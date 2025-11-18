@@ -40,11 +40,6 @@ const DashboardPage = () => {
     fetchData();
   }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    window.location.href = '/login';
-  };
-
   const handleDeleteMessage = async () => {
     if (!messageIdToDelete) {
       setDeleteMessageStatus('메시지 ID를 입력해주세요.');
@@ -65,6 +60,20 @@ const DashboardPage = () => {
     }
   };
 
+  const chartData = React.useMemo(() => {
+    if (!stats) return [];
+
+    const data = stats.last30Days ? [...stats.last30Days] : [];
+    const today = new Date().toISOString().split('T')[0];
+
+    // Add today's data if it's not already present
+    if (!data.find(d => d.date === today)) {
+      data.push({ date: today, count: stats.todayDau || 0 });
+    }
+    
+    return data;
+  }, [stats]);
+
   if (loading) {
     return (
       <div className="dashboard-container">
@@ -78,21 +87,12 @@ const DashboardPage = () => {
 
   return (
     <div className="dashboard-container">
-      {/* Header */}
-      <header className="dashboard-header">
+      <div className="page-header">
         <div>
-          <h1 className="dashboard-title">관리자 대시보드</h1>
-          <p className="dashboard-subtitle">카츠맵 통계</p>
+          <h1 className="page-title">대시보드</h1>
+          <p className="page-subtitle">카츠맵 통계</p>
         </div>
-        <button onClick={handleLogout} className="logout-button">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-            <polyline points="16 17 21 12 16 7" />
-            <line x1="21" y1="12" x2="9" y2="12" />
-          </svg>
-          로그아웃
-        </button>
-      </header>
+      </div>
 
       {error && (
         <div className="error-banner">
@@ -182,8 +182,8 @@ const DashboardPage = () => {
           </div>
         </div>
 
-        {stats?.last30Days && stats.last30Days.length > 0 ? (
-          <DailyUsersChart data={stats.last30Days} />
+        {chartData && chartData.length > 0 ? (
+          <DailyUsersChart data={chartData} />
         ) : (
           <div className="empty-state">
             <p>데이터가 없습니다</p>
