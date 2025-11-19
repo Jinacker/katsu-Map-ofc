@@ -10,6 +10,27 @@ const RestaurantsPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterLevel, setFilterLevel] = useState('all');
   const [selectedRestaurant, setSelectedRestaurant] = useState(null);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingRestaurant, setEditingRestaurant] = useState(null);
+  const [formData, setFormData] = useState({
+    name: '',
+    area: '',
+    category: '돈가스',
+    addr: '',
+    lat: '',
+    lng: '',
+    priceDisplay: '',
+    description: '',
+    imageUrl: '',
+    image_url_1: '',
+    image_url_2: '',
+    image_url_3: '',
+    placeUrl: '',
+    isTop5: false,
+    isBest: false,
+    isGood: false,
+  });
 
   const itemsPerPage = 20;
 
@@ -33,6 +54,118 @@ const RestaurantsPage = () => {
       alert('맛집 목록을 불러오는데 실패했습니다.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const resetFormData = () => {
+    setFormData({
+      name: '',
+      area: '',
+      category: '돈가스',
+      addr: '',
+      lat: '',
+      lng: '',
+      priceDisplay: '',
+      description: '',
+      imageUrl: '',
+      image_url_1: '',
+      image_url_2: '',
+      image_url_3: '',
+      placeUrl: '',
+      isTop5: false,
+      isBest: false,
+      isGood: false,
+    });
+  };
+
+  const handleAddClick = () => {
+    resetFormData();
+    setShowAddModal(true);
+  };
+
+  const handleEditClick = (restaurant) => {
+    setEditingRestaurant(restaurant);
+    setFormData({
+      name: restaurant.name || '',
+      area: restaurant.area || '',
+      category: restaurant.category || '돈가스',
+      addr: restaurant.addr || '',
+      lat: restaurant.lat || '',
+      lng: restaurant.lng || '',
+      priceDisplay: restaurant.priceDisplay || '',
+      description: restaurant.description || '',
+      imageUrl: restaurant.imageUrl || '',
+      image_url_1: restaurant.image_url_1 || '',
+      image_url_2: restaurant.image_url_2 || '',
+      image_url_3: restaurant.image_url_3 || '',
+      placeUrl: restaurant.placeUrl || '',
+      isTop5: restaurant.isTop5 || false,
+      isBest: restaurant.isBest || false,
+      isGood: restaurant.isGood || false,
+    });
+    setSelectedRestaurant(null);
+    setShowEditModal(true);
+  };
+
+  const handleFormChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value,
+    }));
+  };
+
+  const handleAddSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const payload = {
+        ...formData,
+        lat: parseFloat(formData.lat) || 0,
+        lng: parseFloat(formData.lng) || 0,
+      };
+      await apiClient.post('/api/v1/admin/restaurants', payload);
+      alert('식당이 등록되었습니다.');
+      setShowAddModal(false);
+      resetFormData();
+      fetchRestaurants();
+    } catch (err) {
+      console.error(err);
+      alert('식당 등록에 실패했습니다.');
+    }
+  };
+
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const payload = {
+        ...formData,
+        lat: parseFloat(formData.lat) || 0,
+        lng: parseFloat(formData.lng) || 0,
+      };
+      await apiClient.put(`/api/v1/admin/restaurants/${editingRestaurant.id}`, payload);
+      alert('식당 정보가 수정되었습니다.');
+      setShowEditModal(false);
+      setEditingRestaurant(null);
+      resetFormData();
+      fetchRestaurants();
+    } catch (err) {
+      console.error(err);
+      alert('식당 수정에 실패했습니다.');
+    }
+  };
+
+  const handleDelete = async (restaurant) => {
+    if (!window.confirm(`"${restaurant.name}" 식당을 삭제하시겠습니까?`)) {
+      return;
+    }
+    try {
+      await apiClient.delete(`/api/v1/admin/restaurants/${restaurant.id}`);
+      alert('식당이 삭제되었습니다.');
+      setSelectedRestaurant(null);
+      fetchRestaurants();
+    } catch (err) {
+      console.error(err);
+      alert('식당 삭제에 실패했습니다.');
     }
   };
 
@@ -91,6 +224,9 @@ const RestaurantsPage = () => {
           <h1 className="page-title">맛집 관리</h1>
           <p className="page-subtitle">전체 {totalCount}개의 맛집</p>
         </div>
+        <button className="add-btn" onClick={handleAddClick}>
+          + 새 식당 등록
+        </button>
       </div>
 
       {/* Filters */}
@@ -295,7 +431,236 @@ const RestaurantsPage = () => {
                   </div>
                 )}
               </div>
+
+              <div className="modal-actions">
+                <button
+                  className="edit-btn"
+                  onClick={() => handleEditClick(selectedRestaurant)}
+                >
+                  수정
+                </button>
+                <button
+                  className="delete-btn"
+                  onClick={() => handleDelete(selectedRestaurant)}
+                >
+                  삭제
+                </button>
+              </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add/Edit Modal */}
+      {(showAddModal || showEditModal) && (
+        <div className="modal-overlay" onClick={() => {
+          setShowAddModal(false);
+          setShowEditModal(false);
+          setEditingRestaurant(null);
+          resetFormData();
+        }}>
+          <div className="modal-content restaurant-form-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>{showAddModal ? '새 식당 등록' : '식당 정보 수정'}</h2>
+              <button
+                onClick={() => {
+                  setShowAddModal(false);
+                  setShowEditModal(false);
+                  setEditingRestaurant(null);
+                  resetFormData();
+                }}
+                className="modal-close"
+              >
+                ×
+              </button>
+            </div>
+
+            <form onSubmit={showAddModal ? handleAddSubmit : handleEditSubmit} className="restaurant-form">
+              <div className="form-grid">
+                <div className="form-group">
+                  <label>이름 *</label>
+                  <input
+                    type="text"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleFormChange}
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>지역 *</label>
+                  <input
+                    type="text"
+                    name="area"
+                    value={formData.area}
+                    onChange={handleFormChange}
+                    required
+                    placeholder="예: 강남, 홍대, 종로"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>카테고리</label>
+                  <select name="category" value={formData.category} onChange={handleFormChange}>
+                    <option value="돈가스">돈가스</option>
+                    <option value="일식">일식</option>
+                    <option value="양식">양식</option>
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label>가격대</label>
+                  <input
+                    type="text"
+                    name="priceDisplay"
+                    value={formData.priceDisplay}
+                    onChange={handleFormChange}
+                    placeholder="예: 15,000~25,000원"
+                  />
+                </div>
+
+                <div className="form-group full-width">
+                  <label>주소 *</label>
+                  <input
+                    type="text"
+                    name="addr"
+                    value={formData.addr}
+                    onChange={handleFormChange}
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>위도</label>
+                  <input
+                    type="number"
+                    name="lat"
+                    value={formData.lat}
+                    onChange={handleFormChange}
+                    step="any"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>경도</label>
+                  <input
+                    type="number"
+                    name="lng"
+                    value={formData.lng}
+                    onChange={handleFormChange}
+                    step="any"
+                  />
+                </div>
+
+                <div className="form-group full-width">
+                  <label>설명</label>
+                  <textarea
+                    name="description"
+                    value={formData.description}
+                    onChange={handleFormChange}
+                    rows="3"
+                  />
+                </div>
+
+                <div className="form-group full-width">
+                  <label>메인 이미지 URL</label>
+                  <input
+                    type="url"
+                    name="imageUrl"
+                    value={formData.imageUrl}
+                    onChange={handleFormChange}
+                  />
+                </div>
+
+                <div className="form-group full-width">
+                  <label>추가 이미지 1 URL</label>
+                  <input
+                    type="url"
+                    name="image_url_1"
+                    value={formData.image_url_1}
+                    onChange={handleFormChange}
+                  />
+                </div>
+
+                <div className="form-group full-width">
+                  <label>추가 이미지 2 URL</label>
+                  <input
+                    type="url"
+                    name="image_url_2"
+                    value={formData.image_url_2}
+                    onChange={handleFormChange}
+                  />
+                </div>
+
+                <div className="form-group full-width">
+                  <label>추가 이미지 3 URL</label>
+                  <input
+                    type="url"
+                    name="image_url_3"
+                    value={formData.image_url_3}
+                    onChange={handleFormChange}
+                  />
+                </div>
+
+                <div className="form-group full-width">
+                  <label>카카오맵 URL</label>
+                  <input
+                    type="url"
+                    name="placeUrl"
+                    value={formData.placeUrl}
+                    onChange={handleFormChange}
+                  />
+                </div>
+
+                <div className="form-group full-width checkbox-group">
+                  <label>추천 등급</label>
+                  <div className="checkbox-options">
+                    <label className="checkbox-label">
+                      <input
+                        type="checkbox"
+                        name="isTop5"
+                        checked={formData.isTop5}
+                        onChange={handleFormChange}
+                      />
+                      서울 5대 돈가스
+                    </label>
+                    <label className="checkbox-label">
+                      <input
+                        type="checkbox"
+                        name="isBest"
+                        checked={formData.isBest}
+                        onChange={handleFormChange}
+                      />
+                      강추
+                    </label>
+                    <label className="checkbox-label">
+                      <input
+                        type="checkbox"
+                        name="isGood"
+                        checked={formData.isGood}
+                        onChange={handleFormChange}
+                      />
+                      꽤 괜찮
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <div className="form-actions">
+                <button type="button" className="cancel-btn" onClick={() => {
+                  setShowAddModal(false);
+                  setShowEditModal(false);
+                  setEditingRestaurant(null);
+                  resetFormData();
+                }}>
+                  취소
+                </button>
+                <button type="submit" className="submit-btn">
+                  {showAddModal ? '등록' : '수정'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
