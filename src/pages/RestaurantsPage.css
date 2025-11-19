@@ -191,7 +191,21 @@
   height: 300px;
   object-fit: cover;
   border-radius: var(--radius-md);
+  margin-bottom: var(--space-md);
+}
+
+.additional-images {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-sm);
   margin-bottom: var(--space-xl);
+}
+
+.additional-images img {
+  width: 100%;
+  height: 100px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
 }
 
 .detail-grid {
@@ -220,6 +234,22 @@
 .detail-value {
   font-size: 14px;
   color: var(--color-text-primary);
+}
+
+.detail-value.description {
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.detail-link {
+  font-size: 14px;
+  color: var(--color-accent-secondary);
+  text-decoration: none;
+  word-break: break-all;
+}
+
+.detail-link:hover {
+  text-decoration: underline;
 }
 
 /* Responsive Design */

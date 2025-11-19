@@ -103,35 +103,63 @@
   min-height: 100vh;
 }
 
+/* Mobile Tab Bar */
+.mobile-tabbar {
+  display: none;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
-  .admin-sidebar {
-    width: 60px;
+  .mobile-tabbar {
+    display: flex;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background-color: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+    z-index: 100;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
-  .sidebar-header {
-    padding: var(--space-lg) var(--space-sm);
-  }
-
-  .logo-text {
-    display: none;
-  }
-
-  .nav-item span {
-    display: none;
-  }
-
-  .logout-btn span {
-    display: none;
-  }
-
-  .nav-item,
-  .logout-btn {
+  .tabbar-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     justify-content: center;
+    flex: 1;
+    min-width: 70px;
+    padding: var(--space-xs);
+    color: var(--color-text-secondary);
+    text-decoration: none;
+    font-size: 10px;
+    font-weight: 500;
+    gap: 2px;
+    transition: all 0.2s ease;
+  }
+
+  .tabbar-item svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .tabbar-item.active {
+    color: var(--color-accent-secondary);
+  }
+
+  .tabbar-item.active svg {
+    stroke: var(--color-accent-secondary);
+  }
+
+  .admin-sidebar {
+    display: none;
   }
 
   .admin-main {
-    margin-left: 60px;
+    margin-left: 0;
+    margin-top: 60px;
     padding: var(--space-lg);
   }
 }

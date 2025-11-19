@@ -1,0 +1,163 @@
+.users-page {
+  width: 100%;
+}
+
+.page-header {
+  margin-bottom: var(--space-xl);
+}
+
+.page-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-xs);
+}
+
+.page-subtitle {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}
+
+/* Filters */
+.filters-bar {
+  display: flex;
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+}
+
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  flex: 1;
+  max-width: 400px;
+}
+
+.search-box svg {
+  color: var(--color-text-tertiary);
+  flex-shrink: 0;
+}
+
+.search-box input {
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 14px;
+  color: var(--color-text-primary);
+  width: 100%;
+}
+
+.search-box input::placeholder {
+  color: var(--color-text-tertiary);
+}
+
+/* Table */
+.table-container {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.users-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.users-table th,
+.users-table td {
+  padding: var(--space-md);
+  text-align: left;
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.users-table th {
+  background-color: var(--color-bg-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.users-table td {
+  font-size: 14px;
+  color: var(--color-text-primary);
+}
+
+.user-row {
+  transition: background-color 0.2s ease;
+}
+
+.user-row:hover {
+  background-color: var(--color-surface-hover);
+}
+
+.user-row:last-child td {
+  border-bottom: none;
+}
+
+.user-nickname {
+  font-weight: 500;
+}
+
+.no-nickname {
+  color: var(--color-text-tertiary);
+  font-style: italic;
+}
+
+.favorite-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.empty-cell {
+  text-align: center !important;
+  padding: var(--space-2xl) !important;
+  color: var(--color-text-tertiary);
+}
+
+/* Loading State */
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  gap: var(--space-md);
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--color-border);
+  border-top-color: var(--color-accent-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .table-container {
+    overflow-x: auto;
+  }
+
+  .users-table {
+    min-width: 600px;
+  }
+
+  .search-box {
+    max-width: 100%;
+  }
+}

@@ -5,6 +5,7 @@ import DashboardPage from './pages/DashboardPage';
 import MessagesPage from './pages/MessagesPage';
 import NoticesPage from './pages/NoticesPage';
 import RestaurantsPage from './pages/RestaurantsPage';
+import UsersPage from './pages/UsersPage';
 import NotFoundPage from './pages/NotFoundPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminLayout from './components/AdminLayout';
@@ -51,6 +52,16 @@ function App() {
             <ProtectedRoute>
               <AdminLayout>
                 <RestaurantsPage />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/users"
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <UsersPage />
               </AdminLayout>
             </ProtectedRoute>
           }

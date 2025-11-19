@@ -39,7 +39,7 @@ const LoginPage = () => {
               <circle cx="12" cy="10" r="3" />
             </svg>
           </div>
-          <h1 className="login-title">카츠맵 관리자</h1>
+          <h1 className="login-title">돈가스 지도 관리자</h1>
           <p className="login-subtitle">대시보드 접속을 위해 로그인하세요</p>
         </div>
 

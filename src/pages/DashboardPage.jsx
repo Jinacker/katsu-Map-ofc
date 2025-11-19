@@ -7,8 +7,6 @@ const DashboardPage = () => {
   const [stats, setStats] = useState(null);
   const [healthStatus, setHealthStatus] = useState(null);
   const [error, setError] = useState('');
-  const [messageIdToDelete, setMessageIdToDelete] = useState('');
-  const [deleteMessageStatus, setDeleteMessageStatus] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -40,26 +38,6 @@ const DashboardPage = () => {
     fetchData();
   }, []);
 
-  const handleDeleteMessage = async () => {
-    if (!messageIdToDelete) {
-      setDeleteMessageStatus('메시지 ID를 입력해주세요.');
-      return;
-    }
-    setDeleteMessageStatus('삭제 중...');
-    try {
-      await apiClient.delete(`/api/v1/messages/${messageIdToDelete}`);
-      setDeleteMessageStatus(`메시지 ${messageIdToDelete}가 성공적으로 삭제되었습니다.`);
-      setMessageIdToDelete('');
-    } catch (err) {
-      setDeleteMessageStatus(`메시지 ${messageIdToDelete} 삭제 실패. 오류: ${err.message}`);
-      console.error('Message deletion error:', err);
-      if (err.response && err.response.status === 401) {
-        localStorage.removeItem('token');
-        window.location.href = '/login';
-      }
-    }
-  };
-
   const chartData = React.useMemo(() => {
     if (!stats) return [];
 
@@ -90,7 +68,7 @@ const DashboardPage = () => {
       <div className="page-header">
         <div>
           <h1 className="page-title">대시보드</h1>
-          <p className="page-subtitle">카츠맵 통계</p>
+          <p className="page-subtitle">돈가스 지도 통계</p>
         </div>
       </div>
 
@@ -187,35 +165,6 @@ const DashboardPage = () => {
         ) : (
           <div className="empty-state">
             <p>데이터가 없습니다</p>
-          </div>
-        )}
-      </div>
-
-      {/* Delete Message Section */}
-      <div className="action-section">
-        <h2 className="section-title">메시지 관리</h2>
-        <p className="section-subtitle">ID로 메시지 삭제</p>
-
-        <div className="delete-message-form">
-          <input
-            type="number"
-            placeholder="메시지 ID 입력"
-            value={messageIdToDelete}
-            onChange={(e) => setMessageIdToDelete(e.target.value)}
-            className="message-input"
-          />
-          <button onClick={handleDeleteMessage} className="delete-button">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <polyline points="3 6 5 6 21 6" />
-              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-            </svg>
-            메시지 삭제
-          </button>
-        </div>
-
-        {deleteMessageStatus && (
-          <div className={`status-message ${deleteMessageStatus.includes('성공') ? 'success' : deleteMessageStatus.includes('실패') ? 'error' : 'info'}`}>
-            {deleteMessageStatus}
           </div>
         )}
       </div>

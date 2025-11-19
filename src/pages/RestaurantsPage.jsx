@@ -15,16 +15,19 @@ const RestaurantsPage = () => {
 
   useEffect(() => {
     fetchRestaurants();
-  }, [currentPage]);
+  }, []);
+
+  // 검색이나 필터 변경 시 페이지 리셋
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterLevel]);
 
   const fetchRestaurants = async () => {
     try {
       setLoading(true);
-      const response = await apiClient.get(
-        `/api/v1/restaurants?limit=${itemsPerPage}&offset=${(currentPage - 1) * itemsPerPage}`
-      );
-      setRestaurants(response.data.data.items);
-      setTotalCount(response.data.data.count);
+      const response = await apiClient.get('/api/v1/admin/restaurants');
+      setRestaurants(response.data.data);
+      setTotalCount(response.data.data.length);
     } catch (err) {
       console.error(err);
       alert('맛집 목록을 불러오는데 실패했습니다.');
@@ -33,40 +36,42 @@ const RestaurantsPage = () => {
     }
   };
 
-  const getRecommendLabel = (level) => {
-    switch (level) {
-      case 'top5':
-        return '톱5';
-      case 'best':
-        return '강추';
-      case 'good':
-        return '추천';
-      default:
-        return level;
-    }
+  const getRecommendLevel = (restaurant) => {
+    if (restaurant.isTop5) return 'top5';
+    if (restaurant.isBest) return 'best';
+    if (restaurant.isGood) return 'good';
+    return 'none';
   };
 
-  const getRecommendClass = (level) => {
-    switch (level) {
-      case 'top5':
-        return 'top5';
-      case 'best':
-        return 'best';
-      case 'good':
-        return 'good';
-      default:
-        return '';
-    }
+  const getRecommendLabel = (restaurant) => {
+    if (restaurant.isTop5) return '서울 5대 돈가스';
+    if (restaurant.isBest) return '강추';
+    if (restaurant.isGood) return '꽤 괜찮';
+    return '-';
+  };
+
+  const getRecommendClass = (restaurant) => {
+    if (restaurant.isTop5) return 'top5';
+    if (restaurant.isBest) return 'best';
+    if (restaurant.isGood) return 'good';
+    return '';
   };
 
   const filteredRestaurants = restaurants.filter((r) => {
     const matchesSearch = r.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          r.area.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesLevel = filterLevel === 'all' || r.recommendLevel === filterLevel;
+    const level = getRecommendLevel(r);
+    const matchesLevel = filterLevel === 'all' || level === filterLevel;
     return matchesSearch && matchesLevel;
   });
 
-  const totalPages = Math.ceil(totalCount / itemsPerPage);
+  // 클라이언트 사이드 페이지네이션
+  const totalFilteredCount = filteredRestaurants.length;
+  const totalPages = Math.ceil(totalFilteredCount / itemsPerPage);
+  const paginatedRestaurants = filteredRestaurants.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   if (loading) {
     return (
@@ -109,9 +114,9 @@ const RestaurantsPage = () => {
           className="filter-select"
         >
           <option value="all">전체 등급</option>
-          <option value="top5">톱5</option>
+          <option value="top5">서울 5대 돈가스</option>
           <option value="best">강추</option>
-          <option value="good">추천</option>
+          <option value="good">꽤 괜찮</option>
         </select>
       </div>
 
@@ -131,14 +136,14 @@ const RestaurantsPage = () => {
             </tr>
           </thead>
           <tbody>
-            {filteredRestaurants.length === 0 ? (
+            {paginatedRestaurants.length === 0 ? (
               <tr>
                 <td colSpan="8" className="empty-cell">
                   검색 결과가 없습니다
                 </td>
               </tr>
             ) : (
-              filteredRestaurants.map((restaurant) => (
+              paginatedRestaurants.map((restaurant) => (
                 <tr
                   key={restaurant.id}
                   onClick={() => setSelectedRestaurant(restaurant)}
@@ -158,8 +163,8 @@ const RestaurantsPage = () => {
                   <td>{restaurant.area}</td>
                   <td>{restaurant.category}</td>
                   <td>
-                    <span className={`recommend-badge ${getRecommendClass(restaurant.recommendLevel)}`}>
-                      {getRecommendLabel(restaurant.recommendLevel)}
+                    <span className={`recommend-badge ${getRecommendClass(restaurant)}`}>
+                      {getRecommendLabel(restaurant)}
                     </span>
                   </td>
                   <td>{restaurant.priceDisplay || '-'}</td>
@@ -204,6 +209,7 @@ const RestaurantsPage = () => {
             </div>
 
             <div className="restaurant-detail-content">
+              {/* 메인 이미지 */}
               {selectedRestaurant.imageUrl && (
                 <img
                   src={selectedRestaurant.imageUrl}
@@ -211,6 +217,19 @@ const RestaurantsPage = () => {
                   className="restaurant-image"
                 />
               )}
+
+              {/* 추가 이미지들 */}
+              <div className="additional-images">
+                {selectedRestaurant.image_url_1 && (
+                  <img src={selectedRestaurant.image_url_1} alt="추가 이미지 1" />
+                )}
+                {selectedRestaurant.image_url_2 && (
+                  <img src={selectedRestaurant.image_url_2} alt="추가 이미지 2" />
+                )}
+                {selectedRestaurant.image_url_3 && (
+                  <img src={selectedRestaurant.image_url_3} alt="추가 이미지 3" />
+                )}
+              </div>
 
               <div className="detail-grid">
                 <div className="detail-item">
@@ -230,8 +249,8 @@ const RestaurantsPage = () => {
 
                 <div className="detail-item">
                   <span className="detail-label">추천등급</span>
-                  <span className={`recommend-badge ${getRecommendClass(selectedRestaurant.recommendLevel)}`}>
-                    {getRecommendLabel(selectedRestaurant.recommendLevel)}
+                  <span className={`recommend-badge ${getRecommendClass(selectedRestaurant)}`}>
+                    {getRecommendLabel(selectedRestaurant)}
                   </span>
                 </div>
 
@@ -254,6 +273,27 @@ const RestaurantsPage = () => {
                   <span className="detail-label">경도</span>
                   <span className="detail-value">{selectedRestaurant.lng}</span>
                 </div>
+
+                {selectedRestaurant.description && (
+                  <div className="detail-item full-width">
+                    <span className="detail-label">설명</span>
+                    <span className="detail-value description">{selectedRestaurant.description}</span>
+                  </div>
+                )}
+
+                {selectedRestaurant.placeUrl && (
+                  <div className="detail-item full-width">
+                    <span className="detail-label">카카오맵</span>
+                    <a
+                      href={selectedRestaurant.placeUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="detail-link"
+                    >
+                      {selectedRestaurant.placeUrl}
+                    </a>
+                  </div>
+                )}
               </div>
             </div>
           </div>
