@@ -480,3 +480,44 @@
     grid-column: 1;
   }
 }
+
+/* Image Upload */
+.image-input-group {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.image-input-group input {
+  flex: 1;
+}
+
+.upload-btn {
+  padding: var(--space-sm) var(--space-md);
+  background-color: var(--color-accent-primary);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.upload-btn:hover {
+  background-color: var(--color-accent-secondary);
+}
+
+.upload-btn.uploading {
+  background-color: var(--color-text-tertiary);
+  cursor: not-allowed;
+}
+
+.image-preview {
+  margin-top: var(--space-sm);
+  max-width: 200px;
+  max-height: 150px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+}

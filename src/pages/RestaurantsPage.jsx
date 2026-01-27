@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import apiClient from '../api/axios';
+import { uploadImageToGCS } from '../api/gcs';
 import './RestaurantsPage.css';
 
 const RestaurantsPage = () => {
@@ -36,6 +37,7 @@ const RestaurantsPage = () => {
     isKatsuHunterPick: false,
     katsuHunterDescription: '',
   });
+  const [uploading, setUploading] = useState({});
 
   useEffect(() => {
     fetchRestaurants();
@@ -120,6 +122,43 @@ const RestaurantsPage = () => {
       ...prev,
       [name]: type === 'checkbox' ? checked : value,
     }));
+  };
+
+  const handleImageUpload = async (e, fieldName) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // 이미지 파일만 허용
+    if (!file.type.startsWith('image/')) {
+      alert('이미지 파일만 업로드 가능합니다.');
+      return;
+    }
+
+    // 5MB 제한
+    if (file.size > 5 * 1024 * 1024) {
+      alert('파일 크기는 5MB 이하여야 합니다.');
+      return;
+    }
+
+    setUploading((prev) => ({ ...prev, [fieldName]: true }));
+
+    try {
+      const url = await uploadImageToGCS(file);
+      setFormData((prev) => {
+        const updated = { ...prev, [fieldName]: url };
+        // 추가 이미지 1 업로드 시 메인 이미지가 비어있으면 자동 설정
+        if (fieldName === 'image_url_1' && !prev.imageUrl) {
+          updated.imageUrl = url;
+        }
+        return updated;
+      });
+    } catch (err) {
+      console.error(err);
+      alert(`이미지 업로드 실패: ${err.message}`);
+    } finally {
+      setUploading((prev) => ({ ...prev, [fieldName]: false }));
+      e.target.value = ''; // 같은 파일 재선택 허용
+    }
   };
 
   const handleAddSubmit = async (e) => {
@@ -560,13 +599,15 @@ const RestaurantsPage = () => {
                 </div>
 
                 <div className="form-group">
-                  <label>가격대</label>
+                  <label>가격대 {showEditModal && '(수정 불가)'}</label>
                   <input
                     type="text"
                     name="priceDisplay"
                     value={formData.priceDisplay}
                     onChange={handleFormChange}
                     placeholder="예: 15,000~25,000원"
+                    disabled={showEditModal}
+                    className={showEditModal ? 'disabled-input' : ''}
                   />
                 </div>
 
@@ -614,45 +655,111 @@ const RestaurantsPage = () => {
                 </div>
 
                 <div className="form-group full-width">
-                  <label>메인 이미지 URL {showEditModal && '(수정 불가)'}</label>
-                  <input
-                    type="url"
-                    name="imageUrl"
-                    value={formData.imageUrl}
-                    onChange={handleFormChange}
-                    disabled={showEditModal}
-                    className={showEditModal ? 'disabled-input' : ''}
-                  />
+                  <label>메인 이미지 {showEditModal && '(수정 불가)'}</label>
+                  <div className="image-input-group">
+                    <input
+                      type="url"
+                      name="imageUrl"
+                      value={formData.imageUrl}
+                      onChange={handleFormChange}
+                      disabled={showEditModal}
+                      className={showEditModal ? 'disabled-input' : ''}
+                      placeholder="URL 직접 입력 또는 이미지 업로드"
+                    />
+                    {!showEditModal && (
+                      <label className={`upload-btn ${uploading.imageUrl ? 'uploading' : ''}`}>
+                        {uploading.imageUrl ? '업로드중...' : '업로드'}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handleImageUpload(e, 'imageUrl')}
+                          disabled={uploading.imageUrl}
+                          style={{ display: 'none' }}
+                        />
+                      </label>
+                    )}
+                  </div>
+                  {formData.imageUrl && (
+                    <img src={formData.imageUrl} alt="미리보기" className="image-preview" />
+                  )}
                 </div>
 
                 <div className="form-group full-width">
-                  <label>추가 이미지 1 URL</label>
-                  <input
-                    type="url"
-                    name="image_url_1"
-                    value={formData.image_url_1}
-                    onChange={handleFormChange}
-                  />
+                  <label>추가 이미지 1</label>
+                  <div className="image-input-group">
+                    <input
+                      type="url"
+                      name="image_url_1"
+                      value={formData.image_url_1}
+                      onChange={handleFormChange}
+                      placeholder="URL 직접 입력 또는 이미지 업로드"
+                    />
+                    <label className={`upload-btn ${uploading.image_url_1 ? 'uploading' : ''}`}>
+                      {uploading.image_url_1 ? '업로드중...' : '업로드'}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleImageUpload(e, 'image_url_1')}
+                        disabled={uploading.image_url_1}
+                        style={{ display: 'none' }}
+                      />
+                    </label>
+                  </div>
+                  {formData.image_url_1 && (
+                    <img src={formData.image_url_1} alt="미리보기" className="image-preview" />
+                  )}
                 </div>
 
                 <div className="form-group full-width">
-                  <label>추가 이미지 2 URL</label>
-                  <input
-                    type="url"
-                    name="image_url_2"
-                    value={formData.image_url_2}
-                    onChange={handleFormChange}
-                  />
+                  <label>추가 이미지 2</label>
+                  <div className="image-input-group">
+                    <input
+                      type="url"
+                      name="image_url_2"
+                      value={formData.image_url_2}
+                      onChange={handleFormChange}
+                      placeholder="URL 직접 입력 또는 이미지 업로드"
+                    />
+                    <label className={`upload-btn ${uploading.image_url_2 ? 'uploading' : ''}`}>
+                      {uploading.image_url_2 ? '업로드중...' : '업로드'}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleImageUpload(e, 'image_url_2')}
+                        disabled={uploading.image_url_2}
+                        style={{ display: 'none' }}
+                      />
+                    </label>
+                  </div>
+                  {formData.image_url_2 && (
+                    <img src={formData.image_url_2} alt="미리보기" className="image-preview" />
+                  )}
                 </div>
 
                 <div className="form-group full-width">
-                  <label>추가 이미지 3 URL</label>
-                  <input
-                    type="url"
-                    name="image_url_3"
-                    value={formData.image_url_3}
-                    onChange={handleFormChange}
-                  />
+                  <label>추가 이미지 3</label>
+                  <div className="image-input-group">
+                    <input
+                      type="url"
+                      name="image_url_3"
+                      value={formData.image_url_3}
+                      onChange={handleFormChange}
+                      placeholder="URL 직접 입력 또는 이미지 업로드"
+                    />
+                    <label className={`upload-btn ${uploading.image_url_3 ? 'uploading' : ''}`}>
+                      {uploading.image_url_3 ? '업로드중...' : '업로드'}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleImageUpload(e, 'image_url_3')}
+                        disabled={uploading.image_url_3}
+                        style={{ display: 'none' }}
+                      />
+                    </label>
+                  </div>
+                  {formData.image_url_3 && (
+                    <img src={formData.image_url_3} alt="미리보기" className="image-preview" />
+                  )}
                 </div>
 
                 <div className="form-group full-width">
