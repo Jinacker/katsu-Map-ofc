@@ -33,8 +33,8 @@ const RestaurantsPage = () => {
     isTop5: false,
     isBest: false,
     isGood: false,
-    is_katsu_hunter_pick: false,
-    katsu_hunter_description: '',
+    isKatsuHunterPick: false,
+    katsuHunterDescription: '',
   });
 
   useEffect(() => {
@@ -78,8 +78,8 @@ const RestaurantsPage = () => {
       isTop5: false,
       isBest: false,
       isGood: false,
-      is_katsu_hunter_pick: false,
-      katsu_hunter_description: '',
+      isKatsuHunterPick: false,
+      katsuHunterDescription: '',
     });
   };
 
@@ -107,8 +107,8 @@ const RestaurantsPage = () => {
       isTop5: restaurant.isTop5 || false,
       isBest: restaurant.isBest || false,
       isGood: restaurant.isGood || false,
-      is_katsu_hunter_pick: restaurant.is_katsu_hunter_pick || false,
-      katsu_hunter_description: restaurant.katsu_hunter_description || '',
+      isKatsuHunterPick: restaurant.isKatsuHunterPick || false,
+      katsuHunterDescription: restaurant.katsuHunterDescription || '',
     });
     setSelectedRestaurant(null);
     setShowEditModal(true);
@@ -157,7 +157,8 @@ const RestaurantsPage = () => {
       fetchRestaurants();
     } catch (err) {
       console.error(err);
-      alert('식당 수정에 실패했습니다.');
+      const errorMsg = err.response?.data?.message || err.message || '알 수 없는 오류';
+      alert(`식당 수정에 실패했습니다.\n${errorMsg}`);
     }
   };
 
@@ -206,7 +207,7 @@ const RestaurantsPage = () => {
       if (filterLevel === 'all') {
         matchesLevel = true;
       } else if (filterLevel === 'katsu_hunter') {
-        matchesLevel = r.is_katsu_hunter_pick;
+        matchesLevel = r.isKatsuHunterPick;
       } else {
         matchesLevel = level === filterLevel;
       }
@@ -701,8 +702,8 @@ const RestaurantsPage = () => {
                     <label className="checkbox-label">
                       <input
                         type="checkbox"
-                        name="is_katsu_hunter_pick"
-                        checked={formData.is_katsu_hunter_pick}
+                        name="isKatsuHunterPick"
+                        checked={formData.isKatsuHunterPick}
                         onChange={handleFormChange}
                       />
                       카츠헌터 PICK
@@ -713,8 +714,8 @@ const RestaurantsPage = () => {
                 <div className="form-group full-width">
                   <label>카츠헌터 설명</label>
                   <textarea
-                    name="katsu_hunter_description"
-                    value={formData.katsu_hunter_description}
+                    name="katsuHunterDescription"
+                    value={formData.katsuHunterDescription}
                     onChange={handleFormChange}
                     rows="3"
                     placeholder="카츠헌터 PICK 설명을 입력하세요"
