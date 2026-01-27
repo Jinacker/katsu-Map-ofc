@@ -16,7 +16,7 @@ const RestaurantsPage = () => {
   const [formData, setFormData] = useState({
     name: '',
     area: '',
-    category: '돈가스',
+    category: '일식',
     addr: '',
     lat: '',
     lng: '',
@@ -30,6 +30,8 @@ const RestaurantsPage = () => {
     isTop5: false,
     isBest: false,
     isGood: false,
+    is_katsu_hunter_pick: false,
+    katsu_hunter_description: '',
   });
 
   const itemsPerPage = 20;
@@ -61,7 +63,7 @@ const RestaurantsPage = () => {
     setFormData({
       name: '',
       area: '',
-      category: '돈가스',
+      category: '일식',
       addr: '',
       lat: '',
       lng: '',
@@ -75,6 +77,8 @@ const RestaurantsPage = () => {
       isTop5: false,
       isBest: false,
       isGood: false,
+      is_katsu_hunter_pick: false,
+      katsu_hunter_description: '',
     });
   };
 
@@ -88,7 +92,7 @@ const RestaurantsPage = () => {
     setFormData({
       name: restaurant.name || '',
       area: restaurant.area || '',
-      category: restaurant.category || '돈가스',
+      category: restaurant.category || '일식',
       addr: restaurant.addr || '',
       lat: restaurant.lat || '',
       lng: restaurant.lng || '',
@@ -102,6 +106,8 @@ const RestaurantsPage = () => {
       isTop5: restaurant.isTop5 || false,
       isBest: restaurant.isBest || false,
       isGood: restaurant.isGood || false,
+      is_katsu_hunter_pick: restaurant.is_katsu_hunter_pick || false,
+      katsu_hunter_description: restaurant.katsu_hunter_description || '',
     });
     setSelectedRestaurant(null);
     setShowEditModal(true);
@@ -503,9 +509,8 @@ const RestaurantsPage = () => {
                 <div className="form-group">
                   <label>카테고리</label>
                   <select name="category" value={formData.category} onChange={handleFormChange}>
-                    <option value="돈가스">돈가스</option>
                     <option value="일식">일식</option>
-                    <option value="양식">양식</option>
+                    <option value="경양식">경양식</option>
                   </select>
                 </div>
 
@@ -644,6 +649,32 @@ const RestaurantsPage = () => {
                       꽤 괜찮
                     </label>
                   </div>
+                </div>
+
+                <div className="form-group full-width checkbox-group">
+                  <label>카츠헌터 PICK</label>
+                  <div className="checkbox-options">
+                    <label className="checkbox-label">
+                      <input
+                        type="checkbox"
+                        name="is_katsu_hunter_pick"
+                        checked={formData.is_katsu_hunter_pick}
+                        onChange={handleFormChange}
+                      />
+                      카츠헌터 PICK
+                    </label>
+                  </div>
+                </div>
+
+                <div className="form-group full-width">
+                  <label>카츠헌터 설명</label>
+                  <textarea
+                    name="katsu_hunter_description"
+                    value={formData.katsu_hunter_description}
+                    onChange={handleFormChange}
+                    rows="3"
+                    placeholder="카츠헌터 PICK 설명을 입력하세요"
+                  />
                 </div>
               </div>
 
