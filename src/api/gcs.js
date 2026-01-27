@@ -2,7 +2,7 @@ import { SignJWT, importPKCS8 } from 'jose';
 
 const BUCKET = import.meta.env.VITE_GCS_BUCKET;
 const CLIENT_EMAIL = import.meta.env.VITE_GCS_CLIENT_EMAIL;
-const PRIVATE_KEY = import.meta.env.VITE_GCS_PRIVATE_KEY;
+const PRIVATE_KEY = import.meta.env.VITE_GCS_PRIVATE_KEY.replace(/\\n/g, '\n');
 
 let cachedToken = null;
 let tokenExpiry = 0;
