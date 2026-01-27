@@ -381,6 +381,12 @@
   min-height: 80px;
 }
 
+.form-group input.disabled-input {
+  background-color: var(--color-bg-secondary);
+  color: var(--color-text-tertiary);
+  cursor: not-allowed;
+}
+
 .checkbox-group {
   margin-top: var(--space-sm);
 }

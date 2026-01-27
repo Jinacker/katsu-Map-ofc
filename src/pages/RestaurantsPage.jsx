@@ -614,12 +614,14 @@ const RestaurantsPage = () => {
                 </div>
 
                 <div className="form-group full-width">
-                  <label>메인 이미지 URL</label>
+                  <label>메인 이미지 URL {showEditModal && '(수정 불가)'}</label>
                   <input
                     type="url"
                     name="imageUrl"
                     value={formData.imageUrl}
                     onChange={handleFormChange}
+                    disabled={showEditModal}
+                    className={showEditModal ? 'disabled-input' : ''}
                   />
                 </div>
 
