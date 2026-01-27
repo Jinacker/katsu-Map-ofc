@@ -51,6 +51,30 @@
   border-color: var(--color-accent-primary);
 }
 
+.sort-btn {
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  background-color: var(--color-surface);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.sort-btn:hover {
+  background-color: var(--color-surface-hover);
+  border-color: var(--color-accent-primary);
+}
+
+.sort-btn.active {
+  background-color: var(--color-accent-primary);
+  border-color: var(--color-accent-primary);
+  color: white;
+}
+
 /* Table */
 .table-container {
   background-color: var(--color-surface);
@@ -142,39 +166,31 @@
   color: var(--color-text-tertiary);
 }
 
-/* Pagination */
-.pagination {
+/* 무한 스크롤 */
+.load-more-trigger {
+  padding: var(--space-lg);
+  text-align: center;
+}
+
+.load-more-indicator {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: var(--space-lg);
-}
-
-.pagination-btn {
-  padding: var(--space-sm) var(--space-lg);
-  background-color: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--color-text-primary);
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.pagination-btn:hover:not(:disabled) {
-  background-color: var(--color-surface-hover);
-  border-color: var(--color-accent-primary);
-}
-
-.pagination-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.pagination-info {
-  font-size: 14px;
+  gap: var(--space-sm);
   color: var(--color-text-secondary);
+  font-size: 14px;
+}
+
+.load-more-indicator .loading-spinner.small {
+  width: 20px;
+  height: 20px;
+  border-width: 2px;
+}
+
+.load-more-end {
+  color: var(--color-text-tertiary);
+  font-size: 13px;
+  padding: var(--space-md);
 }
 
 /* Restaurant Detail Modal */

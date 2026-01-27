@@ -1,14 +1,17 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import apiClient from '../api/axios';
 import './RestaurantsPage.css';
 
 const RestaurantsPage = () => {
   const [restaurants, setRestaurants] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [displayCount, setDisplayCount] = useState(20);
   const [totalCount, setTotalCount] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterLevel, setFilterLevel] = useState('all');
+  const [sortOrder, setSortOrder] = useState('asc'); // 'asc' = 등록순, 'desc' = 역순
+  const observerRef = useRef(null);
+  const loadMoreRef = useRef(null);
   const [selectedRestaurant, setSelectedRestaurant] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -34,16 +37,14 @@ const RestaurantsPage = () => {
     katsu_hunter_description: '',
   });
 
-  const itemsPerPage = 20;
-
   useEffect(() => {
     fetchRestaurants();
   }, []);
 
-  // 검색이나 필터 변경 시 페이지 리셋
+  // 검색이나 필터, 정렬 변경 시 표시 개수 리셋
   useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, filterLevel]);
+    setDisplayCount(20);
+  }, [searchTerm, filterLevel, sortOrder]);
 
   const fetchRestaurants = async () => {
     try {
@@ -196,21 +197,62 @@ const RestaurantsPage = () => {
     return '';
   };
 
-  const filteredRestaurants = restaurants.filter((r) => {
-    const matchesSearch = r.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         r.area.toLowerCase().includes(searchTerm.toLowerCase());
-    const level = getRecommendLevel(r);
-    const matchesLevel = filterLevel === 'all' || level === filterLevel;
-    return matchesSearch && matchesLevel;
-  });
+  const filteredRestaurants = restaurants
+    .filter((r) => {
+      const matchesSearch = r.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           r.area.toLowerCase().includes(searchTerm.toLowerCase());
+      const level = getRecommendLevel(r);
+      let matchesLevel;
+      if (filterLevel === 'all') {
+        matchesLevel = true;
+      } else if (filterLevel === 'katsu_hunter') {
+        matchesLevel = r.is_katsu_hunter_pick;
+      } else {
+        matchesLevel = level === filterLevel;
+      }
+      return matchesSearch && matchesLevel;
+    })
+    .sort((a, b) => {
+      if (sortOrder === 'desc') {
+        return b.id - a.id; // 역순 (최신순)
+      }
+      return a.id - b.id; // 등록순
+    });
 
-  // 클라이언트 사이드 페이지네이션
+  // 무한 스크롤용 표시 데이터
   const totalFilteredCount = filteredRestaurants.length;
-  const totalPages = Math.ceil(totalFilteredCount / itemsPerPage);
-  const paginatedRestaurants = filteredRestaurants.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  const displayedRestaurants = filteredRestaurants.slice(0, displayCount);
+  const hasMore = displayCount < totalFilteredCount;
+
+  // 무한 스크롤 로직
+  const loadMore = useCallback(() => {
+    if (hasMore) {
+      setDisplayCount((prev) => prev + 20);
+    }
+  }, [hasMore]);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore) {
+          loadMore();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (loadMoreRef.current) {
+      observer.observe(loadMoreRef.current);
+    }
+
+    observerRef.current = observer;
+
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+  }, [hasMore, loadMore]);
 
   if (loading) {
     return (
@@ -259,7 +301,15 @@ const RestaurantsPage = () => {
           <option value="top5">서울 5대 돈가스</option>
           <option value="best">강추</option>
           <option value="good">꽤 괜찮</option>
+          <option value="katsu_hunter">카츠헌터 PICK</option>
         </select>
+
+        <button
+          className={`sort-btn ${sortOrder === 'desc' ? 'active' : ''}`}
+          onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+        >
+          {sortOrder === 'asc' ? '등록순 ↑' : '최신순 ↓'}
+        </button>
       </div>
 
       {/* Restaurant Table */}
@@ -278,14 +328,14 @@ const RestaurantsPage = () => {
             </tr>
           </thead>
           <tbody>
-            {paginatedRestaurants.length === 0 ? (
+            {displayedRestaurants.length === 0 ? (
               <tr>
                 <td colSpan="8" className="empty-cell">
                   검색 결과가 없습니다
                 </td>
               </tr>
             ) : (
-              paginatedRestaurants.map((restaurant) => (
+              displayedRestaurants.map((restaurant) => (
                 <tr
                   key={restaurant.id}
                   onClick={() => setSelectedRestaurant(restaurant)}
@@ -318,25 +368,19 @@ const RestaurantsPage = () => {
         </table>
       </div>
 
-      {/* Pagination */}
-      <div className="pagination">
-        <button
-          onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-          disabled={currentPage === 1}
-          className="pagination-btn"
-        >
-          이전
-        </button>
-        <span className="pagination-info">
-          {currentPage} / {totalPages} 페이지
-        </span>
-        <button
-          onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-          disabled={currentPage === totalPages}
-          className="pagination-btn"
-        >
-          다음
-        </button>
+      {/* 무한 스크롤 로딩 */}
+      <div ref={loadMoreRef} className="load-more-trigger">
+        {hasMore && (
+          <div className="load-more-indicator">
+            <div className="loading-spinner small"></div>
+            <span>더 불러오는 중... ({displayCount} / {totalFilteredCount})</span>
+          </div>
+        )}
+        {!hasMore && totalFilteredCount > 0 && (
+          <div className="load-more-end">
+            총 {totalFilteredCount}개의 맛집을 모두 불러왔습니다
+          </div>
+        )}
       </div>
 
       {/* Detail Modal */}
