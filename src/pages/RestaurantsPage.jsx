@@ -134,12 +134,6 @@ const RestaurantsPage = () => {
       return;
     }
 
-    // 5MB 제한
-    if (file.size > 5 * 1024 * 1024) {
-      alert('파일 크기는 5MB 이하여야 합니다.');
-      return;
-    }
-
     setUploading((prev) => ({ ...prev, [fieldName]: true }));
 
     try {
