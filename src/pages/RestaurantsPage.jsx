@@ -363,7 +363,7 @@ const RestaurantsPage = () => {
               <th>지역</th>
               <th>카테고리</th>
               <th>추천등급</th>
-              <th>가격대</th>
+              <th>카츠헌터</th>
               <th>주소</th>
             </tr>
           </thead>
@@ -399,7 +399,11 @@ const RestaurantsPage = () => {
                       {getRecommendLabel(restaurant)}
                     </span>
                   </td>
-                  <td>{restaurant.priceDisplay || '-'}</td>
+                  <td>
+                    <span className={`pick-badge ${restaurant.isKatsuHunterPick ? 'active' : ''}`}>
+                      {restaurant.isKatsuHunterPick ? 'PICK' : '-'}
+                    </span>
+                  </td>
                   <td className="address-cell">{restaurant.addr}</td>
                 </tr>
               ))
