@@ -481,6 +481,13 @@ const RestaurantsPage = () => {
                 </div>
 
                 <div className="detail-item">
+                  <span className="detail-label">카츠헌터 PICK</span>
+                  <span className={`pick-badge ${selectedRestaurant.isKatsuHunterPick ? 'active' : ''}`}>
+                    {selectedRestaurant.isKatsuHunterPick ? '✓ PICK' : '-'}
+                  </span>
+                </div>
+
+                <div className="detail-item">
                   <span className="detail-label">가격대</span>
                   <span className="detail-value">{selectedRestaurant.priceDisplay || '-'}</span>
                 </div>
@@ -500,9 +507,21 @@ const RestaurantsPage = () => {
                   <span className="detail-value">{selectedRestaurant.lng}</span>
                 </div>
 
+                {selectedRestaurant.isKatsuHunterPick && (
+                  <div className="detail-item full-width katsu-hunter-section">
+                    <div className="katsu-hunter-badge">
+                      <span className="katsu-hunter-icon">🏆</span>
+                      <span className="katsu-hunter-title">카츠헌터 PICK</span>
+                    </div>
+                    {selectedRestaurant.katsuHunterDescription && (
+                      <p className="katsu-hunter-description">{selectedRestaurant.katsuHunterDescription}</p>
+                    )}
+                  </div>
+                )}
+
                 {selectedRestaurant.description && (
                   <div className="detail-item full-width">
-                    <span className="detail-label">설명</span>
+                    <span className="detail-label">AI 리뷰 요약</span>
                     <span className="detail-value description">{selectedRestaurant.description}</span>
                   </div>
                 )}

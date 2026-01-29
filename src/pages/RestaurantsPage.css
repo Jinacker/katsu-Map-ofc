@@ -153,6 +153,21 @@
   color: #8B9D83;
 }
 
+.pick-badge {
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 600;
+  display: inline-block;
+  background-color: var(--color-bg-secondary);
+  color: var(--color-text-tertiary);
+}
+
+.pick-badge.active {
+  background-color: #FFEDD5;
+  color: #EA580C;
+}
+
 .address-cell {
   max-width: 250px;
   overflow: hidden;
@@ -266,6 +281,42 @@
 
 .detail-link:hover {
   text-decoration: underline;
+}
+
+/* 카츠헌터 PICK 섹션 */
+.katsu-hunter-section {
+  background: linear-gradient(135deg, #FFF7ED 0%, #FFEDD5 100%);
+  border: 2px solid #F97316;
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg) !important;
+  margin: var(--space-md) 0;
+}
+
+.katsu-hunter-badge {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-sm);
+}
+
+.katsu-hunter-icon {
+  font-size: 24px;
+}
+
+.katsu-hunter-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #EA580C;
+  letter-spacing: -0.5px;
+}
+
+.katsu-hunter-description {
+  font-size: 15px;
+  line-height: 1.7;
+  color: #9A3412;
+  margin: 0;
+  padding: var(--space-sm) 0 0 0;
+  white-space: pre-wrap;
 }
 
 /* Add Button */
