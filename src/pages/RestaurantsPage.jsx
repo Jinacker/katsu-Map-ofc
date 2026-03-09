@@ -218,11 +218,13 @@ const RestaurantsPage = () => {
   };
 
   const getRecommendLabel = (restaurant) => {
-    if (restaurant.isTop5) return '서울 5대 돈가스';
-    if (restaurant.isBest) return '강추';
-    if (restaurant.isGood) return '꽤 괜찮';
-    return '-';
+    if (restaurant.isTop5) return '★★★★';
+    if (restaurant.isBest) return '★★★';
+    if (restaurant.isGood) return '★★';
+    return '★';
   };
+
+
 
   const getRecommendClass = (restaurant) => {
     if (restaurant.isTop5) return 'top5';
@@ -332,9 +334,9 @@ const RestaurantsPage = () => {
           className="filter-select"
         >
           <option value="all">전체 등급</option>
-          <option value="top5">서울 5대 돈가스</option>
-          <option value="best">강추</option>
-          <option value="good">꽤 괜찮</option>
+          <option value="top5">★★★★</option>
+          <option value="best">★★★</option>
+          <option value="good">★★</option>
           <option value="katsu_hunter">카츠헌터 PICK</option>
         </select>
 
@@ -790,7 +792,7 @@ const RestaurantsPage = () => {
                 </div>
 
                 <div className="form-group full-width checkbox-group">
-                  <label>추천 등급</label>
+                  <label>추천 등급 <span className="grade-hint">★ 체크 안하면 별 1개</span></label>
                   <div className="checkbox-options">
                     <label className="checkbox-label">
                       <input
@@ -799,7 +801,7 @@ const RestaurantsPage = () => {
                         checked={formData.isTop5}
                         onChange={handleFormChange}
                       />
-                      서울 5대 돈가스
+                      ★★★★
                     </label>
                     <label className="checkbox-label">
                       <input
@@ -808,7 +810,7 @@ const RestaurantsPage = () => {
                         checked={formData.isBest}
                         onChange={handleFormChange}
                       />
-                      강추
+                      ★★★
                     </label>
                     <label className="checkbox-label">
                       <input
@@ -817,7 +819,7 @@ const RestaurantsPage = () => {
                         checked={formData.isGood}
                         onChange={handleFormChange}
                       />
-                      꽤 괜찮
+                      ★★
                     </label>
                   </div>
                 </div>
