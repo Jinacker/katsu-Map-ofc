@@ -337,6 +337,7 @@ const RestaurantsPage = () => {
           <option value="top5">★★★★</option>
           <option value="best">★★★</option>
           <option value="good">★★</option>
+          <option value="none">★</option>
           <option value="katsu_hunter">카츠헌터 PICK</option>
         </select>
 
