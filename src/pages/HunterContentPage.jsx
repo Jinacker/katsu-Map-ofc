@@ -10,7 +10,7 @@ const MAX_PICKS = 3;
 
 const emptyInstaPost = () => ({ id: Date.now() + Math.random(), image: '', title: '', subtitle: '', url: '' });
 const emptyBlogPost = () => ({ id: Date.now() + Math.random(), image: '', title: '', subtitle: '', url: '' });
-const emptyStoreItem = () => ({ id: Date.now() + Math.random(), image: '', title: '', price: '' });
+const emptyStoreItem = () => ({ id: Date.now() + Math.random(), image: '', title: '', price: '', url: '' });
 
 // 이미지 업로드 버튼 컴포넌트
 function ImageUploadCell({ value, onChange, uploading, onUpload }) {
@@ -354,6 +354,7 @@ export default function HunterContentPage() {
               <div style={{ flex: 1, minWidth: 200, display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <input style={s.input} placeholder="상품명" value={item.title} onChange={e => setStoreItems(prev => prev.map((p, i) => i === idx ? { ...p, title: e.target.value } : p))} />
                 <input style={s.input} placeholder="가격 (예: 11,500원)" value={item.price} onChange={e => setStoreItems(prev => prev.map((p, i) => i === idx ? { ...p, price: e.target.value } : p))} />
+                <input style={s.input} placeholder="URL (클릭 시 이동)" value={item.url ?? ''} onChange={e => setStoreItems(prev => prev.map((p, i) => i === idx ? { ...p, url: e.target.value } : p))} />
               </div>
             </div>
             <button onClick={() => setStoreItems(prev => prev.filter((_, i) => i !== idx))} style={s.removeBtn}>삭제</button>
@@ -365,7 +366,8 @@ export default function HunterContentPage() {
       </Section>
 
       {/* 하단 저장 버튼 */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 24, paddingBottom: 60 }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 12, marginTop: 24, paddingBottom: 60 }}>
+        {msg && <span style={{ fontSize: 14, color: msg.startsWith('✅') ? '#16a34a' : '#dc2626' }}>{msg}</span>}
         <button onClick={handleSave} disabled={saving} style={{ ...s.saveBtn, padding: '12px 32px', fontSize: 16 }}>
           {saving ? '저장 중...' : '저장하기'}
         </button>
