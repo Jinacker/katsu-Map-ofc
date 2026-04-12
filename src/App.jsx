@@ -6,6 +6,7 @@ import MessagesPage from './pages/MessagesPage';
 import NoticesPage from './pages/NoticesPage';
 import RestaurantsPage from './pages/RestaurantsPage';
 import UsersPage from './pages/UsersPage';
+import HunterContentPage from './pages/HunterContentPage';
 import NotFoundPage from './pages/NotFoundPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminLayout from './components/AdminLayout';
@@ -62,6 +63,16 @@ function App() {
             <ProtectedRoute>
               <AdminLayout>
                 <UsersPage />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/hunter"
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <HunterContentPage />
               </AdminLayout>
             </ProtectedRoute>
           }

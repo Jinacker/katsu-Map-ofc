@@ -108,14 +108,14 @@ async function getAccessToken() {
 }
 
 // 이미지 업로드
-export async function uploadImageToGCS(file) {
+export async function uploadImageToGCS(file, folder = 'restaurants') {
   // 이미지 압축 (모든 이미지를 JPEG로 변환)
   const compressedFile = await compressImage(file);
 
   const token = await getAccessToken();
 
   // 파일명: timestamp + 랜덤 + .jpg (압축 후 항상 JPEG)
-  const fileName = `restaurants/${Date.now()}_${Math.random().toString(36).substring(2, 8)}.jpg`;
+  const fileName = `${folder}/${Date.now()}_${Math.random().toString(36).substring(2, 8)}.jpg`;
 
   const uploadUrl = `https://storage.googleapis.com/upload/storage/v1/b/${BUCKET}/o?uploadType=media&name=${encodeURIComponent(fileName)}`;
 
