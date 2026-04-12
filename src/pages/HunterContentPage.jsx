@@ -175,7 +175,7 @@ export default function HunterContentPage() {
     pickSearchTimer.current = setTimeout(async () => {
       try {
         const res = await api.get('/api/v1/restaurants/by-name', { params: { query: pickSearch } });
-        const items = res.data?.data ?? res.data ?? [];
+        const items = res.data?.data?.items ?? res.data?.items ?? [];
         setPickSearchResults(Array.isArray(items) ? items : []);
       } catch { setPickSearchResults([]); }
       finally { setPickSearchLoading(false); }
