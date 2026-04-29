@@ -220,7 +220,7 @@ export default function HunterContentPage() {
       {msg && <div style={{ ...s.msg, color: msg.startsWith('✅') ? '#16a34a' : '#dc2626' }}>{msg}</div>}
 
       {/* ── 1. 카츠헌터 한마디 ── */}
-      <Section title="카츠헌터 한마디">
+      <Section title="📣 카츠헌터 한마디">
         <Field label="말풍선 텍스트">
           <input style={s.input} value={noticeText} onChange={e => setNoticeText(e.target.value)} placeholder="예) 새 맛집이 계속 추가되고 있어요! 🎉" />
         </Field>

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import apiClient from '../api/axios';
 import DailyUsersChart from '../components/DailyUsersChart';
 import './DashboardPage.css';
+import { clearAdminToken } from '../utils/adminAuth';
 
 const DashboardPage = () => {
   const [stats, setStats] = useState(null);
@@ -27,7 +28,7 @@ const DashboardPage = () => {
         console.error('Dashboard data fetch error:', err);
         // If token is invalid, redirect to login
         if (err.response && err.response.status === 401) {
-          localStorage.removeItem('token');
+          clearAdminToken();
           window.location.href = '/login';
         }
       } finally {

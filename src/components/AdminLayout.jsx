@@ -1,13 +1,14 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import './AdminLayout.css';
+import { clearAdminToken } from '../utils/adminAuth';
 
 const AdminLayout = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
+    clearAdminToken();
     navigate('/login');
   };
 

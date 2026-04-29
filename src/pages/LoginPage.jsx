@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import apiClient from '../api/axios';
 import './LoginPage.css';
+import { storeAdminToken } from '../utils/adminAuth';
 
 const LoginPage = () => {
   const [username, setUsername] = useState('');
@@ -19,7 +20,7 @@ const LoginPage = () => {
         password,
       });
       const { accessToken } = response.data.data;
-      localStorage.setItem('token', accessToken);
+      storeAdminToken(accessToken);
       window.location.href = '/';
     } catch (err) {
       setError('로그인에 실패했습니다. 아이디와 비밀번호를 확인해주세요.');

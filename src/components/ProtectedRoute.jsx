@@ -1,10 +1,11 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
+import { isAdminTokenValid } from '../utils/adminAuth';
 
 const ProtectedRoute = ({ children }) => {
-  const token = localStorage.getItem('token');
+  const tokenIsValid = isAdminTokenValid();
 
-  if (!token) {
+  if (!tokenIsValid) {
     return <Navigate to="/login" replace />;
   }
 
