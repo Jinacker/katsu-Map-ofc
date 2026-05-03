@@ -12,6 +12,14 @@ const emptyInstaPost = () => ({ id: Date.now() + Math.random(), image: '', title
 const emptyBlogPost = () => ({ id: Date.now() + Math.random(), image: '', title: '', subtitle: '', url: '' });
 const emptyStoreItem = () => ({ id: Date.now() + Math.random(), image: '', title: '', price: '', url: '' });
 
+const moveItem = (arr, idx, dir) => {
+  const next = [...arr];
+  const target = idx + dir;
+  if (target < 0 || target >= next.length) return arr;
+  [next[idx], next[target]] = [next[target], next[idx]];
+  return next;
+};
+
 // 이미지 업로드 버튼 컴포넌트
 function ImageUploadCell({ value, onChange, uploading, onUpload }) {
   return (
@@ -293,21 +301,27 @@ export default function HunterContentPage() {
       {/* ── 4. 인스타 포스트 ── */}
       <Section title={`인스타 포스트 (${instaPosts.length}/${MAX_INSTA})`}>
         {instaPosts.map((post, idx) => (
-          <div key={post.id} style={s.listItem}>
-            <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-              <ImageUploadCell
-                value={post.image}
-                onChange={url => setInstaPosts(prev => prev.map((p, i) => i === idx ? { ...p, image: url } : p))}
-                uploading={uploadingInstaIdx === idx}
-                onUpload={e => handleInstaImageUpload(e, idx)}
-              />
-              <div style={{ flex: 1, minWidth: 200, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <input style={s.input} placeholder="제목" value={post.title} onChange={e => setInstaPosts(prev => prev.map((p, i) => i === idx ? { ...p, title: e.target.value } : p))} />
-                <input style={s.input} placeholder="소제목" value={post.subtitle} onChange={e => setInstaPosts(prev => prev.map((p, i) => i === idx ? { ...p, subtitle: e.target.value } : p))} />
-                <input style={s.input} placeholder="URL (클릭 시 이동)" value={post.url} onChange={e => setInstaPosts(prev => prev.map((p, i) => i === idx ? { ...p, url: e.target.value } : p))} />
-              </div>
+          <div key={post.id} style={{ ...s.listItem, display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, paddingTop: 2 }}>
+              <button onClick={() => setInstaPosts(prev => moveItem(prev, idx, -1))} disabled={idx === 0} style={s.orderBtn}>▲</button>
+              <button onClick={() => setInstaPosts(prev => moveItem(prev, idx, 1))} disabled={idx === instaPosts.length - 1} style={s.orderBtn}>▼</button>
             </div>
-            <button onClick={() => setInstaPosts(prev => prev.filter((_, i) => i !== idx))} style={s.removeBtn}>삭제</button>
+            <div style={{ flex: 1 }}>
+              <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+                <ImageUploadCell
+                  value={post.image}
+                  onChange={url => setInstaPosts(prev => prev.map((p, i) => i === idx ? { ...p, image: url } : p))}
+                  uploading={uploadingInstaIdx === idx}
+                  onUpload={e => handleInstaImageUpload(e, idx)}
+                />
+                <div style={{ flex: 1, minWidth: 200, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <input style={s.input} placeholder="제목" value={post.title} onChange={e => setInstaPosts(prev => prev.map((p, i) => i === idx ? { ...p, title: e.target.value } : p))} />
+                  <input style={s.input} placeholder="소제목" value={post.subtitle} onChange={e => setInstaPosts(prev => prev.map((p, i) => i === idx ? { ...p, subtitle: e.target.value } : p))} />
+                  <input style={s.input} placeholder="URL (클릭 시 이동)" value={post.url} onChange={e => setInstaPosts(prev => prev.map((p, i) => i === idx ? { ...p, url: e.target.value } : p))} />
+                </div>
+              </div>
+              <button onClick={() => setInstaPosts(prev => prev.filter((_, i) => i !== idx))} style={s.removeBtn}>삭제</button>
+            </div>
           </div>
         ))}
         {instaPosts.length < MAX_INSTA && (
@@ -318,21 +332,27 @@ export default function HunterContentPage() {
       {/* ── 5. 블로그 ── */}
       <Section title={`블로그 (${blogPosts.length}/${MAX_BLOG})`}>
         {blogPosts.map((post, idx) => (
-          <div key={post.id} style={s.listItem}>
-            <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-              <ImageUploadCell
-                value={post.image}
-                onChange={url => setBlogPosts(prev => prev.map((p, i) => i === idx ? { ...p, image: url } : p))}
-                uploading={uploadingBlogIdx === idx}
-                onUpload={e => handleBlogImageUpload(e, idx)}
-              />
-              <div style={{ flex: 1, minWidth: 200, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <input style={s.input} placeholder="제목" value={post.title} onChange={e => setBlogPosts(prev => prev.map((p, i) => i === idx ? { ...p, title: e.target.value } : p))} />
-                <input style={s.input} placeholder="소제목" value={post.subtitle} onChange={e => setBlogPosts(prev => prev.map((p, i) => i === idx ? { ...p, subtitle: e.target.value } : p))} />
-                <input style={s.input} placeholder="URL (클릭 시 이동)" value={post.url} onChange={e => setBlogPosts(prev => prev.map((p, i) => i === idx ? { ...p, url: e.target.value } : p))} />
-              </div>
+          <div key={post.id} style={{ ...s.listItem, display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, paddingTop: 2 }}>
+              <button onClick={() => setBlogPosts(prev => moveItem(prev, idx, -1))} disabled={idx === 0} style={s.orderBtn}>▲</button>
+              <button onClick={() => setBlogPosts(prev => moveItem(prev, idx, 1))} disabled={idx === blogPosts.length - 1} style={s.orderBtn}>▼</button>
             </div>
-            <button onClick={() => setBlogPosts(prev => prev.filter((_, i) => i !== idx))} style={s.removeBtn}>삭제</button>
+            <div style={{ flex: 1 }}>
+              <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+                <ImageUploadCell
+                  value={post.image}
+                  onChange={url => setBlogPosts(prev => prev.map((p, i) => i === idx ? { ...p, image: url } : p))}
+                  uploading={uploadingBlogIdx === idx}
+                  onUpload={e => handleBlogImageUpload(e, idx)}
+                />
+                <div style={{ flex: 1, minWidth: 200, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <input style={s.input} placeholder="제목" value={post.title} onChange={e => setBlogPosts(prev => prev.map((p, i) => i === idx ? { ...p, title: e.target.value } : p))} />
+                  <input style={s.input} placeholder="소제목" value={post.subtitle} onChange={e => setBlogPosts(prev => prev.map((p, i) => i === idx ? { ...p, subtitle: e.target.value } : p))} />
+                  <input style={s.input} placeholder="URL (클릭 시 이동)" value={post.url} onChange={e => setBlogPosts(prev => prev.map((p, i) => i === idx ? { ...p, url: e.target.value } : p))} />
+                </div>
+              </div>
+              <button onClick={() => setBlogPosts(prev => prev.filter((_, i) => i !== idx))} style={s.removeBtn}>삭제</button>
+            </div>
           </div>
         ))}
         {blogPosts.length < MAX_BLOG && (
@@ -343,21 +363,27 @@ export default function HunterContentPage() {
       {/* ── 6. 스마트스토어 ── */}
       <Section title={`스마트스토어 (${storeItems.length}/${MAX_STORE})`}>
         {storeItems.map((item, idx) => (
-          <div key={item.id} style={s.listItem}>
-            <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-              <ImageUploadCell
-                value={item.image}
-                onChange={url => setStoreItems(prev => prev.map((p, i) => i === idx ? { ...p, image: url } : p))}
-                uploading={uploadingStoreIdx === idx}
-                onUpload={e => handleStoreImageUpload(e, idx)}
-              />
-              <div style={{ flex: 1, minWidth: 200, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <input style={s.input} placeholder="상품명" value={item.title} onChange={e => setStoreItems(prev => prev.map((p, i) => i === idx ? { ...p, title: e.target.value } : p))} />
-                <input style={s.input} placeholder="가격 (예: 11,500원)" value={item.price} onChange={e => setStoreItems(prev => prev.map((p, i) => i === idx ? { ...p, price: e.target.value } : p))} />
-                <input style={s.input} placeholder="URL (클릭 시 이동)" value={item.url ?? ''} onChange={e => setStoreItems(prev => prev.map((p, i) => i === idx ? { ...p, url: e.target.value } : p))} />
-              </div>
+          <div key={item.id} style={{ ...s.listItem, display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, paddingTop: 2 }}>
+              <button onClick={() => setStoreItems(prev => moveItem(prev, idx, -1))} disabled={idx === 0} style={s.orderBtn}>▲</button>
+              <button onClick={() => setStoreItems(prev => moveItem(prev, idx, 1))} disabled={idx === storeItems.length - 1} style={s.orderBtn}>▼</button>
             </div>
-            <button onClick={() => setStoreItems(prev => prev.filter((_, i) => i !== idx))} style={s.removeBtn}>삭제</button>
+            <div style={{ flex: 1 }}>
+              <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+                <ImageUploadCell
+                  value={item.image}
+                  onChange={url => setStoreItems(prev => prev.map((p, i) => i === idx ? { ...p, image: url } : p))}
+                  uploading={uploadingStoreIdx === idx}
+                  onUpload={e => handleStoreImageUpload(e, idx)}
+                />
+                <div style={{ flex: 1, minWidth: 200, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <input style={s.input} placeholder="상품명" value={item.title} onChange={e => setStoreItems(prev => prev.map((p, i) => i === idx ? { ...p, title: e.target.value } : p))} />
+                  <input style={s.input} placeholder="가격 (예: 11,500원)" value={item.price} onChange={e => setStoreItems(prev => prev.map((p, i) => i === idx ? { ...p, price: e.target.value } : p))} />
+                  <input style={s.input} placeholder="URL (클릭 시 이동)" value={item.url ?? ''} onChange={e => setStoreItems(prev => prev.map((p, i) => i === idx ? { ...p, url: e.target.value } : p))} />
+                </div>
+              </div>
+              <button onClick={() => setStoreItems(prev => prev.filter((_, i) => i !== idx))} style={s.removeBtn}>삭제</button>
+            </div>
           </div>
         ))}
         {storeItems.length < MAX_STORE && (
@@ -454,6 +480,7 @@ const styles = {
   addBtn: { background: '#f3f4f6', color: '#374151', border: '1px dashed #d1d5db', borderRadius: 8, padding: '8px 16px', fontSize: 13, cursor: 'pointer', marginTop: 8 },
   removeBtn: { background: 'none', border: 'none', color: '#ef4444', fontSize: 13, cursor: 'pointer', marginTop: 6 },
   listItem: { background: '#f9fafb', borderRadius: 8, padding: 12, marginBottom: 10, border: '1px solid #e5e7eb' },
+  orderBtn: { background: '#e5e7eb', border: 'none', borderRadius: 4, width: 26, height: 26, fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#374151', padding: 0, lineHeight: 1 },
   pickChip: { display: 'flex', alignItems: 'center', gap: 6, background: '#fef3c7', borderRadius: 20, padding: '4px 10px', fontSize: 13, border: '1px solid #fcd34d' },
   chipRemove: { background: 'none', border: 'none', color: '#92400e', cursor: 'pointer', fontSize: 14, padding: 0, lineHeight: 1 },
   addChipBtn: { display: 'flex', alignItems: 'center', gap: 4, background: '#f3f4f6', border: '1px dashed #d1d5db', borderRadius: 20, padding: '4px 12px', fontSize: 13, cursor: 'pointer', color: '#374151' },
