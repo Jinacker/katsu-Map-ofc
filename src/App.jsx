@@ -7,6 +7,7 @@ import NoticesPage from './pages/NoticesPage';
 import RestaurantsPage from './pages/RestaurantsPage';
 import UsersPage from './pages/UsersPage';
 import HunterContentPage from './pages/HunterContentPage';
+import UserRecordsPage from './pages/UserRecordsPage';
 import NotFoundPage from './pages/NotFoundPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminLayout from './components/AdminLayout';
@@ -73,6 +74,16 @@ function App() {
             <ProtectedRoute>
               <AdminLayout>
                 <HunterContentPage />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/records"
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <UserRecordsPage />
               </AdminLayout>
             </ProtectedRoute>
           }
