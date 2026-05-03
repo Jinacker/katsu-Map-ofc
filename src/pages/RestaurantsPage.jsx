@@ -39,6 +39,12 @@ const RestaurantsPage = () => {
     katsuHunterDescription: '',
   });
   const [uploading, setUploading] = useState({});
+  const [geoSearching, setGeoSearching] = useState(false);
+  const [geoResults, setGeoResults] = useState([]);
+  const [showGeoResults, setShowGeoResults] = useState(false);
+  const mapPreviewRef = useRef(null);
+  const mapInstanceRef = useRef(null);
+  const markerInstanceRef = useRef(null);
 
   useEffect(() => {
     fetchRestaurants();
@@ -209,6 +215,99 @@ const RestaurantsPage = () => {
       console.error(err);
       alert('식당 삭제에 실패했습니다.');
     }
+  };
+
+  // 모달 닫힐 때 지도 인스턴스 초기화 (DOM이 제거되므로)
+  useEffect(() => {
+    if (!showAddModal && !showEditModal) {
+      mapInstanceRef.current = null;
+      markerInstanceRef.current = null;
+    }
+  }, [showAddModal, showEditModal]);
+
+  // lat/lng 변경 시 지도 미리보기 업데이트 + 카카오맵 URL 자동 생성
+  useEffect(() => {
+    const lat = parseFloat(formData.lat);
+    const lng = parseFloat(formData.lng);
+    if (!lat || !lng) return;
+
+    // placeUrl 비어있을 때만 좌표 기반 URL 생성 (기존 URL 덮어쓰지 않음)
+    setFormData(prev => {
+      if (prev.placeUrl) return prev;
+      const name = encodeURIComponent(prev.name || '위치');
+      return { ...prev, placeUrl: `https://map.kakao.com/link/map/${name},${lat},${lng}` };
+    });
+
+    if (!mapPreviewRef.current) return;
+
+    const initOrUpdateMap = () => {
+      const center = new window.kakao.maps.LatLng(lat, lng);
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.setCenter(center);
+        markerInstanceRef.current.setPosition(center);
+      } else {
+        const map = new window.kakao.maps.Map(mapPreviewRef.current, { center, level: 4 });
+        const marker = new window.kakao.maps.Marker({ position: center, map });
+        mapInstanceRef.current = map;
+        markerInstanceRef.current = marker;
+      }
+    };
+
+    if (window.kakao?.maps?.services) {
+      initOrUpdateMap();
+    } else {
+      window.kakao?.maps?.load(initOrUpdateMap);
+    }
+  }, [formData.lat, formData.lng]);
+
+  const ensureKakaoLoaded = () => new Promise((resolve, reject) => {
+    if (!window.kakao) { reject(new Error('카카오맵 SDK 로드 실패')); return; }
+    if (window.kakao?.maps?.services) { resolve(); return; }
+    window.kakao.maps.load(resolve);
+  });
+
+  const handleGeoAutoFill = async () => {
+    const keyword = [formData.name, formData.area].filter(Boolean).join(' ');
+    if (!keyword.trim()) { alert('이름 또는 지역을 먼저 입력해주세요.'); return; }
+    setGeoSearching(true);
+    setShowGeoResults(false);
+    try {
+      await ensureKakaoLoaded();
+      const ps = new window.kakao.maps.services.Places();
+      const placeResults = await new Promise((resolve) => {
+        ps.keywordSearch(keyword, (results, status) =>
+          resolve(status === window.kakao.maps.services.Status.OK ? results : [])
+        );
+      });
+      if (placeResults.length > 0) {
+        setGeoResults(placeResults.slice(0, 5).map(r => ({
+          name: r.place_name,
+          addr: r.road_address_name || r.address_name,
+          lat: r.y,
+          lng: r.x,
+          placeUrl: r.place_url,
+        })));
+        setShowGeoResults(true);
+      } else {
+        alert('검색 결과가 없습니다. 이름/지역을 확인해주세요.');
+      }
+    } catch (e) {
+      alert('좌표 검색 중 오류가 발생했습니다: ' + e.message);
+    } finally {
+      setGeoSearching(false);
+    }
+  };
+
+  const applyGeoResult = (result) => {
+    setFormData(prev => ({
+      ...prev,
+      lat: result.lat,
+      lng: result.lng,
+      addr: prev.addr || result.addr,
+      ...(result.placeUrl ? { placeUrl: result.placeUrl } : {}),
+    }));
+    setShowGeoResults(false);
+    setGeoResults([]);
   };
 
   const getRecommendLevel = (restaurant) => {
@@ -670,6 +769,38 @@ const RestaurantsPage = () => {
                     step="any"
                   />
                 </div>
+
+                <div className="form-group full-width">
+                  <div className="geo-autofill-bar">
+                    <button
+                      type="button"
+                      className="geo-autofill-btn"
+                      onClick={handleGeoAutoFill}
+                      disabled={geoSearching}
+                    >
+                      {geoSearching ? '🔍 검색 중...' : '🔍 좌표 자동 채우기'}
+                    </button>
+                    <span className="geo-hint">이름·지역으로 검색 후 선택하면 주소 / 위도·경도 / 카카오맵 URL 자동 입력</span>
+                  </div>
+                  {showGeoResults && geoResults.length > 0 && (
+                    <div className="geo-results">
+                      {geoResults.map((r, i) => (
+                        <button key={i} type="button" className="geo-result-item" onClick={() => applyGeoResult(r)}>
+                          <span className="geo-result-name">{r.name}</span>
+                          <span className="geo-result-address">{r.addr}</span>
+                          <span className="geo-result-coords">{parseFloat(r.lat).toFixed(6)}, {parseFloat(r.lng).toFixed(6)}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {formData.lat && formData.lng && (
+                  <div className="form-group full-width">
+                    <label>위치 미리보기</label>
+                    <div ref={mapPreviewRef} className="map-preview-container" />
+                  </div>
+                )}
 
                 <div className="form-group full-width">
                   <label>설명</label>
