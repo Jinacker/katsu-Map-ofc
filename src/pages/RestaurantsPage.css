@@ -75,6 +75,62 @@
   color: white;
 }
 
+.star-filter-group {
+  display: flex;
+  gap: 4px;
+}
+
+.star-filter-btn {
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 600;
+  color: #C8102E;
+  background-color: var(--color-surface);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  letter-spacing: 0.5px;
+}
+
+.star-filter-btn:hover {
+  background-color: #FFF5F5;
+  border-color: #C8102E;
+}
+
+.star-filter-btn.active {
+  background-color: #C8102E;
+  border-color: #C8102E;
+  color: white;
+}
+
+.pick-filter-btn {
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  background-color: var(--color-surface);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.pick-filter-btn:hover {
+  background-color: #FFF7ED;
+  border-color: #F97316;
+  color: #EA580C;
+}
+
+.pick-filter-btn.active {
+  background-color: #FFEDD5;
+  border-color: #F97316;
+  color: #EA580C;
+  font-weight: 700;
+}
+
 /* Table */
 .table-container {
   background-color: var(--color-surface);

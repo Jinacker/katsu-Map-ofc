@@ -9,7 +9,8 @@ const RestaurantsPage = () => {
   const [displayCount, setDisplayCount] = useState(20);
   const [totalCount, setTotalCount] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterLevel, setFilterLevel] = useState('all');
+  const [filterStars, setFilterStars] = useState(['top5', 'best', 'good', 'none']);
+  const [filterKatsuPick, setFilterKatsuPick] = useState(false);
   const [sortOrder, setSortOrder] = useState('asc'); // 'asc' = 등록순, 'desc' = 역순
   const observerRef = useRef(null);
   const loadMoreRef = useRef(null);
@@ -46,7 +47,7 @@ const RestaurantsPage = () => {
   // 검색이나 필터, 정렬 변경 시 표시 개수 리셋
   useEffect(() => {
     setDisplayCount(20);
-  }, [searchTerm, filterLevel, sortOrder]);
+  }, [searchTerm, filterStars, filterKatsuPick, sortOrder]);
 
   const fetchRestaurants = async () => {
     try {
@@ -237,16 +238,9 @@ const RestaurantsPage = () => {
     .filter((r) => {
       const matchesSearch = r.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            r.area.toLowerCase().includes(searchTerm.toLowerCase());
-      const level = getRecommendLevel(r);
-      let matchesLevel;
-      if (filterLevel === 'all') {
-        matchesLevel = true;
-      } else if (filterLevel === 'katsu_hunter') {
-        matchesLevel = r.isKatsuHunterPick;
-      } else {
-        matchesLevel = level === filterLevel;
-      }
-      return matchesSearch && matchesLevel;
+      const matchesStars = filterStars.length === 0 || filterStars.includes(getRecommendLevel(r));
+      const matchesKatsuPick = !filterKatsuPick || r.isKatsuHunterPick;
+      return matchesSearch && matchesStars && matchesKatsuPick;
     })
     .sort((a, b) => {
       if (sortOrder === 'desc') {
@@ -328,18 +322,31 @@ const RestaurantsPage = () => {
           />
         </div>
 
-        <select
-          value={filterLevel}
-          onChange={(e) => setFilterLevel(e.target.value)}
-          className="filter-select"
+        <div className="star-filter-group">
+          {[
+            { key: 'top5', label: '★★★★' },
+            { key: 'best', label: '★★★' },
+            { key: 'good', label: '★★' },
+            { key: 'none', label: '★' },
+          ].map(({ key, label }) => (
+            <button
+              key={key}
+              className={`star-filter-btn ${filterStars.includes(key) ? 'active' : ''}`}
+              onClick={() => setFilterStars((prev) =>
+                prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
+              )}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        <button
+          className={`pick-filter-btn ${filterKatsuPick ? 'active' : ''}`}
+          onClick={() => setFilterKatsuPick((v) => !v)}
         >
-          <option value="all">전체 등급</option>
-          <option value="top5">★★★★</option>
-          <option value="best">★★★</option>
-          <option value="good">★★</option>
-          <option value="none">★</option>
-          <option value="katsu_hunter">카츠헌터 PICK</option>
-        </select>
+          🏆 카츠헌터 PICK
+        </button>
 
         <button
           className={`sort-btn ${sortOrder === 'desc' ? 'active' : ''}`}
