@@ -39,6 +39,7 @@ const RestaurantsPage = () => {
     katsuHunterDescription: '',
   });
   const [uploading, setUploading] = useState({});
+  const [draggingOver, setDraggingOver] = useState(null);
   const [geoSearching, setGeoSearching] = useState(false);
   const [geoResults, setGeoResults] = useState([]);
   const [showGeoResults, setShowGeoResults] = useState(false);
@@ -131,23 +132,16 @@ const RestaurantsPage = () => {
     }));
   };
 
-  const handleImageUpload = async (e, fieldName) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    // 이미지 파일만 허용
+  const handleImageFile = async (file, fieldName) => {
     if (!file.type.startsWith('image/')) {
       alert('이미지 파일만 업로드 가능합니다.');
       return;
     }
-
     setUploading((prev) => ({ ...prev, [fieldName]: true }));
-
     try {
       const url = await uploadImageToGCS(file);
       setFormData((prev) => {
         const updated = { ...prev, [fieldName]: url };
-        // 추가 이미지 1 업로드 시 메인 이미지가 비어있으면 자동 설정
         if (fieldName === 'image_url_1' && !prev.imageUrl) {
           updated.imageUrl = url;
         }
@@ -158,8 +152,34 @@ const RestaurantsPage = () => {
       alert(`이미지 업로드 실패: ${err.message}`);
     } finally {
       setUploading((prev) => ({ ...prev, [fieldName]: false }));
-      e.target.value = ''; // 같은 파일 재선택 허용
     }
+  };
+
+  const handleImageUpload = async (e, fieldName) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    await handleImageFile(file, fieldName);
+    e.target.value = '';
+  };
+
+  const handlePaste = async (e, fieldName) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (const item of items) {
+      if (item.type.startsWith('image/')) {
+        e.preventDefault();
+        const file = item.getAsFile();
+        if (file) await handleImageFile(file, fieldName);
+        return;
+      }
+    }
+  };
+
+  const handleDrop = async (e, fieldName) => {
+    e.preventDefault();
+    setDraggingOver(null);
+    const file = e.dataTransfer.files[0];
+    if (file) await handleImageFile(file, fieldName);
   };
 
   const handleAddSubmit = async (e) => {
@@ -814,12 +834,18 @@ const RestaurantsPage = () => {
 
                 <div className="form-group full-width">
                   <label>메인 이미지 {showEditModal && '(수정 불가)'}</label>
-                  <div className="image-input-group">
+                  <div
+                    className={`image-input-group ${draggingOver === 'imageUrl' ? 'drag-over' : ''}`}
+                    onDragOver={(e) => { if (!showEditModal) { e.preventDefault(); setDraggingOver('imageUrl'); } }}
+                    onDragLeave={() => setDraggingOver(null)}
+                    onDrop={(e) => { if (!showEditModal) handleDrop(e, 'imageUrl'); }}
+                  >
                     <input
                       type="url"
                       name="imageUrl"
                       value={formData.imageUrl}
                       onChange={handleFormChange}
+                      onPaste={(e) => { if (!showEditModal) handlePaste(e, 'imageUrl'); }}
                       disabled={showEditModal}
                       className={showEditModal ? 'disabled-input' : ''}
                       placeholder="URL 직접 입력 또는 이미지 업로드"
@@ -844,12 +870,18 @@ const RestaurantsPage = () => {
 
                 <div className="form-group full-width">
                   <label>추가 이미지 1</label>
-                  <div className="image-input-group">
+                  <div
+                    className={`image-input-group ${draggingOver === 'image_url_1' ? 'drag-over' : ''}`}
+                    onDragOver={(e) => { e.preventDefault(); setDraggingOver('image_url_1'); }}
+                    onDragLeave={() => setDraggingOver(null)}
+                    onDrop={(e) => handleDrop(e, 'image_url_1')}
+                  >
                     <input
                       type="url"
                       name="image_url_1"
                       value={formData.image_url_1}
                       onChange={handleFormChange}
+                      onPaste={(e) => handlePaste(e, 'image_url_1')}
                       placeholder="URL 직접 입력 또는 이미지 업로드"
                     />
                     <label className={`upload-btn ${uploading.image_url_1 ? 'uploading' : ''}`}>
@@ -870,12 +902,18 @@ const RestaurantsPage = () => {
 
                 <div className="form-group full-width">
                   <label>추가 이미지 2</label>
-                  <div className="image-input-group">
+                  <div
+                    className={`image-input-group ${draggingOver === 'image_url_2' ? 'drag-over' : ''}`}
+                    onDragOver={(e) => { e.preventDefault(); setDraggingOver('image_url_2'); }}
+                    onDragLeave={() => setDraggingOver(null)}
+                    onDrop={(e) => handleDrop(e, 'image_url_2')}
+                  >
                     <input
                       type="url"
                       name="image_url_2"
                       value={formData.image_url_2}
                       onChange={handleFormChange}
+                      onPaste={(e) => handlePaste(e, 'image_url_2')}
                       placeholder="URL 직접 입력 또는 이미지 업로드"
                     />
                     <label className={`upload-btn ${uploading.image_url_2 ? 'uploading' : ''}`}>
@@ -896,12 +934,18 @@ const RestaurantsPage = () => {
 
                 <div className="form-group full-width">
                   <label>추가 이미지 3</label>
-                  <div className="image-input-group">
+                  <div
+                    className={`image-input-group ${draggingOver === 'image_url_3' ? 'drag-over' : ''}`}
+                    onDragOver={(e) => { e.preventDefault(); setDraggingOver('image_url_3'); }}
+                    onDragLeave={() => setDraggingOver(null)}
+                    onDrop={(e) => handleDrop(e, 'image_url_3')}
+                  >
                     <input
                       type="url"
                       name="image_url_3"
                       value={formData.image_url_3}
                       onChange={handleFormChange}
+                      onPaste={(e) => handlePaste(e, 'image_url_3')}
                       placeholder="URL 직접 입력 또는 이미지 업로드"
                     />
                     <label className={`upload-btn ${uploading.image_url_3 ? 'uploading' : ''}`}>

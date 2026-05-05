@@ -608,6 +608,12 @@
   flex: 1;
 }
 
+.image-input-group.drag-over {
+  outline: 2px dashed var(--color-accent-primary);
+  border-radius: var(--radius-md);
+  background-color: color-mix(in srgb, var(--color-accent-primary) 8%, transparent);
+}
+
 .upload-btn {
   padding: var(--space-sm) var(--space-md);
   background-color: var(--color-accent-primary);
