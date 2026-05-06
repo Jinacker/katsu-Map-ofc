@@ -221,9 +221,38 @@
   border-color: var(--color-success);
 }
 
+.reply-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.reply-edit-btn {
+  padding: 4px 12px;
+  background-color: transparent;
+  border: 1px solid var(--color-accent-primary);
+  border-radius: var(--radius-sm);
+  color: var(--color-accent-primary);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.reply-edit-btn:hover {
+  background-color: var(--color-accent-primary);
+  color: white;
+}
+
 .reply-form {
   display: flex;
   flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.reply-form-actions {
+  display: flex;
+  justify-content: flex-end;
   gap: var(--space-sm);
 }
 
@@ -247,7 +276,6 @@
 }
 
 .reply-submit-btn {
-  align-self: flex-end;
   padding: var(--space-sm) var(--space-xl);
   background-color: var(--color-accent-primary);
   border: none;
@@ -263,6 +291,22 @@
   background-color: var(--color-accent-secondary);
   transform: translateY(-1px);
   box-shadow: var(--shadow-md);
+}
+
+.reply-cancel-btn {
+  padding: var(--space-sm) var(--space-xl);
+  background-color: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.reply-cancel-btn:hover {
+  background-color: var(--color-surface-hover);
 }
 
 .empty-state {

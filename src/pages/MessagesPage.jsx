@@ -7,6 +7,7 @@ const MessagesPage = () => {
   const [loading, setLoading] = useState(true);
   const [selectedMessage, setSelectedMessage] = useState(null);
   const [replyText, setReplyText] = useState('');
+  const [isEditingReply, setIsEditingReply] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -36,12 +37,13 @@ const MessagesPage = () => {
       await apiClient.patch(`/api/v1/messages/${messageId}/reply`, {
         reply: replyText
       });
-      alert('답장이 전송되었습니다.');
+      alert(isEditingReply ? '답장이 수정되었습니다.' : '답장이 전송되었습니다.');
       setReplyText('');
+      setIsEditingReply(false);
       setSelectedMessage(null);
       fetchMessages();
     } catch (err) {
-      alert('답장 전송에 실패했습니다.');
+      alert(isEditingReply ? '답장 수정에 실패했습니다.' : '답장 전송에 실패했습니다.');
       console.error(err);
     }
   };
@@ -117,7 +119,7 @@ const MessagesPage = () => {
               <div
                 key={message.id}
                 className={`message-card ${selectedMessage?.id === message.id ? 'active' : ''}`}
-                onClick={() => setSelectedMessage(message)}
+                onClick={() => { setSelectedMessage(message); setIsEditingReply(false); setReplyText(''); }}
               >
                 <div className="message-header-info">
                   <span className={`type-badge ${message.type}`}>
@@ -175,16 +177,24 @@ const MessagesPage = () => {
                 </div>
               </div>
 
-              {selectedMessage.reply ? (
+              {selectedMessage.reply && !isEditingReply ? (
                 <div className="detail-section">
-                  <span className="detail-label">답장</span>
+                  <div className="reply-label-row">
+                    <span className="detail-label">답장</span>
+                    <button
+                      onClick={() => { setIsEditingReply(true); setReplyText(selectedMessage.reply); }}
+                      className="reply-edit-btn"
+                    >
+                      수정
+                    </button>
+                  </div>
                   <div className="reply-content-box">
                     {selectedMessage.reply}
                   </div>
                 </div>
               ) : (
                 <div className="reply-form">
-                  <label className="detail-label">답장 작성</label>
+                  <label className="detail-label">{isEditingReply ? '답장 수정' : '답장 작성'}</label>
                   <textarea
                     value={replyText}
                     onChange={(e) => setReplyText(e.target.value)}
@@ -192,12 +202,22 @@ const MessagesPage = () => {
                     rows={5}
                     className="reply-textarea"
                   />
-                  <button
-                    onClick={() => handleReply(selectedMessage.id)}
-                    className="reply-submit-btn"
-                  >
-                    답장 보내기
-                  </button>
+                  <div className="reply-form-actions">
+                    <button
+                      onClick={() => handleReply(selectedMessage.id)}
+                      className="reply-submit-btn"
+                    >
+                      {isEditingReply ? '수정 완료' : '답장 보내기'}
+                    </button>
+                    {isEditingReply && (
+                      <button
+                        onClick={() => { setIsEditingReply(false); setReplyText(''); }}
+                        className="reply-cancel-btn"
+                      >
+                        취소
+                      </button>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
