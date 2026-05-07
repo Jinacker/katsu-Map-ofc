@@ -9,6 +9,8 @@ const MessagesPage = () => {
   const [replyText, setReplyText] = useState('');
   const [isEditingReply, setIsEditingReply] = useState(false);
   const [error, setError] = useState('');
+  const [sortOrder, setSortOrder] = useState('newest');
+  const [unrepliedOnly, setUnrepliedOnly] = useState(false);
 
   useEffect(() => {
     fetchMessages();
@@ -110,12 +112,39 @@ const MessagesPage = () => {
       <div className="messages-container">
         {/* Message List */}
         <div className="messages-list">
-          {messages.length === 0 ? (
+          <div className="list-filters">
+            <div className="filter-sort">
+              <button
+                className={`filter-btn ${sortOrder === 'newest' ? 'active' : ''}`}
+                onClick={() => setSortOrder('newest')}
+              >
+                최신순
+              </button>
+              <button
+                className={`filter-btn ${sortOrder === 'oldest' ? 'active' : ''}`}
+                onClick={() => setSortOrder('oldest')}
+              >
+                과거순
+              </button>
+            </div>
+            <button
+              className={`filter-btn ${unrepliedOnly ? 'active' : ''}`}
+              onClick={() => setUnrepliedOnly(v => !v)}
+            >
+              미답장만
+            </button>
+          </div>
+          {(() => {
+            let filtered = [...messages];
+            if (unrepliedOnly) filtered = filtered.filter(m => !m.reply);
+            if (sortOrder === 'oldest') filtered.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+            else filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            return filtered.length === 0 ? (
             <div className="empty-state">
               <p>문의가 없습니다</p>
             </div>
           ) : (
-            messages.map((message) => (
+            filtered.map((message) => (
               <div
                 key={message.id}
                 className={`message-card ${selectedMessage?.id === message.id ? 'active' : ''}`}
@@ -136,7 +165,8 @@ const MessagesPage = () => {
                 </span>
               </div>
             ))
-          )}
+          );
+          })()}
         </div>
 
         {/* Message Detail */}
