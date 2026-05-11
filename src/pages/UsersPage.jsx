@@ -93,7 +93,9 @@ const UsersPage = () => {
             <tr>
               <th>ID</th>
               <th>닉네임</th>
-              <th>즐겨찾기 수</th>
+              <th>제보</th>
+              <th>즐찾</th>
+              <th>기록</th>
               <th>마지막 접속</th>
               <th>가입일</th>
             </tr>
@@ -101,7 +103,7 @@ const UsersPage = () => {
           <tbody>
             {filteredUsers.length === 0 ? (
               <tr>
-                <td colSpan="5" className="empty-cell">
+                <td colSpan="7" className="empty-cell">
                   검색 결과가 없습니다
                 </td>
               </tr>
@@ -113,11 +115,18 @@ const UsersPage = () => {
                     {user.nickname || <span className="no-nickname">미설정</span>}
                   </td>
                   <td>
-                    <span className="favorite-count">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="#C07A7A" stroke="#C07A7A" strokeWidth="2">
-                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-                      </svg>
+                    <span className={`stat-count ${user.messageCount > 0 ? 'has-value' : ''}`}>
+                      {user.messageCount ?? 0}
+                    </span>
+                  </td>
+                  <td>
+                    <span className={`stat-count favorite ${user.favoriteCount > 0 ? 'has-value' : ''}`}>
                       {user.favoriteCount}
+                    </span>
+                  </td>
+                  <td>
+                    <span className={`stat-count ${user.tastingNoteCount > 0 ? 'has-value' : ''}`}>
+                      {user.tastingNoteCount ?? 0}
                     </span>
                   </td>
                   <td>{formatDate(user.lastAccessedAt)}</td>

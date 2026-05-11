@@ -116,6 +116,22 @@
   gap: 4px;
 }
 
+.stat-count {
+  display: inline-block;
+  min-width: 24px;
+  text-align: center;
+  color: var(--color-text-tertiary);
+}
+
+.stat-count.has-value {
+  color: var(--color-text-primary);
+  font-weight: 600;
+}
+
+.stat-count.favorite.has-value {
+  color: #C07A7A;
+}
+
 .empty-cell {
   text-align: center !important;
   padding: var(--space-2xl) !important;

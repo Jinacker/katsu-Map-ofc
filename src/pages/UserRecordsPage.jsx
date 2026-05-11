@@ -162,7 +162,7 @@ const s = {
   dot: { fontSize: 10, color: '#d1d5db' },
   date: { fontSize: 12, color: '#9ca3af' },
   menu: { fontSize: 12, color: '#374151', background: '#f3f4f6', padding: '1px 6px', borderRadius: 4 },
-  review: { margin: 0, fontSize: 13, color: '#374151', lineHeight: 1.6, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' },
+  review: { margin: 0, fontSize: 13, color: '#374151', lineHeight: 1.6, maxHeight: 120, overflowY: 'auto' },
   deleteBtn: {
     margin: '0 14px 14px', padding: '6px 0', background: 'none',
     border: '1px solid #fca5a5', borderRadius: 8, color: '#ef4444',

@@ -115,6 +115,136 @@
   color: var(--color-text-tertiary);
 }
 
+/* Engagement Section */
+.engagement-section {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-xl);
+  margin-bottom: var(--space-2xl);
+  box-shadow: var(--shadow-sm);
+}
+
+.engagement-header {
+  margin-bottom: var(--space-lg);
+}
+
+.engagement-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-lg);
+}
+
+.engagement-card {
+  padding: var(--space-lg);
+  background-color: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.engagement-card--mau {
+  border-color: var(--color-accent-light);
+}
+
+.engagement-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.engagement-period {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--color-text-tertiary);
+  text-transform: none;
+  letter-spacing: 0;
+  margin-left: 4px;
+}
+
+.engagement-value {
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  letter-spacing: -1px;
+  margin-bottom: var(--space-md);
+}
+
+.engagement-ratio-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.engagement-ratio-label {
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+}
+
+.engagement-ratio-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-accent-primary);
+}
+
+.engagement-ratio-bar {
+  height: 4px;
+  background-color: var(--color-border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.engagement-ratio-fill {
+  height: 100%;
+  background-color: var(--color-accent-primary);
+  border-radius: 2px;
+  transition: width 0.6s ease;
+}
+
+.engagement-ratio-fill.wau {
+  background-color: #8B9D83;
+}
+
+.engagement-ratio-fill.mau {
+  background-color: #8B7EC4;
+}
+
+/* Chart toggle */
+.chart-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.chart-toggle {
+  display: flex;
+  background-color: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 2px;
+}
+
+.chart-toggle-btn {
+  padding: 4px 14px;
+  border: none;
+  border-radius: calc(var(--radius-sm) - 2px);
+  background-color: transparent;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.chart-toggle-btn.active {
+  background-color: var(--color-surface);
+  color: var(--color-text-primary);
+  box-shadow: var(--shadow-sm);
+}
+
 /* Chart Section */
 .chart-section {
   background-color: var(--color-surface);
@@ -275,6 +405,16 @@
 @media (max-width: 768px) {
   .page-title {
     font-size: 24px;
+  }
+
+  .engagement-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .chart-controls {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-sm);
   }
 
   .stats-grid {
