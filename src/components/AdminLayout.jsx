@@ -1,11 +1,22 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import './AdminLayout.css';
 import { clearAdminToken } from '../utils/adminAuth';
+import apiClient from '../api/axios';
 
 const AdminLayout = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
+  const [unrepliedCount, setUnrepliedCount] = useState(0);
+
+  useEffect(() => {
+    apiClient.get('/api/v1/messages/admin/all')
+      .then(res => {
+        const msgs = res.data?.data ?? [];
+        setUnrepliedCount(msgs.filter(m => !m.reply).length);
+      })
+      .catch(() => {});
+  }, []);
 
   const handleLogout = () => {
     clearAdminToken();
@@ -103,7 +114,12 @@ const AdminLayout = ({ children }) => {
             to={item.path}
             className={`tabbar-item ${location.pathname === item.path ? 'active' : ''}`}
           >
-            {item.icon}
+            <div className="tabbar-icon-wrap">
+              {item.icon}
+              {item.path === '/messages' && unrepliedCount > 0 && (
+                <span className="tabbar-badge" />
+              )}
+            </div>
             <span>{item.label}</span>
           </Link>
         ))}
@@ -130,6 +146,9 @@ const AdminLayout = ({ children }) => {
             >
               {item.icon}
               <span>{item.label}</span>
+              {item.path === '/messages' && unrepliedCount > 0 && (
+                <span className="nav-badge">{unrepliedCount}</span>
+              )}
             </Link>
           ))}
         </nav>
