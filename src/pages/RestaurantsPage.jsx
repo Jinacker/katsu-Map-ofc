@@ -37,6 +37,7 @@ const RestaurantsPage = () => {
     isGood: false,
     isKatsuHunterPick: false,
     katsuHunterDescription: '',
+    ownerComment: '',
   });
   const [uploading, setUploading] = useState({});
   const [draggingOver, setDraggingOver] = useState(null);
@@ -90,6 +91,7 @@ const RestaurantsPage = () => {
       isGood: false,
       isKatsuHunterPick: false,
       katsuHunterDescription: '',
+      ownerComment: '',
     });
   };
 
@@ -119,6 +121,7 @@ const RestaurantsPage = () => {
       isGood: restaurant.isGood || false,
       isKatsuHunterPick: restaurant.isKatsuHunterPick || false,
       katsuHunterDescription: restaurant.katsuHunterDescription || '',
+      ownerComment: restaurant.ownerComment || '',
     });
     setSelectedRestaurant(null);
     setShowEditModal(true);
@@ -646,6 +649,13 @@ const RestaurantsPage = () => {
                   </div>
                 )}
 
+                {selectedRestaurant.ownerComment && (
+                  <div className="detail-item full-width">
+                    <span className="detail-label">사장님 한마디</span>
+                    <span className="detail-value description">{selectedRestaurant.ownerComment}</span>
+                  </div>
+                )}
+
                 {selectedRestaurant.description && (
                   <div className="detail-item full-width">
                     <span className="detail-label">AI 리뷰 요약</span>
@@ -1030,6 +1040,17 @@ const RestaurantsPage = () => {
                     onChange={handleFormChange}
                     rows="3"
                     placeholder="카츠헌터 PICK 설명을 입력하세요"
+                  />
+                </div>
+
+                <div className="form-group full-width">
+                  <label>사장님 한마디</label>
+                  <textarea
+                    name="ownerComment"
+                    value={formData.ownerComment}
+                    onChange={handleFormChange}
+                    rows="3"
+                    placeholder="가게 상세 모달에 표시할 사장님 한마디를 입력하세요"
                   />
                 </div>
               </div>
