@@ -116,7 +116,7 @@ const RestaurantsPage = () => {
   const loadContributors = async (restaurantId) => {
     try {
       const res = await apiClient.get(`/api/v1/admin/restaurants/${restaurantId}/contributors`);
-      setContributors(res.data || []);
+      setContributors(res.data?.data || []);
     } catch {
       setContributors([]);
     }
@@ -128,7 +128,7 @@ const RestaurantsPage = () => {
     setUserSearchResults([]);
     try {
       const res = await apiClient.get(`/api/v1/admin/users/search?query=${encodeURIComponent(userSearchQuery.trim())}`);
-      const results = res.data || [];
+      const results = res.data?.data || [];
       setUserSearchResults(results);
       if (results.length === 0) alert('검색 결과가 없습니다.');
     } catch (err) {
@@ -197,7 +197,7 @@ const RestaurantsPage = () => {
       apiClient.get(`/api/v1/admin/restaurants/${restaurant.id}`).catch(() => null),
       loadContributors(restaurant.id),
     ]);
-    const detail = detailRes?.data;
+    const detail = detailRes?.data?.data;
     const h = detail?.hours;
     setHoursData(h ? {
       mon: h.mon || '', tue: h.tue || '', wed: h.wed || '',
