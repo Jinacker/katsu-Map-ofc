@@ -39,6 +39,8 @@ const RestaurantsPage = () => {
     katsuHunterDescription: '',
     ownerComment: '',
   });
+  const [hoursData, setHoursData] = useState({ mon: '', tue: '', wed: '', thu: '', fri: '', sat: '', sun: '', breakTime: '' });
+  const [menusData, setMenusData] = useState({ priceRate: '', names: '' });
   const [uploading, setUploading] = useState({});
   const [draggingOver, setDraggingOver] = useState(null);
   const [geoSearching, setGeoSearching] = useState(false);
@@ -71,6 +73,8 @@ const RestaurantsPage = () => {
     }
   };
 
+  const EMPTY_HOURS = { mon: '', tue: '', wed: '', thu: '', fri: '', sat: '', sun: '', breakTime: '' };
+
   const resetFormData = () => {
     setFormData({
       name: '',
@@ -93,6 +97,8 @@ const RestaurantsPage = () => {
       katsuHunterDescription: '',
       ownerComment: '',
     });
+    setHoursData(EMPTY_HOURS);
+    setMenusData({ priceRate: '', names: '' });
   };
 
   const handleAddClick = () => {
@@ -122,6 +128,19 @@ const RestaurantsPage = () => {
       isKatsuHunterPick: restaurant.isKatsuHunterPick || false,
       katsuHunterDescription: restaurant.katsuHunterDescription || '',
       ownerComment: restaurant.ownerComment || '',
+    });
+    // 영업시간
+    const h = restaurant.hours;
+    setHoursData(h ? {
+      mon: h.mon || '', tue: h.tue || '', wed: h.wed || '',
+      thu: h.thu || '', fri: h.fri || '', sat: h.sat || '',
+      sun: h.sun || '', breakTime: h.breakTime || '',
+    } : { mon: '', tue: '', wed: '', thu: '', fri: '', sat: '', sun: '', breakTime: '' });
+    // 대표 메뉴
+    const ms = restaurant.menus || [];
+    setMenusData({
+      priceRate: ms[0]?.priceRate || '',
+      names: ms.map(m => m.name).join('\n'),
     });
     setSelectedRestaurant(null);
     setShowEditModal(true);
@@ -185,6 +204,28 @@ const RestaurantsPage = () => {
     if (file) await handleImageFile(file, fieldName);
   };
 
+  const buildHoursMenusPayload = () => {
+    const hoursHasData = Object.entries(hoursData).some(([, v]) => v.trim());
+    const menuNames = menusData.names.split('\n').map(s => s.trim()).filter(Boolean);
+    return {
+      hours: hoursHasData ? {
+        mon: hoursData.mon.trim() || null,
+        tue: hoursData.tue.trim() || null,
+        wed: hoursData.wed.trim() || null,
+        thu: hoursData.thu.trim() || null,
+        fri: hoursData.fri.trim() || null,
+        sat: hoursData.sat.trim() || null,
+        sun: hoursData.sun.trim() || null,
+        breakTime: hoursData.breakTime.trim() || null,
+      } : undefined,
+      menus: menuNames.length > 0 ? menuNames.map((name, i) => ({
+        name,
+        priceRate: menusData.priceRate || null,
+        displayOrder: i,
+      })) : undefined,
+    };
+  };
+
   const handleAddSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -192,6 +233,7 @@ const RestaurantsPage = () => {
         ...formData,
         lat: parseFloat(formData.lat) || 0,
         lng: parseFloat(formData.lng) || 0,
+        ...buildHoursMenusPayload(),
       };
       await apiClient.post('/api/v1/admin/restaurants', payload);
       alert('식당이 등록되었습니다.');
@@ -211,6 +253,7 @@ const RestaurantsPage = () => {
         ...formData,
         lat: parseFloat(formData.lat) || 0,
         lng: parseFloat(formData.lng) || 0,
+        ...buildHoursMenusPayload(),
       };
       await apiClient.put(`/api/v1/admin/restaurants/${editingRestaurant.id}`, payload);
       alert('식당 정보가 수정되었습니다.');
@@ -1051,6 +1094,65 @@ const RestaurantsPage = () => {
                     onChange={handleFormChange}
                     rows="3"
                     placeholder="가게 상세 모달에 표시할 사장님 한마디를 입력하세요"
+                  />
+                </div>
+
+                {/* ── 영업시간 ── */}
+                <div className="form-group full-width">
+                  <label>영업시간</label>
+                  <div className="hours-grid">
+                    {[
+                      { key: 'mon', label: '월' }, { key: 'tue', label: '화' },
+                      { key: 'wed', label: '수' }, { key: 'thu', label: '목' },
+                      { key: 'fri', label: '금' }, { key: 'sat', label: '토' },
+                      { key: 'sun', label: '일' },
+                    ].map(({ key, label }) => (
+                      <div key={key} className="hours-row">
+                        <span className="hours-day-label">{label}</span>
+                        <input
+                          type="text"
+                          value={hoursData[key]}
+                          onChange={(e) => setHoursData(prev => ({ ...prev, [key]: e.target.value }))}
+                          placeholder="예: 11:30 ~ 20:30 또는 휴무일"
+                          className="hours-input"
+                        />
+                      </div>
+                    ))}
+                    <div className="hours-row">
+                      <span className="hours-day-label">브레이크</span>
+                      <input
+                        type="text"
+                        value={hoursData.breakTime}
+                        onChange={(e) => setHoursData(prev => ({ ...prev, breakTime: e.target.value }))}
+                        placeholder="예: 15:30 ~ 17:30"
+                        className="hours-input"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* ── 대표 메뉴 ── */}
+                <div className="form-group full-width">
+                  <label>대표 메뉴</label>
+                  <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 8 }}>
+                    <span style={{ fontSize: 13, color: '#666', whiteSpace: 'nowrap' }}>가격대</span>
+                    <select
+                      value={menusData.priceRate}
+                      onChange={(e) => setMenusData(prev => ({ ...prev, priceRate: e.target.value }))}
+                      style={{ width: 120 }}
+                    >
+                      <option value="">선택 안 함</option>
+                      <option value="₩">₩</option>
+                      <option value="₩₩">₩₩</option>
+                      <option value="₩₩₩">₩₩₩</option>
+                      <option value="₩₩₩₩">₩₩₩₩</option>
+                    </select>
+                  </div>
+                  <textarea
+                    value={menusData.names}
+                    onChange={(e) => setMenusData(prev => ({ ...prev, names: e.target.value }))}
+                    rows="4"
+                    placeholder={"메뉴명을 한 줄에 하나씩 입력하세요\n예:\n히레카츠 정식\n로스카츠 정식\n모리아와세카츠"}
                   />
                 </div>
               </div>
