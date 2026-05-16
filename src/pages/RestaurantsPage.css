@@ -764,3 +764,88 @@
   border-radius: var(--radius-sm);
   background: var(--color-bg-input, #fff);
 }
+
+/* ── 기여자 관리 ── */
+.contributor-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.contributor-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px;
+  background: #fff8ee;
+  border: 1px solid #ffa83244;
+  border-radius: 20px;
+  font-size: 13px;
+  color: #333;
+}
+
+.contributor-remove-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  color: #999;
+  line-height: 1;
+  padding: 0;
+  margin-left: 2px;
+}
+.contributor-remove-btn:hover { color: #e53935; }
+
+.contributor-search-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.contributor-search-input {
+  flex: 1;
+  padding: 7px 10px;
+  font-size: 13px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.contributor-search-btn {
+  padding: 7px 16px;
+  font-size: 13px;
+  background: var(--color-primary, #1976d2);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+.contributor-search-btn:disabled { opacity: 0.6; cursor: default; }
+
+.contributor-results {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.contributor-result-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  font-size: 13px;
+  border-bottom: 1px solid var(--color-border);
+  background: #fff;
+}
+.contributor-result-item:last-child { border-bottom: none; }
+
+.contributor-add-btn {
+  padding: 4px 12px;
+  font-size: 12px;
+  background: #4caf50;
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+}
+.contributor-add-btn:disabled { background: #bbb; cursor: default; }

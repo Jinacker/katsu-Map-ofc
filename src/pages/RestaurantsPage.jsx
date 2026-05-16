@@ -41,6 +41,10 @@ const RestaurantsPage = () => {
   });
   const [hoursData, setHoursData] = useState({ mon: '', tue: '', wed: '', thu: '', fri: '', sat: '', sun: '', breakTime: '' });
   const [menusData, setMenusData] = useState({ priceRate: '', names: '' });
+  const [contributors, setContributors] = useState([]);
+  const [userSearchQuery, setUserSearchQuery] = useState('');
+  const [userSearchResults, setUserSearchResults] = useState([]);
+  const [contributorSearching, setContributorSearching] = useState(false);
   const [uploading, setUploading] = useState({});
   const [draggingOver, setDraggingOver] = useState(null);
   const [geoSearching, setGeoSearching] = useState(false);
@@ -99,6 +103,9 @@ const RestaurantsPage = () => {
     });
     setHoursData(EMPTY_HOURS);
     setMenusData({ priceRate: '', names: '' });
+    setContributors([]);
+    setUserSearchQuery('');
+    setUserSearchResults([]);
   };
 
   const handleAddClick = () => {
@@ -106,7 +113,58 @@ const RestaurantsPage = () => {
     setShowAddModal(true);
   };
 
-  const handleEditClick = (restaurant) => {
+  const loadContributors = async (restaurantId) => {
+    try {
+      const res = await apiClient.get(`/api/v1/admin/restaurants/${restaurantId}/contributors`);
+      setContributors(res.data || []);
+    } catch {
+      setContributors([]);
+    }
+  };
+
+  const handleUserSearch = async () => {
+    if (!userSearchQuery.trim()) return;
+    setContributorSearching(true);
+    setUserSearchResults([]);
+    try {
+      const res = await apiClient.get(`/api/v1/admin/users/search?query=${encodeURIComponent(userSearchQuery.trim())}`);
+      const results = res.data || [];
+      setUserSearchResults(results);
+      if (results.length === 0) alert('검색 결과가 없습니다.');
+    } catch (err) {
+      alert(`검색 실패: ${err.response?.data?.message || err.message}`);
+    } finally {
+      setContributorSearching(false);
+    }
+  };
+
+  const handleAddContributor = async (userId) => {
+    if (!editingRestaurant) return;
+    if (contributors.length >= 3) {
+      alert('기여자는 최대 3명까지 등록 가능합니다.');
+      return;
+    }
+    try {
+      await apiClient.post(`/api/v1/admin/restaurants/${editingRestaurant.id}/contributors`, { userId });
+      await loadContributors(editingRestaurant.id);
+      setUserSearchResults([]);
+      setUserSearchQuery('');
+    } catch (err) {
+      alert(err.response?.data?.message || '기여자 추가에 실패했습니다.');
+    }
+  };
+
+  const handleRemoveContributor = async (userId) => {
+    if (!editingRestaurant) return;
+    try {
+      await apiClient.delete(`/api/v1/admin/restaurants/${editingRestaurant.id}/contributors/${userId}`);
+      await loadContributors(editingRestaurant.id);
+    } catch {
+      alert('기여자 제거에 실패했습니다.');
+    }
+  };
+
+  const handleEditClick = async (restaurant) => {
     setEditingRestaurant(restaurant);
     setFormData({
       name: restaurant.name || '',
@@ -129,21 +187,28 @@ const RestaurantsPage = () => {
       katsuHunterDescription: restaurant.katsuHunterDescription || '',
       ownerComment: restaurant.ownerComment || '',
     });
-    // 영업시간
-    const h = restaurant.hours;
+    setContributors([]);
+    setUserSearchQuery('');
+    setUserSearchResults([]);
+    setSelectedRestaurant(null);
+    setShowEditModal(true);
+    // hours/menus/contributors 별도 로드
+    const [detailRes] = await Promise.all([
+      apiClient.get(`/api/v1/admin/restaurants/${restaurant.id}`).catch(() => null),
+      loadContributors(restaurant.id),
+    ]);
+    const detail = detailRes?.data;
+    const h = detail?.hours;
     setHoursData(h ? {
       mon: h.mon || '', tue: h.tue || '', wed: h.wed || '',
       thu: h.thu || '', fri: h.fri || '', sat: h.sat || '',
       sun: h.sun || '', breakTime: h.breakTime || '',
     } : { mon: '', tue: '', wed: '', thu: '', fri: '', sat: '', sun: '', breakTime: '' });
-    // 대표 메뉴
-    const ms = restaurant.menus || [];
+    const ms = detail?.menus || [];
     setMenusData({
       priceRate: ms[0]?.priceRate || '',
       names: ms.map(m => m.name).join('\n'),
     });
-    setSelectedRestaurant(null);
-    setShowEditModal(true);
   };
 
   const handleFormChange = (e) => {
@@ -1155,6 +1220,56 @@ const RestaurantsPage = () => {
                     placeholder={"메뉴명을 한 줄에 하나씩 입력하세요\n예:\n히레카츠 정식\n로스카츠 정식\n모리아와세카츠"}
                   />
                 </div>
+
+                {/* ── 제보 기여자 (수정 시에만) ── */}
+                {showEditModal && (
+                  <div className="form-group full-width">
+                    <label>제보 기여자 <span style={{ fontWeight: 'normal', color: '#888', fontSize: 12 }}>(최대 3명)</span></label>
+
+                    {contributors.length > 0 && (
+                      <div className="contributor-list">
+                        {contributors.map((c) => (
+                          <div key={c.userId} className="contributor-chip">
+                            <span>#{c.user?.id} {c.user?.nickname ?? '닉네임 없음'}</span>
+                            <button type="button" className="contributor-remove-btn" onClick={() => handleRemoveContributor(c.userId)}>×</button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {contributors.length < 3 && (
+                      <div className="contributor-search-row">
+                        <input
+                          type="text"
+                          value={userSearchQuery}
+                          onChange={(e) => setUserSearchQuery(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleUserSearch())}
+                          placeholder="유저 ID 또는 닉네임으로 검색"
+                          className="contributor-search-input"
+                        />
+                        <button type="button" className="contributor-search-btn" onClick={handleUserSearch} disabled={contributorSearching}>
+                          {contributorSearching ? '검색중...' : '검색'}
+                        </button>
+                      </div>
+                    )}
+
+                    {userSearchResults.length > 0 && (
+                      <div className="contributor-results">
+                        {userSearchResults.map((u) => {
+                          const alreadyAdded = contributors.some((c) => c.userId === u.id);
+                          return (
+                            <div key={u.id} className="contributor-result-item">
+                              <span>#{u.id} {u.nickname}</span>
+                              <button type="button" className="contributor-add-btn" onClick={() => handleAddContributor(u.id)} disabled={alreadyAdded}>
+                                {alreadyAdded ? '추가됨' : '추가'}
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="form-actions">
