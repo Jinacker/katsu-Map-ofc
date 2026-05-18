@@ -3,12 +3,14 @@ import api from '../api/axios';
 import { uploadImageToGCS } from '../api/gcs';
 
 const MAX_INSTA = 8;
+const MAX_YOUTUBE = 8;
 const MAX_BLOG = 5;
 const MAX_STORE = 8;
 const MAX_NOTICE_IMAGES = 3;
 const MAX_PICKS = 3;
 
 const emptyInstaPost = () => ({ id: Date.now() + Math.random(), image: '', title: '', subtitle: '', url: '' });
+const emptyYoutubePost = () => ({ id: Date.now() + Math.random(), image: '', title: '', subtitle: '', url: '' });
 const emptyBlogPost = () => ({ id: Date.now() + Math.random(), image: '', title: '', subtitle: '', url: '' });
 const emptyStoreItem = () => ({ id: Date.now() + Math.random(), image: '', title: '', price: '', url: '' });
 
@@ -54,17 +56,20 @@ export default function HunterContentPage() {
   const [noticeBody, setNoticeBody] = useState('');
   const [instagramUrl, setInstagramUrl] = useState('');
   const [blogUrl, setBlogUrl] = useState('');
+  const [youtubeUrl, setYoutubeUrl] = useState('');
   const [picksTheme, setPicksTheme] = useState('');
   const [picksDesc, setPicksDesc] = useState('');
   const [picksRestaurantIds, setPicksRestaurantIds] = useState([]);
   const [picksRestaurants, setPicksRestaurants] = useState([]); // [{id, name, imageUrl}]
   const [instaPosts, setInstaPosts] = useState([]);
+  const [youtubePosts, setYoutubePosts] = useState([]);
   const [blogPosts, setBlogPosts] = useState([]);
   const [storeItems, setStoreItems] = useState([]);
 
   // 업로드 중 상태
   const [uploadingNoticeIdx, setUploadingNoticeIdx] = useState(null);
   const [uploadingInstaIdx, setUploadingInstaIdx] = useState(null);
+  const [uploadingYoutubeIdx, setUploadingYoutubeIdx] = useState(null);
   const [uploadingBlogIdx, setUploadingBlogIdx] = useState(null);
   const [uploadingStoreIdx, setUploadingStoreIdx] = useState(null);
 
@@ -91,11 +96,13 @@ export default function HunterContentPage() {
       setNoticeBody(d.noticeBody ?? '');
       setInstagramUrl(d.instagramUrl ?? '');
       setBlogUrl(d.blogUrl ?? '');
+      setYoutubeUrl(d.youtubeUrl ?? '');
       setPicksTheme(d.picksTheme ?? '');
       setPicksDesc(d.picksDesc ?? '');
       setPicksRestaurantIds(d.picksRestaurantIds ?? []);
       setPicksRestaurants(d.picksRestaurants ?? []);
       setInstaPosts(d.instaPosts ?? []);
+      setYoutubePosts(d.youtubePosts ?? []);
       setBlogPosts(d.blogPosts ?? []);
       setStoreItems(d.storeItems ?? []);
     } catch (e) {
@@ -111,9 +118,9 @@ export default function HunterContentPage() {
     try {
       await api.put('/api/v1/admin/hunter-content', {
         noticeText, noticeImages, noticeBody,
-        instagramUrl, blogUrl,
+        instagramUrl, blogUrl, youtubeUrl,
         picksTheme, picksDesc, picksRestaurantIds,
-        instaPosts, blogPosts, storeItems,
+        instaPosts, youtubePosts, blogPosts, storeItems,
       });
       setMsg('✅ 저장 완료!');
     } catch (e) {
@@ -148,6 +155,18 @@ export default function HunterContentPage() {
       setInstaPosts(prev => prev.map((p, i) => i === idx ? { ...p, image: url } : p));
     } catch { alert('이미지 업로드 실패'); }
     finally { setUploadingInstaIdx(null); }
+  };
+
+  // 유튜브 이미지 업로드
+  const handleYoutubeImageUpload = async (e, idx) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingYoutubeIdx(idx);
+    try {
+      const url = await uploadImageToGCS(file, 'hunter');
+      setYoutubePosts(prev => prev.map((p, i) => i === idx ? { ...p, image: url } : p));
+    } catch { alert('이미지 업로드 실패'); }
+    finally { setUploadingYoutubeIdx(null); }
   };
 
   // 블로그 이미지 업로드
@@ -260,6 +279,9 @@ export default function HunterContentPage() {
         <Field label="인스타그램 URL">
           <input style={s.input} value={instagramUrl} onChange={e => setInstagramUrl(e.target.value)} placeholder="https://www.instagram.com/katz_hunter/" />
         </Field>
+        <Field label="유튜브 URL">
+          <input style={s.input} value={youtubeUrl} onChange={e => setYoutubeUrl(e.target.value)} placeholder="https://www.youtube.com/@katz_hunter" />
+        </Field>
         <Field label="블로그 URL">
           <input style={s.input} value={blogUrl} onChange={e => setBlogUrl(e.target.value)} placeholder="https://blog.naver.com/katz_hunter" />
         </Field>
@@ -329,7 +351,38 @@ export default function HunterContentPage() {
         )}
       </Section>
 
-      {/* ── 5. 블로그 ── */}
+      {/* ── 5. 유튜브 포스트 ── */}
+      <Section title={`유튜브 포스트 (${youtubePosts.length}/${MAX_YOUTUBE})`}>
+        {youtubePosts.map((post, idx) => (
+          <div key={post.id} style={{ ...s.listItem, display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, paddingTop: 2 }}>
+              <button onClick={() => setYoutubePosts(prev => moveItem(prev, idx, -1))} disabled={idx === 0} style={s.orderBtn}>▲</button>
+              <button onClick={() => setYoutubePosts(prev => moveItem(prev, idx, 1))} disabled={idx === youtubePosts.length - 1} style={s.orderBtn}>▼</button>
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+                <ImageUploadCell
+                  value={post.image}
+                  onChange={url => setYoutubePosts(prev => prev.map((p, i) => i === idx ? { ...p, image: url } : p))}
+                  uploading={uploadingYoutubeIdx === idx}
+                  onUpload={e => handleYoutubeImageUpload(e, idx)}
+                />
+                <div style={{ flex: 1, minWidth: 200, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <input style={s.input} placeholder="제목" value={post.title} onChange={e => setYoutubePosts(prev => prev.map((p, i) => i === idx ? { ...p, title: e.target.value } : p))} />
+                  <input style={s.input} placeholder="소제목" value={post.subtitle} onChange={e => setYoutubePosts(prev => prev.map((p, i) => i === idx ? { ...p, subtitle: e.target.value } : p))} />
+                  <input style={s.input} placeholder="URL (클릭 시 이동)" value={post.url} onChange={e => setYoutubePosts(prev => prev.map((p, i) => i === idx ? { ...p, url: e.target.value } : p))} />
+                </div>
+              </div>
+              <button onClick={() => setYoutubePosts(prev => prev.filter((_, i) => i !== idx))} style={s.removeBtn}>삭제</button>
+            </div>
+          </div>
+        ))}
+        {youtubePosts.length < MAX_YOUTUBE && (
+          <button onClick={() => setYoutubePosts(prev => [...prev, emptyYoutubePost()])} style={s.addBtn}>+ 포스트 추가</button>
+        )}
+      </Section>
+
+      {/* ── 6. 블로그 ── */}
       <Section title={`블로그 (${blogPosts.length}/${MAX_BLOG})`}>
         {blogPosts.map((post, idx) => (
           <div key={post.id} style={{ ...s.listItem, display: 'flex', gap: 10, alignItems: 'flex-start' }}>
