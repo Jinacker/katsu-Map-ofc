@@ -74,7 +74,6 @@ export default function PushNotificationsPage() {
       setBody('');
       setSelectedUsers([]);
       setUserSearch('');
-      setSearchResults([]);
     } catch {
       setResult({ success: false });
     } finally {
