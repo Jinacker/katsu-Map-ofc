@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import apiClient from '../api/axios';
 
 const CONFIRM_STEPS = [
@@ -12,24 +12,25 @@ export default function PushNotificationsPage() {
   const [body, setBody] = useState('');
   const [targetMode, setTargetMode] = useState('all'); // 'all' | 'specific'
   const [userSearch, setUserSearch] = useState('');
-  const [searchResults, setSearchResults] = useState([]);
+  const [allUsers, setAllUsers] = useState([]);
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [confirmStep, setConfirmStep] = useState(0); // 0 = 닫힘, 1~3 = 확인 단계
   const [isSending, setIsSending] = useState(false);
   const [result, setResult] = useState(null);
 
-  const handleSearch = async () => {
-    if (!userSearch.trim()) return;
-    try {
-      const res = await apiClient.get('/api/v1/admin/users', {
-        params: { search: userSearch, limit: 20 },
-      });
-      const users = res.data?.data?.users ?? res.data?.data ?? [];
-      setSearchResults(Array.isArray(users) ? users : []);
-    } catch {
-      alert('유저 검색에 실패했습니다.');
-    }
-  };
+  useEffect(() => {
+    apiClient.get('/api/v1/admin/users').then(res => {
+      const users = res.data?.data ?? [];
+      setAllUsers(Array.isArray(users) ? users : []);
+    }).catch(() => {});
+  }, []);
+
+  const searchResults = userSearch.trim()
+    ? allUsers.filter(u =>
+        (u.nickname || '').toLowerCase().includes(userSearch.toLowerCase()) ||
+        String(u.id).includes(userSearch)
+      ).slice(0, 20)
+    : [];
 
   const toggleUser = (user) => {
     setSelectedUsers(prev =>
@@ -145,12 +146,10 @@ export default function PushNotificationsPage() {
             <div style={styles.searchRow}>
               <input
                 style={{ ...styles.input, flex: 1 }}
-                placeholder="닉네임으로 검색"
+                placeholder="닉네임 또는 ID로 검색"
                 value={userSearch}
                 onChange={e => setUserSearch(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleSearch()}
               />
-              <button style={styles.searchBtn} onClick={handleSearch}>검색</button>
             </div>
 
             {searchResults.length > 0 && (
