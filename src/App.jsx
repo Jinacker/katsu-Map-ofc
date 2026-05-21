@@ -9,6 +9,7 @@ import UsersPage from './pages/UsersPage';
 import HunterContentPage from './pages/HunterContentPage';
 import UserRecordsPage from './pages/UserRecordsPage';
 import PushNotificationsPage from './pages/PushNotificationsPage';
+import CommunityPage from './pages/CommunityPage';
 import NotFoundPage from './pages/NotFoundPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminLayout from './components/AdminLayout';
@@ -95,6 +96,16 @@ function App() {
             <ProtectedRoute>
               <AdminLayout>
                 <PushNotificationsPage />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/community"
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <CommunityPage />
               </AdminLayout>
             </ProtectedRoute>
           }
