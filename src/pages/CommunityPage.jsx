@@ -35,15 +35,15 @@ export default function CommunityPage() {
     fetchNotes();
   }, [fetchNotes]);
 
-  const handleHideNote = async (id) => {
-    if (!window.confirm('이 기록을 커뮤니티에서 숨기겠습니까?\n(유저의 기록 탭에는 유지됩니다)')) return;
+  const handleDeleteNote = async (id) => {
+    if (!window.confirm('이 기록을 완전히 삭제하겠습니까?\n(유저의 기록 탭에서도 사라집니다)')) return;
     try {
-      await api.delete(`/api/v1/admin/community/feed/${id}`);
+      await api.delete(`/api/v1/admin/tasting-notes/${id}`);
       setNotes((prev) => prev.filter((n) => n.id !== id));
       setTotal((t) => t - 1);
       if (selectedNote?.id === id) setSelectedNote(null);
     } catch (e) {
-      alert('숨기기 실패: ' + (e.response?.data?.message ?? e.message));
+      alert('삭제 실패: ' + (e.response?.data?.message ?? e.message));
     }
   };
 
@@ -135,10 +135,10 @@ export default function CommunityPage() {
                   댓글 보기
                 </button>
                 <button
-                  onClick={() => handleHideNote(note.id)}
+                  onClick={() => handleDeleteNote(note.id)}
                   style={s.hideBtn}
                 >
-                  숨기기
+                  삭제
                 </button>
               </div>
             </div>
