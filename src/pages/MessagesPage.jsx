@@ -192,7 +192,12 @@ const MessagesPage = () => {
 
               <div className="detail-row">
                 <span className="detail-label">작성자</span>
-                <span>{selectedMessage.user?.nickname || '익명'}</span>
+                <span className="author-value">
+                  {selectedMessage.user?.nickname || '익명'}
+                  <span className="author-user-id">
+                    ID: {selectedMessage.user?.id ?? selectedMessage.userId ?? '-'}
+                  </span>
+                </span>
               </div>
 
               <div className="detail-row">
