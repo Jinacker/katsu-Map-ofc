@@ -735,6 +735,40 @@
 }
 
 /* ── 영업시간 ── */
+.hours-paste-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.hours-paste-textarea {
+  min-height: 132px;
+  line-height: 1.5;
+  font-size: 13px;
+}
+
+.hours-paste-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.hours-parse-btn {
+  padding: 7px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  background: #EFF6FF;
+  color: #1D4ED8;
+  border: 1px solid #BFDBFE;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.hours-parse-btn:hover {
+  background: #DBEAFE;
+  border-color: #93C5FD;
+}
+
 .hours-grid {
   display: flex;
   flex-direction: column;
@@ -825,7 +859,8 @@
 .contributor-results {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
-  overflow: hidden;
+  max-height: 280px;
+  overflow-y: auto;
 }
 
 .contributor-result-item {

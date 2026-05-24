@@ -3,6 +3,96 @@ import apiClient from '../api/axios';
 import { uploadImageToGCS } from '../api/gcs';
 import './RestaurantsPage.css';
 
+const EMPTY_HOURS = { mon: '', tue: '', wed: '', thu: '', fri: '', sat: '', sun: '', breakTime: '' };
+const DAY_OPTIONS = [
+  { key: 'mon', label: '월' },
+  { key: 'tue', label: '화' },
+  { key: 'wed', label: '수' },
+  { key: 'thu', label: '목' },
+  { key: 'fri', label: '금' },
+  { key: 'sat', label: '토' },
+  { key: 'sun', label: '일' },
+];
+const DAY_LABEL_TO_KEY = DAY_OPTIONS.reduce((acc, { key, label }) => {
+  acc[label] = key;
+  return acc;
+}, {});
+const TIME_RANGE_PATTERN = /(\d{1,2})\s*(?::|시)\s*(\d{1,2})?\s*(?:분)?\s*(?:-|~|–|—|－)\s*(\d{1,2})\s*(?::|시)\s*(\d{1,2})?\s*(?:분)?/g;
+
+const formatTime = (hour, minute) => `${String(Number(hour)).padStart(2, '0')}:${String(Number(minute ?? 0)).padStart(2, '0')}`;
+
+const extractTimeRanges = (line) => {
+  const ranges = [];
+  TIME_RANGE_PATTERN.lastIndex = 0;
+  let match = TIME_RANGE_PATTERN.exec(line);
+  while (match) {
+    ranges.push(`${formatTime(match[1], match[2])} ~ ${formatTime(match[3], match[4])}`);
+    match = TIME_RANGE_PATTERN.exec(line);
+  }
+  return ranges;
+};
+
+const pickMostFrequent = (items) => {
+  const counts = new Map();
+  let best = '';
+  items.forEach((item) => {
+    const count = (counts.get(item) || 0) + 1;
+    counts.set(item, count);
+    if (!best || count > counts.get(best)) {
+      best = item;
+    }
+  });
+  return best;
+};
+
+const parseBusinessHoursText = (rawText) => {
+  const parsed = { ...EMPTY_HOURS };
+  const breakCandidates = [];
+  let currentDayKey = null;
+
+  rawText
+    .split(/\r?\n/)
+    .map((line) => line.trim().replace(/^[•*-]\s*/, ''))
+    .filter(Boolean)
+    .forEach((line) => {
+      const dayOnlyMatch = line.match(/^(월|화|수|목|금|토|일)(?:요일)?$/);
+      const dayInlineMatch = line.match(/^(월|화|수|목|금|토|일)(?:요일)?[\s:]+(.+)$/);
+      let contentLine = line;
+
+      if (dayOnlyMatch) {
+        currentDayKey = DAY_LABEL_TO_KEY[dayOnlyMatch[1]];
+        return;
+      }
+
+      if (dayInlineMatch) {
+        currentDayKey = DAY_LABEL_TO_KEY[dayInlineMatch[1]];
+        contentLine = dayInlineMatch[2].trim();
+      }
+
+      if (!currentDayKey) return;
+
+      if (/휴무/.test(contentLine) && !parsed[currentDayKey]) {
+        parsed[currentDayKey] = contentLine;
+        return;
+      }
+
+      const ranges = extractTimeRanges(contentLine);
+      if (ranges.length === 0) return;
+
+      if (/브레이크|break/i.test(contentLine)) {
+        breakCandidates.push(ranges[0]);
+        return;
+      }
+
+      if (!parsed[currentDayKey]) {
+        parsed[currentDayKey] = ranges.join(' / ');
+      }
+    });
+
+  parsed.breakTime = pickMostFrequent(breakCandidates);
+  return parsed;
+};
+
 const RestaurantsPage = () => {
   const [restaurants, setRestaurants] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -39,7 +129,8 @@ const RestaurantsPage = () => {
     katsuHunterDescription: '',
     ownerComment: '',
   });
-  const [hoursData, setHoursData] = useState({ mon: '', tue: '', wed: '', thu: '', fri: '', sat: '', sun: '', breakTime: '' });
+  const [hoursData, setHoursData] = useState(EMPTY_HOURS);
+  const [hoursPasteText, setHoursPasteText] = useState('');
   const [menusData, setMenusData] = useState({ priceRate: '', names: '' });
   const [contributors, setContributors] = useState([]);
   const [userSearchQuery, setUserSearchQuery] = useState('');
@@ -77,8 +168,6 @@ const RestaurantsPage = () => {
     }
   };
 
-  const EMPTY_HOURS = { mon: '', tue: '', wed: '', thu: '', fri: '', sat: '', sun: '', breakTime: '' };
-
   const resetFormData = () => {
     setFormData({
       name: '',
@@ -102,6 +191,7 @@ const RestaurantsPage = () => {
       ownerComment: '',
     });
     setHoursData(EMPTY_HOURS);
+    setHoursPasteText('');
     setMenusData({ priceRate: '', names: '' });
     setContributors([]);
     setUserSearchQuery('');
@@ -109,6 +199,7 @@ const RestaurantsPage = () => {
   };
 
   const handleAddClick = () => {
+    setEditingRestaurant(null);
     resetFormData();
     setShowAddModal(true);
   };
@@ -138,12 +229,22 @@ const RestaurantsPage = () => {
     }
   };
 
-  const handleAddContributor = async (userId) => {
-    if (!editingRestaurant) return;
+  const handleAddContributor = async (user) => {
+    const userId = typeof user === 'object' ? user.id : user;
+    const userInfo = typeof user === 'object' ? user : userSearchResults.find((u) => u.id === userId);
     if (contributors.length >= 3) {
       alert('기여자는 최대 3명까지 등록 가능합니다.');
       return;
     }
+    if (contributors.some((c) => c.userId === userId)) return;
+
+    if (!editingRestaurant) {
+      setContributors((prev) => [...prev, { userId, user: userInfo || { id: userId, nickname: '닉네임 없음' } }]);
+      setUserSearchResults([]);
+      setUserSearchQuery('');
+      return;
+    }
+
     try {
       await apiClient.post(`/api/v1/admin/restaurants/${editingRestaurant.id}/contributors`, { userId });
       await loadContributors(editingRestaurant.id);
@@ -155,7 +256,11 @@ const RestaurantsPage = () => {
   };
 
   const handleRemoveContributor = async (userId) => {
-    if (!editingRestaurant) return;
+    if (!editingRestaurant) {
+      setContributors((prev) => prev.filter((c) => c.userId !== userId));
+      return;
+    }
+
     try {
       await apiClient.delete(`/api/v1/admin/restaurants/${editingRestaurant.id}/contributors/${userId}`);
       await loadContributors(editingRestaurant.id);
@@ -190,6 +295,7 @@ const RestaurantsPage = () => {
     setContributors([]);
     setUserSearchQuery('');
     setUserSearchResults([]);
+    setHoursPasteText('');
     setSelectedRestaurant(null);
     setShowEditModal(true);
     // hours/menus/contributors 별도 로드
@@ -291,6 +397,24 @@ const RestaurantsPage = () => {
     };
   };
 
+  const applyParsedHoursText = (text, { silent = false } = {}) => {
+    const parsed = parseBusinessHoursText(text);
+    const hasParsedData = Object.values(parsed).some((v) => v.trim());
+
+    if (!hasParsedData) {
+      if (!silent) alert('파싱할 영업시간을 찾지 못했습니다.');
+      return false;
+    }
+
+    setHoursData(parsed);
+    return true;
+  };
+
+  const handleHoursPaste = (e) => {
+    const textarea = e.currentTarget;
+    window.setTimeout(() => applyParsedHoursText(textarea.value, { silent: true }), 0);
+  };
+
   const handleAddSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -300,8 +424,30 @@ const RestaurantsPage = () => {
         lng: parseFloat(formData.lng) || 0,
         ...buildHoursMenusPayload(),
       };
-      await apiClient.post('/api/v1/admin/restaurants', payload);
-      alert('식당이 등록되었습니다.');
+      const res = await apiClient.post('/api/v1/admin/restaurants', payload);
+      const createdRestaurantId = res.data?.data?.id;
+
+      let contributorSaveError = null;
+      if (contributors.length > 0) {
+        if (!createdRestaurantId) {
+          contributorSaveError = new Error('생성된 식당 ID를 확인할 수 없습니다.');
+        } else {
+          try {
+            await Promise.all(
+              contributors.map((c) => apiClient.post(`/api/v1/admin/restaurants/${createdRestaurantId}/contributors`, { userId: c.userId }))
+            );
+          } catch (contributorErr) {
+            contributorSaveError = contributorErr;
+          }
+        }
+      }
+
+      if (contributorSaveError) {
+        console.error(contributorSaveError);
+        alert(`식당은 등록되었지만 제보자 등록에 실패했습니다.\n${contributorSaveError.response?.data?.message || contributorSaveError.message}`);
+      } else {
+        alert('식당이 등록되었습니다.');
+      }
       setShowAddModal(false);
       resetFormData();
       fetchRestaurants();
@@ -1165,13 +1311,23 @@ const RestaurantsPage = () => {
                 {/* ── 영업시간 ── */}
                 <div className="form-group full-width">
                   <label>영업시간</label>
+                  <div className="hours-paste-box">
+                    <textarea
+                      value={hoursPasteText}
+                      onChange={(e) => setHoursPasteText(e.target.value)}
+                      onPaste={handleHoursPaste}
+                      rows="6"
+                      placeholder={"영업시간\n일\n11:40 - 21:00\n15:00 - 17:40 브레이크타임\n월\n정기휴무 (매주 월요일)"}
+                      className="hours-paste-textarea"
+                    />
+                    <div className="hours-paste-actions">
+                      <button type="button" className="hours-parse-btn" onClick={() => applyParsedHoursText(hoursPasteText)}>
+                        파싱
+                      </button>
+                    </div>
+                  </div>
                   <div className="hours-grid">
-                    {[
-                      { key: 'mon', label: '월' }, { key: 'tue', label: '화' },
-                      { key: 'wed', label: '수' }, { key: 'thu', label: '목' },
-                      { key: 'fri', label: '금' }, { key: 'sat', label: '토' },
-                      { key: 'sun', label: '일' },
-                    ].map(({ key, label }) => (
+                    {DAY_OPTIONS.map(({ key, label }) => (
                       <div key={key} className="hours-row">
                         <span className="hours-day-label">{label}</span>
                         <input
@@ -1221,55 +1377,53 @@ const RestaurantsPage = () => {
                   />
                 </div>
 
-                {/* ── 제보 기여자 (수정 시에만) ── */}
-                {showEditModal && (
-                  <div className="form-group full-width">
-                    <label>제보 기여자 <span style={{ fontWeight: 'normal', color: '#888', fontSize: 12 }}>(최대 3명)</span></label>
+                {/* ── 제보 기여자 ── */}
+                <div className="form-group full-width">
+                  <label>제보 기여자 <span style={{ fontWeight: 'normal', color: '#888', fontSize: 12 }}>(최대 3명)</span></label>
 
-                    {contributors.length > 0 && (
-                      <div className="contributor-list">
-                        {contributors.map((c) => (
-                          <div key={c.userId} className="contributor-chip">
-                            <span>#{c.user?.id} {c.user?.nickname ?? '닉네임 없음'}</span>
-                            <button type="button" className="contributor-remove-btn" onClick={() => handleRemoveContributor(c.userId)}>×</button>
+                  {contributors.length > 0 && (
+                    <div className="contributor-list">
+                      {contributors.map((c) => (
+                        <div key={c.userId} className="contributor-chip">
+                          <span>#{c.user?.id} {c.user?.nickname ?? '닉네임 없음'}</span>
+                          <button type="button" className="contributor-remove-btn" onClick={() => handleRemoveContributor(c.userId)}>×</button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {contributors.length < 3 && (
+                    <div className="contributor-search-row">
+                      <input
+                        type="text"
+                        value={userSearchQuery}
+                        onChange={(e) => setUserSearchQuery(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleUserSearch())}
+                        placeholder="유저 ID, 닉네임 또는 둘 다 검색"
+                        className="contributor-search-input"
+                      />
+                      <button type="button" className="contributor-search-btn" onClick={handleUserSearch} disabled={contributorSearching}>
+                        {contributorSearching ? '검색중...' : '검색'}
+                      </button>
+                    </div>
+                  )}
+
+                  {userSearchResults.length > 0 && (
+                    <div className="contributor-results">
+                      {userSearchResults.map((u) => {
+                        const alreadyAdded = contributors.some((c) => c.userId === u.id);
+                        return (
+                          <div key={u.id} className="contributor-result-item">
+                            <span>#{u.id} {u.nickname}</span>
+                            <button type="button" className="contributor-add-btn" onClick={() => handleAddContributor(u)} disabled={alreadyAdded}>
+                              {alreadyAdded ? '추가됨' : '추가'}
+                            </button>
                           </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {contributors.length < 3 && (
-                      <div className="contributor-search-row">
-                        <input
-                          type="text"
-                          value={userSearchQuery}
-                          onChange={(e) => setUserSearchQuery(e.target.value)}
-                          onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleUserSearch())}
-                          placeholder="유저 ID 또는 닉네임으로 검색"
-                          className="contributor-search-input"
-                        />
-                        <button type="button" className="contributor-search-btn" onClick={handleUserSearch} disabled={contributorSearching}>
-                          {contributorSearching ? '검색중...' : '검색'}
-                        </button>
-                      </div>
-                    )}
-
-                    {userSearchResults.length > 0 && (
-                      <div className="contributor-results">
-                        {userSearchResults.map((u) => {
-                          const alreadyAdded = contributors.some((c) => c.userId === u.id);
-                          return (
-                            <div key={u.id} className="contributor-result-item">
-                              <span>#{u.id} {u.nickname}</span>
-                              <button type="button" className="contributor-add-btn" onClick={() => handleAddContributor(u.id)} disabled={alreadyAdded}>
-                                {alreadyAdded ? '추가됨' : '추가'}
-                              </button>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                )}
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="form-actions">
