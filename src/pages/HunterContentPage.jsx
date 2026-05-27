@@ -8,6 +8,9 @@ const MAX_BLOG = 5;
 const MAX_STORE = 8;
 const MAX_NOTICE_IMAGES = 3;
 const MAX_PICKS = 3;
+const DEFAULT_SHARE_TITLE_TEMPLATE = '{name} | 돈가스 지도';
+const DEFAULT_SHARE_DESCRIPTION_TEMPLATE = '{area}의 돈가스 맛집, 돈가스 지도에서 확인해보세요.';
+const DEFAULT_SHARE_CTA_TEXT = '돈가스 지도에서 이 가게 보기';
 
 const emptyInstaPost = () => ({ id: Date.now() + Math.random(), image: '', title: '', subtitle: '', url: '' });
 const emptyYoutubePost = () => ({ id: Date.now() + Math.random(), image: '', title: '', subtitle: '', url: '' });
@@ -54,6 +57,9 @@ export default function HunterContentPage() {
   const [noticeText, setNoticeText] = useState('');
   const [noticeImages, setNoticeImages] = useState([]);
   const [noticeBody, setNoticeBody] = useState('');
+  const [shareTitleTemplate, setShareTitleTemplate] = useState(DEFAULT_SHARE_TITLE_TEMPLATE);
+  const [shareDescriptionTemplate, setShareDescriptionTemplate] = useState(DEFAULT_SHARE_DESCRIPTION_TEMPLATE);
+  const [shareCtaText, setShareCtaText] = useState(DEFAULT_SHARE_CTA_TEXT);
   const [instagramUrl, setInstagramUrl] = useState('');
   const [blogUrl, setBlogUrl] = useState('');
   const [youtubeUrl, setYoutubeUrl] = useState('');
@@ -94,6 +100,9 @@ export default function HunterContentPage() {
       setNoticeText(d.noticeText ?? '');
       setNoticeImages(d.noticeImages ?? []);
       setNoticeBody(d.noticeBody ?? '');
+      setShareTitleTemplate(d.shareTitleTemplate ?? DEFAULT_SHARE_TITLE_TEMPLATE);
+      setShareDescriptionTemplate(d.shareDescriptionTemplate ?? DEFAULT_SHARE_DESCRIPTION_TEMPLATE);
+      setShareCtaText(d.shareCtaText ?? DEFAULT_SHARE_CTA_TEXT);
       setInstagramUrl(d.instagramUrl ?? '');
       setBlogUrl(d.blogUrl ?? '');
       setYoutubeUrl(d.youtubeUrl ?? '');
@@ -118,6 +127,7 @@ export default function HunterContentPage() {
     try {
       await api.put('/api/v1/admin/hunter-content', {
         noticeText, noticeImages, noticeBody,
+        shareTitleTemplate, shareDescriptionTemplate, shareCtaText,
         instagramUrl, blogUrl, youtubeUrl,
         picksTheme, picksDesc, picksRestaurantIds,
         instaPosts, youtubePosts, blogPosts, storeItems,
@@ -274,7 +284,38 @@ export default function HunterContentPage() {
         </Field>
       </Section>
 
-      {/* ── 2. SNS 링크 ── */}
+      {/* ── 2. 공유 링크 설정 ── */}
+      <Section title="공유 링크 설정">
+        <Field label="OG 제목 템플릿">
+          <input
+            style={s.input}
+            value={shareTitleTemplate}
+            onChange={e => setShareTitleTemplate(e.target.value)}
+            placeholder={DEFAULT_SHARE_TITLE_TEMPLATE}
+          />
+        </Field>
+        <Field label="OG 설명 템플릿">
+          <textarea
+            style={{ ...s.input, minHeight: 72 }}
+            value={shareDescriptionTemplate}
+            onChange={e => setShareDescriptionTemplate(e.target.value)}
+            placeholder={DEFAULT_SHARE_DESCRIPTION_TEMPLATE}
+          />
+        </Field>
+        <Field label="공유 본문 문구">
+          <input
+            style={s.input}
+            value={shareCtaText}
+            onChange={e => setShareCtaText(e.target.value)}
+            placeholder={DEFAULT_SHARE_CTA_TEXT}
+          />
+        </Field>
+        <div style={s.helpText}>
+          사용 가능 변수: {'{name}'}, {'{area}'}, {'{stars}'}, {'{url}'}
+        </div>
+      </Section>
+
+      {/* ── 3. SNS 링크 ── */}
       <Section title="SNS 링크">
         <Field label="인스타그램 URL">
           <input style={s.input} value={instagramUrl} onChange={e => setInstagramUrl(e.target.value)} placeholder="https://www.instagram.com/katz_hunter/" />
@@ -287,7 +328,7 @@ export default function HunterContentPage() {
         </Field>
       </Section>
 
-      {/* ── 3. 추천 가게 픽 ── */}
+      {/* ── 4. 추천 가게 픽 ── */}
       <Section title="추천 가게 픽">
         <div style={{ display: 'flex', gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
           <div style={{ flex: 1, minWidth: 200 }}>
@@ -320,7 +361,7 @@ export default function HunterContentPage() {
         </Field>
       </Section>
 
-      {/* ── 4. 인스타 포스트 ── */}
+      {/* ── 5. 인스타 포스트 ── */}
       <Section title={`인스타 포스트 (${instaPosts.length}/${MAX_INSTA})`}>
         {instaPosts.map((post, idx) => (
           <div key={post.id} style={{ ...s.listItem, display: 'flex', gap: 10, alignItems: 'flex-start' }}>
@@ -528,6 +569,7 @@ const styles = {
   field: { marginBottom: 14 },
   label: { display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 6 },
   input: { width: '100%', padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14, outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit', resize: 'vertical' },
+  helpText: { marginTop: -4, marginBottom: 4, fontSize: 12, color: '#6b7280' },
   saveBtn: { background: '#d6483e', color: '#fff', border: 'none', borderRadius: 8, padding: '9px 20px', fontSize: 14, fontWeight: 600, cursor: 'pointer' },
   shuffleBtn: { background: '#f59e0b', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer' },
   addBtn: { background: '#f3f4f6', color: '#374151', border: '1px dashed #d1d5db', borderRadius: 8, padding: '8px 16px', fontSize: 13, cursor: 'pointer', marginTop: 8 },
