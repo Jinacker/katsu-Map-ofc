@@ -10,6 +10,7 @@ import HunterContentPage from './pages/HunterContentPage';
 import UserRecordsPage from './pages/UserRecordsPage';
 import PushNotificationsPage from './pages/PushNotificationsPage';
 import CommunityPage from './pages/CommunityPage';
+import OgSettingsPage from './pages/OgSettingsPage';
 import NotFoundPage from './pages/NotFoundPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminLayout from './components/AdminLayout';
@@ -106,6 +107,16 @@ function App() {
             <ProtectedRoute>
               <AdminLayout>
                 <CommunityPage />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/og"
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <OgSettingsPage />
               </AdminLayout>
             </ProtectedRoute>
           }

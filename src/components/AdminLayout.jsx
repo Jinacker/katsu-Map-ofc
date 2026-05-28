@@ -125,6 +125,16 @@ const AdminLayout = ({ children }) => {
         </svg>
       ),
       label: '커뮤니티'
+    },
+    {
+      path: '/og',
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M10 13a5 5 0 0 0 7.07 0l2.83-2.83a5 5 0 0 0-7.07-7.07L11 4" />
+          <path d="M14 11a5 5 0 0 0-7.07 0L4.1 13.83a5 5 0 0 0 7.07 7.07L13 20" />
+        </svg>
+      ),
+      label: 'OG 설정'
     }
   ];
 

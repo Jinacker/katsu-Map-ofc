@@ -6,6 +6,9 @@ const DEFAULT_API_URL = 'https://katsu-map-api-181871710999.asia-northeast3.run.
 const DEFAULT_SHARE_TITLE_TEMPLATE = '{name} | 돈가스 지도';
 const DEFAULT_SHARE_DESCRIPTION_TEMPLATE = '{area}의 돈가스 맛집, 돈가스 지도에서 확인해보세요.';
 const DEFAULT_SHARE_CTA_TEXT = '돈가스 지도에서 이 가게 보기';
+const DEFAULT_FEED_SHARE_TITLE_TEMPLATE = '{restaurantName} 피드 | 돈가스 지도';
+const DEFAULT_FEED_SHARE_DESCRIPTION_TEMPLATE = '{review}';
+const DEFAULT_FEED_SHARE_CTA_TEXT = '돈가스 피드 보기';
 
 function decodeRestaurantShareRef(ref) {
   if (typeof ref !== 'string' || !ref.trim()) return null;
@@ -42,17 +45,21 @@ function getStarCount(restaurant) {
 }
 
 function applyTemplate(template, values) {
-  return String(template || '')
-    .replaceAll('{name}', values.name)
-    .replaceAll('{area}', values.area)
-    .replaceAll('{stars}', values.stars)
-    .replaceAll('{url}', values.url);
+  return Object.entries(values).reduce((result, [key, value]) => (
+    result.replaceAll(`{${key}}`, value ?? '')
+  ), String(template || ''));
 }
 
 function getAbsoluteImageUrl(imageUrl) {
   if (!imageUrl) return null;
   if (/^https?:\/\//i.test(imageUrl)) return imageUrl;
   return null;
+}
+
+function getPreviewText(text, maxLength = 90) {
+  const normalized = String(text || '').replace(/\s+/g, ' ').trim();
+  if (!normalized) return '';
+  return normalized.length > maxLength ? `${normalized.slice(0, maxLength).trim()}...` : normalized;
 }
 
 function escapeHtml(value) {
@@ -70,16 +77,18 @@ function escapeAttribute(value) {
 
 function renderHtml({
   ref,
-  restaurant,
+  deepLinkType = 'r',
+  heading,
+  eyebrow,
   title,
   description,
   ctaText,
   shareUrl,
   imageUrl,
 }) {
-  const restaurantName = restaurant?.name || '돈가스 맛집';
-  const area = restaurant?.area || '';
-  const deepLink = `katsumap://r/${ref}`;
+  const displayHeading = heading || '돈가스 지도';
+  const displayEyebrow = eyebrow || '';
+  const deepLink = `katsumap://${deepLinkType}/${ref}`;
   const safeTitle = escapeAttribute(title);
   const safeDescription = escapeAttribute(description);
   const safeShareUrl = escapeAttribute(shareUrl);
@@ -122,8 +131,8 @@ function renderHtml({
 <body>
   <main>
     ${safeImageUrl ? `<img src="${safeImageUrl}" alt="" />` : ''}
-    ${area ? `<div class="eyebrow">${escapeHtml(area)}</div>` : ''}
-    <h1>${escapeHtml(restaurantName)}</h1>
+    ${displayEyebrow ? `<div class="eyebrow">${escapeHtml(displayEyebrow)}</div>` : ''}
+    <h1>${escapeHtml(displayHeading)}</h1>
     <p>${escapeHtml(description)}</p>
     <a class="primary" href="${escapeAttribute(deepLink)}">${escapeHtml(ctaText)}</a>
     <div class="stores">
@@ -160,6 +169,84 @@ function renderHtml({
 
 export default async function handler(req, res) {
   const ref = Array.isArray(req.query.ref) ? req.query.ref[0] : req.query.ref;
+  const type = Array.isArray(req.query.type) ? req.query.type[0] : req.query.type;
+  const isCommunityShare = type === 'community';
+
+  if (typeof ref !== 'string' || !/^[a-z0-9]+$/i.test(ref)) {
+    res.status(404).send('Not found');
+    return;
+  }
+
+  if (isCommunityShare) {
+    const apiBaseUrl = normalizeApiBaseUrl();
+    const shareUrl = `${SHARE_ORIGIN}/c/${encodeURIComponent(ref)}`;
+
+    try {
+      const [notePayload, contentPayload] = await Promise.all([
+        fetchJson(`${apiBaseUrl}/api/v1/community/share/${encodeURIComponent(ref)}`),
+        fetchJson(`${apiBaseUrl}/api/v1/hunter-content`).catch(() => null),
+      ]);
+      const note = unwrapApiData(notePayload);
+      const content = unwrapApiData(contentPayload) || {};
+      const nickname = note?.user?.nickname?.trim() || '익명';
+      const heading = note?.restaurantName || '돈가스 피드';
+      const area = note?.area || '';
+      const reviewPreview = getPreviewText(note?.review);
+      const stars = note?.satisfaction ? `별 ${note.satisfaction}개` : '';
+      const templateValues = {
+        restaurantName: heading,
+        name: heading,
+        area,
+        nickname,
+        menuName: note?.menuName || '',
+        review: reviewPreview,
+        stars,
+        url: shareUrl,
+      };
+      const title = applyTemplate(
+        content.feedShareTitleTemplate || DEFAULT_FEED_SHARE_TITLE_TEMPLATE,
+        templateValues,
+      ).trim() || `${heading} 피드 | 돈가스 지도`;
+      const description = applyTemplate(
+        content.feedShareDescriptionTemplate || DEFAULT_FEED_SHARE_DESCRIPTION_TEMPLATE,
+        templateValues,
+      ).trim() || `${nickname}님의 돈가스 기록을 확인해보세요.`;
+      const ctaText = applyTemplate(
+        content.feedShareCtaText || DEFAULT_FEED_SHARE_CTA_TEXT,
+        templateValues,
+      ).trim() || DEFAULT_FEED_SHARE_CTA_TEXT;
+      const imageUrl = getAbsoluteImageUrl(note?.photoUrl);
+
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      res.setHeader('Cache-Control', 'public, s-maxage=86400, stale-while-revalidate=604800');
+      res.status(200).send(renderHtml({
+        ref,
+        deepLinkType: 'c',
+        heading,
+        eyebrow: [area, `${nickname}님의 피드`].filter(Boolean).join(' · '),
+        title,
+        description,
+        ctaText,
+        shareUrl,
+        imageUrl,
+      }));
+    } catch {
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      res.status(500).send(renderHtml({
+        ref,
+        deepLinkType: 'c',
+        heading: '돈가스 지도',
+        eyebrow: '',
+        title: '돈가스 지도',
+        description: '돈가스 지도에서 피드를 확인해보세요.',
+        ctaText: DEFAULT_FEED_SHARE_CTA_TEXT,
+        shareUrl,
+        imageUrl: null,
+      }));
+    }
+    return;
+  }
+
   const restaurantId = decodeRestaurantShareRef(ref);
 
   if (!restaurantId) {
@@ -194,7 +281,9 @@ export default async function handler(req, res) {
     res.setHeader('Cache-Control', 'public, s-maxage=86400, stale-while-revalidate=604800');
     res.status(200).send(renderHtml({
       ref,
-      restaurant,
+      deepLinkType: 'r',
+      heading: restaurant?.name || '돈가스 맛집',
+      eyebrow: restaurant?.area || '',
       title,
       description,
       ctaText,
@@ -205,7 +294,9 @@ export default async function handler(req, res) {
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.status(500).send(renderHtml({
       ref,
-      restaurant: { name: '돈가스 지도', area: '' },
+      deepLinkType: 'r',
+      heading: '돈가스 지도',
+      eyebrow: '',
       title: '돈가스 지도',
       description: '돈가스 지도에서 맛집을 확인해보세요.',
       ctaText: DEFAULT_SHARE_CTA_TEXT,

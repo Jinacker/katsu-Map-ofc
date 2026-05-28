@@ -1,6 +1,7 @@
 {
   "rewrites": [
     { "source": "/r/:ref", "destination": "/api/share?ref=:ref" },
+    { "source": "/c/:ref", "destination": "/api/share?type=community&ref=:ref" },
     { "source": "/(.*)", "destination": "/" }
   ]
 }
