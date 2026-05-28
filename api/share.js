@@ -4,7 +4,7 @@ const APP_STORE_URL = 'https://apps.apple.com/kr/app/%EB%8F%88%EA%B0%80%EC%8A%A4
 const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.katsumap.app';
 const DEFAULT_API_URL = 'https://katsu-map-api-181871710999.asia-northeast3.run.app';
 const DEFAULT_SHARE_TITLE_TEMPLATE = '{name} | 돈가스 지도';
-const DEFAULT_SHARE_DESCRIPTION_TEMPLATE = '{area}의 돈가스 맛집, 돈가스 지도에서 확인해보세요.';
+const DEFAULT_SHARE_DESCRIPTION_TEMPLATE = '{area} 돈가스 맛집 확인해보세요!';
 const DEFAULT_SHARE_CTA_TEXT = '돈가스 지도에서 이 가게 보기';
 const DEFAULT_FEED_SHARE_CTA_TEXT = '돈가스 피드 보기';
 
