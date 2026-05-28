@@ -56,6 +56,14 @@ function getAbsoluteImageUrl(imageUrl) {
   return null;
 }
 
+function pickImageUrl(...imageUrls) {
+  for (const imageUrl of imageUrls) {
+    const absoluteUrl = getAbsoluteImageUrl(imageUrl);
+    if (absoluteUrl) return absoluteUrl;
+  }
+  return null;
+}
+
 function getPreviewText(text, maxLength = 90) {
   const normalized = String(text || '').replace(/\s+/g, ' ').trim();
   if (!normalized) return '';
@@ -73,6 +81,13 @@ function escapeHtml(value) {
 
 function escapeAttribute(value) {
   return escapeHtml(value).replace(/\n/g, ' ');
+}
+
+function setHtmlHeaders(res) {
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.setHeader('Cache-Control', 'no-store, max-age=0, must-revalidate');
+  res.setHeader('CDN-Cache-Control', 'no-store');
+  res.setHeader('Vercel-CDN-Cache-Control', 'no-store');
 }
 
 function renderHtml({
@@ -108,12 +123,15 @@ function renderHtml({
   <meta property="og:description" content="${safeDescription}" />
   <meta property="og:url" content="${safeShareUrl}" />
   ${safeImageUrl ? `<meta property="og:image" content="${safeImageUrl}" />` : ''}
+  ${safeImageUrl ? `<meta property="og:image:secure_url" content="${safeImageUrl}" />` : ''}
   ${safeImageUrl ? `<meta property="og:image:width" content="1200" />` : ''}
   ${safeImageUrl ? `<meta property="og:image:height" content="630" />` : ''}
+  ${safeImageUrl ? `<meta property="og:image:alt" content="${safeTitle}" />` : ''}
   <meta name="twitter:card" content="${safeImageUrl ? 'summary_large_image' : 'summary'}" />
   <meta name="twitter:title" content="${safeTitle}" />
   <meta name="twitter:description" content="${safeDescription}" />
   ${safeImageUrl ? `<meta name="twitter:image" content="${safeImageUrl}" />` : ''}
+  ${safeImageUrl ? `<meta name="twitter:image:src" content="${safeImageUrl}" />` : ''}
   <style>
     :root { color-scheme: light; }
     body { margin: 0; min-height: 100vh; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #fdfbf6; color: #2f2924; display: flex; align-items: center; justify-content: center; }
@@ -215,10 +233,9 @@ export default async function handler(req, res) {
         content.feedShareCtaText || DEFAULT_FEED_SHARE_CTA_TEXT,
         templateValues,
       ).trim() || DEFAULT_FEED_SHARE_CTA_TEXT;
-      const imageUrl = getAbsoluteImageUrl(note?.photoUrl);
+      const imageUrl = pickImageUrl(note?.photoUrl, note?.photo_url, note?.imageUrl, note?.image_url);
 
-      res.setHeader('Content-Type', 'text/html; charset=utf-8');
-      res.setHeader('Cache-Control', 'public, s-maxage=86400, stale-while-revalidate=604800');
+      setHtmlHeaders(res);
       res.status(200).send(renderHtml({
         ref,
         deepLinkType: 'c',
@@ -231,7 +248,7 @@ export default async function handler(req, res) {
         imageUrl,
       }));
     } catch {
-      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      setHtmlHeaders(res);
       res.status(500).send(renderHtml({
         ref,
         deepLinkType: 'c',
@@ -275,10 +292,9 @@ export default async function handler(req, res) {
     const title = applyTemplate(content.shareTitleTemplate || DEFAULT_SHARE_TITLE_TEMPLATE, templateValues);
     const description = applyTemplate(content.shareDescriptionTemplate || DEFAULT_SHARE_DESCRIPTION_TEMPLATE, templateValues);
     const ctaText = applyTemplate(content.shareCtaText || DEFAULT_SHARE_CTA_TEXT, templateValues);
-    const imageUrl = getAbsoluteImageUrl(restaurant?.image_url_1 || restaurant?.imageUrl);
+    const imageUrl = pickImageUrl(restaurant?.image_url_1, restaurant?.imageUrl);
 
-    res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.setHeader('Cache-Control', 'public, s-maxage=86400, stale-while-revalidate=604800');
+    setHtmlHeaders(res);
     res.status(200).send(renderHtml({
       ref,
       deepLinkType: 'r',
@@ -291,7 +307,7 @@ export default async function handler(req, res) {
       imageUrl,
     }));
   } catch (error) {
-    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    setHtmlHeaders(res);
     res.status(500).send(renderHtml({
       ref,
       deepLinkType: 'r',
