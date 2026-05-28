@@ -1,11 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import api from '../api/axios';
 
-const DEFAULT_RESTAURANT_SHARE_TITLE_TEMPLATE = '{name} | 돈가스 지도';
-const DEFAULT_RESTAURANT_SHARE_DESCRIPTION_TEMPLATE = '{area}의 돈가스 맛집, 돈가스 지도에서 확인해보세요.';
 const DEFAULT_RESTAURANT_SHARE_CTA_TEXT = '돈가스 지도에서 이 가게 보기';
-const DEFAULT_FEED_SHARE_TITLE_TEMPLATE = '{restaurantName} 피드 | 돈가스 지도';
-const DEFAULT_FEED_SHARE_DESCRIPTION_TEMPLATE = '{review}';
 const DEFAULT_FEED_SHARE_CTA_TEXT = '돈가스 피드 보기';
 
 export default function OgSettingsPage() {
@@ -13,11 +9,7 @@ export default function OgSettingsPage() {
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState('');
   const [form, setForm] = useState({
-    shareTitleTemplate: DEFAULT_RESTAURANT_SHARE_TITLE_TEMPLATE,
-    shareDescriptionTemplate: DEFAULT_RESTAURANT_SHARE_DESCRIPTION_TEMPLATE,
     shareCtaText: DEFAULT_RESTAURANT_SHARE_CTA_TEXT,
-    feedShareTitleTemplate: DEFAULT_FEED_SHARE_TITLE_TEMPLATE,
-    feedShareDescriptionTemplate: DEFAULT_FEED_SHARE_DESCRIPTION_TEMPLATE,
     feedShareCtaText: DEFAULT_FEED_SHARE_CTA_TEXT,
   });
 
@@ -30,11 +22,7 @@ export default function OgSettingsPage() {
       const res = await api.get('/api/v1/admin/hunter-content');
       const data = res.data?.data ?? res.data ?? {};
       setForm({
-        shareTitleTemplate: data.shareTitleTemplate ?? DEFAULT_RESTAURANT_SHARE_TITLE_TEMPLATE,
-        shareDescriptionTemplate: data.shareDescriptionTemplate ?? DEFAULT_RESTAURANT_SHARE_DESCRIPTION_TEMPLATE,
         shareCtaText: data.shareCtaText ?? DEFAULT_RESTAURANT_SHARE_CTA_TEXT,
-        feedShareTitleTemplate: data.feedShareTitleTemplate ?? DEFAULT_FEED_SHARE_TITLE_TEMPLATE,
-        feedShareDescriptionTemplate: data.feedShareDescriptionTemplate ?? DEFAULT_FEED_SHARE_DESCRIPTION_TEMPLATE,
         feedShareCtaText: data.feedShareCtaText ?? DEFAULT_FEED_SHARE_CTA_TEXT,
       });
     } catch (e) {
@@ -71,7 +59,7 @@ export default function OgSettingsPage() {
       <div style={s.header}>
         <div>
           <h1 style={s.title}>OG 설정</h1>
-          <p style={s.subtitle}>공유 링크 미리보기에 노출되는 제목, 설명, 버튼 문구를 관리합니다.</p>
+          <p style={s.subtitle}>공유 링크의 열기 버튼 문구를 관리합니다.</p>
         </div>
         <button onClick={handleSave} disabled={saving} style={s.saveBtn}>
           {saving ? '저장 중...' : '저장하기'}
@@ -85,22 +73,6 @@ export default function OgSettingsPage() {
       )}
 
       <Section title="가게 공유 OG">
-        <Field label="OG 제목 템플릿">
-          <input
-            style={s.input}
-            value={form.shareTitleTemplate}
-            onChange={e => updateField('shareTitleTemplate', e.target.value)}
-            placeholder={DEFAULT_RESTAURANT_SHARE_TITLE_TEMPLATE}
-          />
-        </Field>
-        <Field label="OG 설명 템플릿">
-          <textarea
-            style={{ ...s.input, minHeight: 92 }}
-            value={form.shareDescriptionTemplate}
-            onChange={e => updateField('shareDescriptionTemplate', e.target.value)}
-            placeholder={DEFAULT_RESTAURANT_SHARE_DESCRIPTION_TEMPLATE}
-          />
-        </Field>
         <Field label="열기 버튼 문구">
           <input
             style={s.input}
@@ -113,22 +85,6 @@ export default function OgSettingsPage() {
       </Section>
 
       <Section title="커뮤니티 피드 공유 OG">
-        <Field label="OG 제목 템플릿">
-          <input
-            style={s.input}
-            value={form.feedShareTitleTemplate}
-            onChange={e => updateField('feedShareTitleTemplate', e.target.value)}
-            placeholder={DEFAULT_FEED_SHARE_TITLE_TEMPLATE}
-          />
-        </Field>
-        <Field label="OG 설명 템플릿">
-          <textarea
-            style={{ ...s.input, minHeight: 92 }}
-            value={form.feedShareDescriptionTemplate}
-            onChange={e => updateField('feedShareDescriptionTemplate', e.target.value)}
-            placeholder={DEFAULT_FEED_SHARE_DESCRIPTION_TEMPLATE}
-          />
-        </Field>
         <Field label="열기 버튼 문구">
           <input
             style={s.input}

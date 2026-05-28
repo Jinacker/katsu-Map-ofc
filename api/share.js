@@ -6,8 +6,6 @@ const DEFAULT_API_URL = 'https://katsu-map-api-181871710999.asia-northeast3.run.
 const DEFAULT_SHARE_TITLE_TEMPLATE = '{name} | 돈가스 지도';
 const DEFAULT_SHARE_DESCRIPTION_TEMPLATE = '{area}의 돈가스 맛집, 돈가스 지도에서 확인해보세요.';
 const DEFAULT_SHARE_CTA_TEXT = '돈가스 지도에서 이 가게 보기';
-const DEFAULT_FEED_SHARE_TITLE_TEMPLATE = '{restaurantName} 피드 | 돈가스 지도';
-const DEFAULT_FEED_SHARE_DESCRIPTION_TEMPLATE = '{review}';
 const DEFAULT_FEED_SHARE_CTA_TEXT = '돈가스 피드 보기';
 
 function decodeRestaurantShareRef(ref) {
@@ -52,12 +50,20 @@ function applyTemplate(template, values) {
 
 function getAbsoluteImageUrl(imageUrl) {
   if (!imageUrl) return null;
+  if (typeof imageUrl !== 'string') return null;
+  if (/^\/\//.test(imageUrl)) return `https:${imageUrl}`;
   if (/^https?:\/\//i.test(imageUrl)) return imageUrl;
   return null;
 }
 
 function pickImageUrl(...imageUrls) {
   for (const imageUrl of imageUrls) {
+    if (Array.isArray(imageUrl)) {
+      const nestedUrl = pickImageUrl(...imageUrl);
+      if (nestedUrl) return nestedUrl;
+      continue;
+    }
+
     const absoluteUrl = getAbsoluteImageUrl(imageUrl);
     if (absoluteUrl) return absoluteUrl;
   }
@@ -221,19 +227,20 @@ export default async function handler(req, res) {
         stars,
         url: shareUrl,
       };
-      const title = applyTemplate(
-        content.feedShareTitleTemplate || DEFAULT_FEED_SHARE_TITLE_TEMPLATE,
-        templateValues,
-      ).trim() || `${heading} 피드 | 돈가스 지도`;
-      const description = applyTemplate(
-        content.feedShareDescriptionTemplate || DEFAULT_FEED_SHARE_DESCRIPTION_TEMPLATE,
-        templateValues,
-      ).trim() || `${nickname}님의 돈가스 기록을 확인해보세요.`;
+      const title = applyTemplate(DEFAULT_SHARE_TITLE_TEMPLATE, templateValues).trim();
+      const description = reviewPreview || `${nickname}님의 돈가스 기록을 확인해보세요.`;
       const ctaText = applyTemplate(
         content.feedShareCtaText || DEFAULT_FEED_SHARE_CTA_TEXT,
         templateValues,
       ).trim() || DEFAULT_FEED_SHARE_CTA_TEXT;
-      const imageUrl = pickImageUrl(note?.photoUrl, note?.photo_url, note?.imageUrl, note?.image_url);
+      const imageUrl = pickImageUrl(
+        note?.photoUrl,
+        note?.photo_url,
+        note?.imageUrl,
+        note?.image_url,
+        note?.photos,
+        note?.photoUrls,
+      );
 
       setHtmlHeaders(res);
       res.status(200).send(renderHtml({
@@ -255,7 +262,7 @@ export default async function handler(req, res) {
         heading: '돈가스 지도',
         eyebrow: '',
         title: '돈가스 지도',
-        description: '돈가스 지도에서 피드를 확인해보세요.',
+        description: '돈가스 지도에서 피드를 확인해보세요!',
         ctaText: DEFAULT_FEED_SHARE_CTA_TEXT,
         shareUrl,
         imageUrl: null,
@@ -289,8 +296,8 @@ export default async function handler(req, res) {
       stars,
       url: shareUrl,
     };
-    const title = applyTemplate(content.shareTitleTemplate || DEFAULT_SHARE_TITLE_TEMPLATE, templateValues);
-    const description = applyTemplate(content.shareDescriptionTemplate || DEFAULT_SHARE_DESCRIPTION_TEMPLATE, templateValues);
+    const title = applyTemplate(DEFAULT_SHARE_TITLE_TEMPLATE, templateValues);
+    const description = applyTemplate(DEFAULT_SHARE_DESCRIPTION_TEMPLATE, templateValues);
     const ctaText = applyTemplate(content.shareCtaText || DEFAULT_SHARE_CTA_TEXT, templateValues);
     const imageUrl = pickImageUrl(restaurant?.image_url_1, restaurant?.imageUrl);
 
@@ -314,7 +321,7 @@ export default async function handler(req, res) {
       heading: '돈가스 지도',
       eyebrow: '',
       title: '돈가스 지도',
-      description: '돈가스 지도에서 맛집을 확인해보세요.',
+      description: '돈가스 지도에서 맛집을 확인해보세요!',
       ctaText: DEFAULT_SHARE_CTA_TEXT,
       shareUrl,
       imageUrl: null,
