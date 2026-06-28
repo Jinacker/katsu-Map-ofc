@@ -453,6 +453,26 @@
   padding: var(--space-xl);
 }
 
+.autosave-status {
+  min-height: 18px;
+  margin-top: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text-tertiary);
+}
+
+.autosave-status.saving {
+  color: #D97706;
+}
+
+.autosave-status.saved {
+  color: #16A34A;
+}
+
+.autosave-status.error {
+  color: #DC2626;
+}
+
 .form-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);

@@ -4,6 +4,28 @@ import { uploadImageToGCS } from '../api/gcs';
 import './RestaurantsPage.css';
 
 const EMPTY_HOURS = { mon: '', tue: '', wed: '', thu: '', fri: '', sat: '', sun: '', breakTime: '' };
+const EMPTY_FORM_DATA = {
+  name: '',
+  area: '',
+  category: '일식',
+  addr: '',
+  lat: '',
+  lng: '',
+  priceDisplay: '',
+  description: '',
+  imageUrl: '',
+  image_url_1: '',
+  image_url_2: '',
+  image_url_3: '',
+  placeUrl: '',
+  isTop5: false,
+  isBest: false,
+  isGood: false,
+  isKatsuHunterPick: false,
+  katsuHunterDescription: '',
+  ownerComment: '',
+};
+const EMPTY_MENUS = { priceRate: '', names: '' };
 const DAY_OPTIONS = [
   { key: 'mon', label: '월' },
   { key: 'tue', label: '화' },
@@ -108,30 +130,18 @@ const RestaurantsPage = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingRestaurant, setEditingRestaurant] = useState(null);
-  const [formData, setFormData] = useState({
-    name: '',
-    area: '',
-    category: '일식',
-    addr: '',
-    lat: '',
-    lng: '',
-    priceDisplay: '',
-    description: '',
-    imageUrl: '',
-    image_url_1: '',
-    image_url_2: '',
-    image_url_3: '',
-    placeUrl: '',
-    isTop5: false,
-    isBest: false,
-    isGood: false,
-    isKatsuHunterPick: false,
-    katsuHunterDescription: '',
-    ownerComment: '',
-  });
+  const [formData, setFormData] = useState(EMPTY_FORM_DATA);
   const [hoursData, setHoursData] = useState(EMPTY_HOURS);
   const [hoursPasteText, setHoursPasteText] = useState('');
-  const [menusData, setMenusData] = useState({ priceRate: '', names: '' });
+  const [menusData, setMenusData] = useState(EMPTY_MENUS);
+  const [autoSaveStatus, setAutoSaveStatus] = useState('idle');
+  const [autoSaveError, setAutoSaveError] = useState('');
+  const formDataRef = useRef(formData);
+  const hoursDataRef = useRef(hoursData);
+  const menusDataRef = useRef(menusData);
+  const autoSaveRestaurantIdRef = useRef(null);
+  const autoSaveQueueRef = useRef(Promise.resolve());
+  const lastSavedSnapshotRef = useRef('');
   const [contributors, setContributors] = useState([]);
   const [userSearchQuery, setUserSearchQuery] = useState('');
   const [userSearchResults, setUserSearchResults] = useState([]);
@@ -144,6 +154,18 @@ const RestaurantsPage = () => {
   const mapPreviewRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const markerInstanceRef = useRef(null);
+
+  useEffect(() => {
+    formDataRef.current = formData;
+  }, [formData]);
+
+  useEffect(() => {
+    hoursDataRef.current = hoursData;
+  }, [hoursData]);
+
+  useEffect(() => {
+    menusDataRef.current = menusData;
+  }, [menusData]);
 
   useEffect(() => {
     fetchRestaurants();
@@ -169,30 +191,13 @@ const RestaurantsPage = () => {
   };
 
   const resetFormData = () => {
-    setFormData({
-      name: '',
-      area: '',
-      category: '일식',
-      addr: '',
-      lat: '',
-      lng: '',
-      priceDisplay: '',
-      description: '',
-      imageUrl: '',
-      image_url_1: '',
-      image_url_2: '',
-      image_url_3: '',
-      placeUrl: '',
-      isTop5: false,
-      isBest: false,
-      isGood: false,
-      isKatsuHunterPick: false,
-      katsuHunterDescription: '',
-      ownerComment: '',
-    });
+    formDataRef.current = EMPTY_FORM_DATA;
+    hoursDataRef.current = EMPTY_HOURS;
+    menusDataRef.current = EMPTY_MENUS;
+    setFormData(EMPTY_FORM_DATA);
     setHoursData(EMPTY_HOURS);
     setHoursPasteText('');
-    setMenusData({ priceRate: '', names: '' });
+    setMenusData(EMPTY_MENUS);
     setContributors([]);
     setUserSearchQuery('');
     setUserSearchResults([]);
@@ -201,6 +206,14 @@ const RestaurantsPage = () => {
   const handleAddClick = () => {
     setEditingRestaurant(null);
     resetFormData();
+    autoSaveRestaurantIdRef.current = null;
+    lastSavedSnapshotRef.current = JSON.stringify({
+      formData: EMPTY_FORM_DATA,
+      hoursData: EMPTY_HOURS,
+      menusData: EMPTY_MENUS,
+    });
+    setAutoSaveStatus('idle');
+    setAutoSaveError('');
     setShowAddModal(true);
   };
 
@@ -271,7 +284,7 @@ const RestaurantsPage = () => {
 
   const handleEditClick = async (restaurant) => {
     setEditingRestaurant(restaurant);
-    setFormData({
+    const nextFormData = {
       name: restaurant.name || '',
       area: restaurant.area || '',
       category: restaurant.category || '일식',
@@ -291,7 +304,12 @@ const RestaurantsPage = () => {
       isKatsuHunterPick: restaurant.isKatsuHunterPick || false,
       katsuHunterDescription: restaurant.katsuHunterDescription || '',
       ownerComment: restaurant.ownerComment || '',
-    });
+    };
+    formDataRef.current = nextFormData;
+    setFormData(nextFormData);
+    autoSaveRestaurantIdRef.current = restaurant.id;
+    setAutoSaveStatus('idle');
+    setAutoSaveError('');
     setContributors([]);
     setUserSearchQuery('');
     setUserSearchResults([]);
@@ -305,15 +323,24 @@ const RestaurantsPage = () => {
     ]);
     const detail = detailRes?.data?.data;
     const h = detail?.hours;
-    setHoursData(h ? {
+    const nextHoursData = h ? {
       mon: h.mon || '', tue: h.tue || '', wed: h.wed || '',
       thu: h.thu || '', fri: h.fri || '', sat: h.sat || '',
       sun: h.sun || '', breakTime: h.breakTime || '',
-    } : { mon: '', tue: '', wed: '', thu: '', fri: '', sat: '', sun: '', breakTime: '' });
+    } : { ...EMPTY_HOURS };
     const ms = detail?.menus || [];
-    setMenusData({
+    const nextMenusData = {
       priceRate: ms[0]?.priceRate || '',
       names: ms.map(m => m.name).join('\n'),
+    };
+    hoursDataRef.current = nextHoursData;
+    menusDataRef.current = nextMenusData;
+    setHoursData(nextHoursData);
+    setMenusData(nextMenusData);
+    lastSavedSnapshotRef.current = JSON.stringify({
+      formData: nextFormData,
+      hoursData: nextHoursData,
+      menusData: nextMenusData,
     });
   };
 
@@ -375,26 +402,91 @@ const RestaurantsPage = () => {
     if (file) await handleImageFile(file, fieldName);
   };
 
-  const buildHoursMenusPayload = () => {
-    const hoursHasData = Object.entries(hoursData).some(([, v]) => v.trim());
-    const menuNames = menusData.names.split('\n').map(s => s.trim()).filter(Boolean);
+  const buildHoursMenusPayload = (hours = hoursDataRef.current, menus = menusDataRef.current) => {
+    const menuNames = menus.names.split('\n').map(s => s.trim()).filter(Boolean);
     return {
-      hours: hoursHasData ? {
-        mon: hoursData.mon.trim() || null,
-        tue: hoursData.tue.trim() || null,
-        wed: hoursData.wed.trim() || null,
-        thu: hoursData.thu.trim() || null,
-        fri: hoursData.fri.trim() || null,
-        sat: hoursData.sat.trim() || null,
-        sun: hoursData.sun.trim() || null,
-        breakTime: hoursData.breakTime.trim() || null,
-      } : undefined,
-      menus: menuNames.length > 0 ? menuNames.map((name, i) => ({
+      hours: {
+        mon: hours.mon.trim() || null,
+        tue: hours.tue.trim() || null,
+        wed: hours.wed.trim() || null,
+        thu: hours.thu.trim() || null,
+        fri: hours.fri.trim() || null,
+        sat: hours.sat.trim() || null,
+        sun: hours.sun.trim() || null,
+        breakTime: hours.breakTime.trim() || null,
+      },
+      menus: menuNames.map((name, i) => ({
         name,
-        priceRate: menusData.priceRate || null,
+        priceRate: menus.priceRate || null,
         displayOrder: i,
-      })) : undefined,
+      })),
     };
+  };
+
+  const createRestaurantPayload = (form = formDataRef.current, hours = hoursDataRef.current, menus = menusDataRef.current) => ({
+    ...form,
+    lat: parseFloat(form.lat) || 0,
+    lng: parseFloat(form.lng) || 0,
+    ...buildHoursMenusPayload(hours, menus),
+  });
+
+  const getCurrentFormSnapshot = () => ({
+    formData: formDataRef.current,
+    hoursData: hoursDataRef.current,
+    menusData: menusDataRef.current,
+  });
+
+  const queueAutoSave = () => {
+    const snapshot = getCurrentFormSnapshot();
+    const serializedSnapshot = JSON.stringify(snapshot);
+    if (serializedSnapshot === lastSavedSnapshotRef.current) {
+      return autoSaveQueueRef.current;
+    }
+
+    setAutoSaveStatus('saving');
+    setAutoSaveError('');
+
+    const saveTask = autoSaveQueueRef.current
+      .catch(() => undefined)
+      .then(async () => {
+        setAutoSaveStatus('saving');
+        const payload = createRestaurantPayload(
+          snapshot.formData,
+          snapshot.hoursData,
+          snapshot.menusData,
+        );
+        const restaurantId = autoSaveRestaurantIdRef.current;
+
+        if (restaurantId) {
+          await apiClient.put(`/api/v1/admin/restaurants/${restaurantId}`, payload);
+        } else {
+          const res = await apiClient.post('/api/v1/admin/restaurants', payload);
+          const createdRestaurant = res.data?.data;
+          if (!createdRestaurant?.id) {
+            throw new Error('자동 저장된 식당 ID를 확인할 수 없습니다.');
+          }
+          autoSaveRestaurantIdRef.current = createdRestaurant.id;
+        }
+
+        lastSavedSnapshotRef.current = serializedSnapshot;
+        setAutoSaveStatus('saved');
+      })
+      .catch((err) => {
+        console.error('식당 자동 저장 실패:', err);
+        setAutoSaveStatus('error');
+        setAutoSaveError(err.response?.data?.message || err.message || '자동 저장에 실패했습니다.');
+        throw err;
+      });
+
+    autoSaveQueueRef.current = saveTask;
+    return saveTask;
+  };
+
+  const handleAutoSaveBlur = (e) => {
+    if (!e.target.matches('input[name], select[name], textarea[name], [data-autosave="true"]')) {
+      return;
+    }
+    queueAutoSave().catch(() => undefined);
   };
 
   const applyParsedHoursText = (text, { silent = false } = {}) => {
@@ -418,14 +510,17 @@ const RestaurantsPage = () => {
   const handleAddSubmit = async (e) => {
     e.preventDefault();
     try {
-      const payload = {
-        ...formData,
-        lat: parseFloat(formData.lat) || 0,
-        lng: parseFloat(formData.lng) || 0,
-        ...buildHoursMenusPayload(),
-      };
-      const res = await apiClient.post('/api/v1/admin/restaurants', payload);
-      const createdRestaurantId = res.data?.data?.id;
+      await queueAutoSave();
+      const payload = createRestaurantPayload();
+      let createdRestaurantId = autoSaveRestaurantIdRef.current;
+
+      if (createdRestaurantId) {
+        await apiClient.put(`/api/v1/admin/restaurants/${createdRestaurantId}`, payload);
+      } else {
+        const res = await apiClient.post('/api/v1/admin/restaurants', payload);
+        createdRestaurantId = res.data?.data?.id;
+        autoSaveRestaurantIdRef.current = createdRestaurantId;
+      }
 
       let contributorSaveError = null;
       if (contributors.length > 0) {
@@ -449,6 +544,7 @@ const RestaurantsPage = () => {
         alert('식당이 등록되었습니다.');
       }
       setShowAddModal(false);
+      autoSaveRestaurantIdRef.current = null;
       resetFormData();
       fetchRestaurants();
     } catch (err) {
@@ -460,22 +556,39 @@ const RestaurantsPage = () => {
   const handleEditSubmit = async (e) => {
     e.preventDefault();
     try {
-      const payload = {
-        ...formData,
-        lat: parseFloat(formData.lat) || 0,
-        lng: parseFloat(formData.lng) || 0,
-        ...buildHoursMenusPayload(),
-      };
+      await queueAutoSave();
+      const payload = createRestaurantPayload();
       await apiClient.put(`/api/v1/admin/restaurants/${editingRestaurant.id}`, payload);
       alert('식당 정보가 수정되었습니다.');
       setShowEditModal(false);
       setEditingRestaurant(null);
+      autoSaveRestaurantIdRef.current = null;
       resetFormData();
       fetchRestaurants();
     } catch (err) {
       console.error(err);
       const errorMsg = err.response?.data?.message || err.message || '알 수 없는 오류';
       alert(`식당 수정에 실패했습니다.\n${errorMsg}`);
+    }
+  };
+
+  const closeRestaurantForm = async () => {
+    try {
+      await queueAutoSave();
+    } catch {
+      alert('자동 저장에 실패해 창을 닫지 않았습니다. 저장 상태를 확인한 뒤 다시 시도해주세요.');
+      return;
+    }
+
+    const hadAutoSavedRestaurant = Boolean(autoSaveRestaurantIdRef.current);
+    setShowAddModal(false);
+    setShowEditModal(false);
+    setEditingRestaurant(null);
+    autoSaveRestaurantIdRef.current = null;
+    resetFormData();
+
+    if (hadAutoSavedRestaurant) {
+      fetchRestaurants();
     }
   };
 
@@ -953,29 +1066,31 @@ const RestaurantsPage = () => {
 
       {/* Add/Edit Modal */}
       {(showAddModal || showEditModal) && (
-        <div className="modal-overlay" onClick={() => {
-          setShowAddModal(false);
-          setShowEditModal(false);
-          setEditingRestaurant(null);
-          resetFormData();
-        }}>
+        <div className="modal-overlay" onClick={closeRestaurantForm}>
           <div className="modal-content restaurant-form-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>{showAddModal ? '새 식당 등록' : '식당 정보 수정'}</h2>
+              <div>
+                <h2>{showAddModal ? '새 식당 등록' : '식당 정보 수정'}</h2>
+                <div className={`autosave-status ${autoSaveStatus}`}>
+                  {autoSaveStatus === 'saving' && '자동 저장 중...'}
+                  {autoSaveStatus === 'saved' && '✓ 자동 저장됨'}
+                  {autoSaveStatus === 'error' && `자동 저장 실패: ${autoSaveError}`}
+                  {autoSaveStatus === 'idle' && '입력칸을 벗어나면 자동 저장됩니다'}
+                </div>
+              </div>
               <button
-                onClick={() => {
-                  setShowAddModal(false);
-                  setShowEditModal(false);
-                  setEditingRestaurant(null);
-                  resetFormData();
-                }}
+                onClick={closeRestaurantForm}
                 className="modal-close"
               >
                 ×
               </button>
             </div>
 
-            <form onSubmit={showAddModal ? handleAddSubmit : handleEditSubmit} className="restaurant-form">
+            <form
+              onSubmit={showAddModal ? handleAddSubmit : handleEditSubmit}
+              onBlurCapture={handleAutoSaveBlur}
+              className="restaurant-form"
+            >
               <div className="form-grid">
                 <div className="form-group">
                   <label>이름 *</label>
@@ -1334,6 +1449,7 @@ const RestaurantsPage = () => {
                           type="text"
                           value={hoursData[key]}
                           onChange={(e) => setHoursData(prev => ({ ...prev, [key]: e.target.value }))}
+                          data-autosave="true"
                           placeholder="예: 11:30 ~ 20:30 또는 휴무일"
                           className="hours-input"
                         />
@@ -1345,6 +1461,7 @@ const RestaurantsPage = () => {
                         type="text"
                         value={hoursData.breakTime}
                         onChange={(e) => setHoursData(prev => ({ ...prev, breakTime: e.target.value }))}
+                        data-autosave="true"
                         placeholder="예: 15:30 ~ 17:30"
                         className="hours-input"
                       />
@@ -1360,6 +1477,7 @@ const RestaurantsPage = () => {
                     <select
                       value={menusData.priceRate}
                       onChange={(e) => setMenusData(prev => ({ ...prev, priceRate: e.target.value }))}
+                      data-autosave="true"
                       style={{ width: 120 }}
                     >
                       <option value="">선택 안 함</option>
@@ -1372,6 +1490,7 @@ const RestaurantsPage = () => {
                   <textarea
                     value={menusData.names}
                     onChange={(e) => setMenusData(prev => ({ ...prev, names: e.target.value }))}
+                    data-autosave="true"
                     rows="4"
                     placeholder={"메뉴명을 한 줄에 하나씩 입력하세요\n예:\n히레카츠 정식\n로스카츠 정식\n모리아와세카츠"}
                   />
@@ -1427,12 +1546,7 @@ const RestaurantsPage = () => {
               </div>
 
               <div className="form-actions">
-                <button type="button" className="cancel-btn" onClick={() => {
-                  setShowAddModal(false);
-                  setShowEditModal(false);
-                  setEditingRestaurant(null);
-                  resetFormData();
-                }}>
+                <button type="button" className="cancel-btn" onClick={closeRestaurantForm}>
                   취소
                 </button>
                 <button type="submit" className="submit-btn">
