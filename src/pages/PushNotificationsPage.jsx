@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import apiClient from '../api/axios';
+import AdminTemplateModal from '../components/AdminTemplateModal';
+import AdminTemplatePicker from '../components/AdminTemplatePicker';
 
 const CONFIRM_STEPS = [
   '정말 전송하시겠습니까?',
@@ -17,6 +19,8 @@ export default function PushNotificationsPage() {
   const [confirmStep, setConfirmStep] = useState(0); // 0 = 닫힘, 1~3 = 확인 단계
   const [isSending, setIsSending] = useState(false);
   const [result, setResult] = useState(null);
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
+  const [templateRefreshKey, setTemplateRefreshKey] = useState(0);
 
   useEffect(() => {
     apiClient.get('/api/v1/admin/users').then(res => {
@@ -85,8 +89,13 @@ export default function PushNotificationsPage() {
   return (
     <div style={styles.page}>
       <div style={styles.header}>
-        <h1 style={styles.title}>푸시 알림</h1>
-        <p style={styles.subtitle}>앱 사용자에게 푸시 알림을 발송합니다.</p>
+        <div>
+          <h1 style={styles.title}>푸시 알림</h1>
+          <p style={styles.subtitle}>앱 사용자에게 푸시 알림을 발송합니다.</p>
+        </div>
+        <button style={styles.templateBtn} onClick={() => setShowTemplateModal(true)}>
+          푸시 템플릿
+        </button>
       </div>
 
       {result && (
@@ -120,6 +129,17 @@ export default function PushNotificationsPage() {
             maxLength={200}
           />
           <div style={styles.charCount}>{body.length}/200</div>
+        </div>
+
+        <div style={styles.formGroup}>
+          <AdminTemplatePicker
+            type="push_notification"
+            refreshKey={templateRefreshKey}
+            onSelect={(template) => {
+              setTitle(template.title || '');
+              setBody(template.content);
+            }}
+          />
         </div>
 
         <div style={styles.formGroup}>
@@ -211,15 +231,36 @@ export default function PushNotificationsPage() {
           </div>
         </div>
       )}
+
+      <AdminTemplateModal
+        open={showTemplateModal}
+        type="push_notification"
+        onClose={() => {
+          setShowTemplateModal(false);
+          setTemplateRefreshKey((key) => key + 1);
+        }}
+        onUse={(template) => {
+          setTitle(template.title);
+          setBody(template.content);
+        }}
+      />
     </div>
   );
 }
 
 const styles = {
   page: { padding: '24px', maxWidth: 720, margin: '0 auto' },
-  header: { marginBottom: 24 },
+  header: {
+    display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
+    gap: 16, marginBottom: 24,
+  },
   title: { fontSize: 24, fontWeight: 700, margin: 0 },
   subtitle: { color: '#666', marginTop: 6 },
+  templateBtn: {
+    padding: '10px 16px', border: 'none', borderRadius: 8,
+    background: '#d6483e', color: '#fff', fontSize: 13, fontWeight: 700,
+    cursor: 'pointer', whiteSpace: 'nowrap',
+  },
   resultBanner: {
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
     padding: '12px 16px', borderRadius: 8, border: '1px solid', marginBottom: 20,

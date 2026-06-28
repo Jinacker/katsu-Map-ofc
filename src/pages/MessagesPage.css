@@ -23,7 +23,23 @@
 
 .header-stats {
   display: flex;
+  align-items: stretch;
   gap: var(--space-md);
+}
+
+.template-manage-btn {
+  padding: 0 var(--space-lg);
+  border: 1px solid var(--color-accent-primary);
+  border-radius: var(--radius-md);
+  background-color: var(--color-accent-primary);
+  color: white;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.template-manage-btn:hover {
+  background-color: var(--color-accent-secondary);
 }
 
 .stat-badge {
@@ -404,6 +420,10 @@
 
   .header-stats {
     width: 100%;
-    justify-content: space-around;
+    flex-wrap: wrap;
+  }
+
+  .template-manage-btn {
+    min-height: 44px;
   }
 }

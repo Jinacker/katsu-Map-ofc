@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import apiClient from '../api/axios';
+import AdminTemplateModal from '../components/AdminTemplateModal';
+import AdminTemplatePicker from '../components/AdminTemplatePicker';
 import './MessagesPage.css';
 
 const MessagesPage = () => {
@@ -11,6 +13,8 @@ const MessagesPage = () => {
   const [error, setError] = useState('');
   const [sortOrder, setSortOrder] = useState('newest');
   const [unrepliedOnly, setUnrepliedOnly] = useState(false);
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
+  const [templateRefreshKey, setTemplateRefreshKey] = useState(0);
 
   useEffect(() => {
     fetchMessages();
@@ -96,6 +100,13 @@ const MessagesPage = () => {
           <p className="page-subtitle">사용자 문의 및 이의제기 관리</p>
         </div>
         <div className="header-stats">
+          <button
+            type="button"
+            className="template-manage-btn"
+            onClick={() => setShowTemplateModal(true)}
+          >
+            문의 템플릿
+          </button>
           <div className="stat-badge">
             <span className="stat-label">전체</span>
             <span className="stat-value">{messages.length}</span>
@@ -230,6 +241,11 @@ const MessagesPage = () => {
               ) : (
                 <div className="reply-form">
                   <label className="detail-label">{isEditingReply ? '답장 수정' : '답장 작성'}</label>
+                  <AdminTemplatePicker
+                    type="message_reply"
+                    refreshKey={templateRefreshKey}
+                    onSelect={(template) => setReplyText(template.content)}
+                  />
                   <textarea
                     value={replyText}
                     onChange={(e) => setReplyText(e.target.value)}
@@ -259,6 +275,23 @@ const MessagesPage = () => {
           </div>
         )}
       </div>
+
+      <AdminTemplateModal
+        open={showTemplateModal}
+        type="message_reply"
+        onClose={() => {
+          setShowTemplateModal(false);
+          setTemplateRefreshKey((key) => key + 1);
+        }}
+        onUse={({ content }) => {
+          if (!selectedMessage) {
+            alert('답변할 문의를 먼저 선택해주세요.');
+            return;
+          }
+          setReplyText(content);
+          if (selectedMessage.reply) setIsEditingReply(true);
+        }}
+      />
     </div>
   );
 };
