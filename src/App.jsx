@@ -14,7 +14,6 @@ import OgSettingsPage from './pages/OgSettingsPage';
 import NotFoundPage from './pages/NotFoundPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminLayout from './components/AdminLayout';
-import './App.css';
 
 function App() {
   return (
