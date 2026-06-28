@@ -4,24 +4,65 @@ import DailyUsersChart from '../components/DailyUsersChart';
 import './DashboardPage.css';
 import { clearAdminToken } from '../utils/adminAuth';
 
+const getCurrentKstMonth = () => {
+  const kst = new Date(Date.now() + 9 * 60 * 60 * 1000);
+  return `${kst.getUTCFullYear()}-${String(kst.getUTCMonth() + 1).padStart(2, '0')}`;
+};
+
+const formatMonth = (month) => {
+  const [year, monthNumber] = month.split('-');
+  return `${year}년 ${Number(monthNumber)}월`;
+};
+
+const formatDate = (date) => (
+  date ? new Date(`${date}T00:00:00+09:00`).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' }) : '-'
+);
+
+const Comparison = ({ metric, unit = '개' }) => {
+  if (!metric) return null;
+  const isUp = metric.change > 0;
+  const isDown = metric.change < 0;
+  const sign = isUp ? '+' : '';
+
+  return (
+    <div className={`stat-comparison ${isUp ? 'up' : ''} ${isDown ? 'down' : ''}`}>
+      <span className="stat-change-rate">
+        {isUp ? '↑' : isDown ? '↓' : '—'} {sign}{metric.changeRate}%
+      </span>
+      <span className="stat-change-count">
+        전월보다 {sign}{metric.change.toLocaleString()}{unit}
+      </span>
+    </div>
+  );
+};
+
 const DashboardPage = () => {
   const [stats, setStats] = useState(null);
   const [healthStatus, setHealthStatus] = useState(null);
+  const [selectedMonth, setSelectedMonth] = useState(getCurrentKstMonth);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
-  const [chartMode, setChartMode] = useState('daily'); // 'daily' | 'weekly'
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
+
     const fetchData = async () => {
       try {
-        setLoading(true);
+        if (stats) setRefreshing(true);
+        else setLoading(true);
+        setError('');
+
         const [statsResponse, healthResponse] = await Promise.all([
-          apiClient.get('/api/v1/admin/stats'),
+          apiClient.get(`/api/v1/admin/stats?month=${selectedMonth}`),
           apiClient.get('/api/v1/admin/health'),
         ]);
+
+        if (cancelled) return;
         setStats(statsResponse.data.data);
         setHealthStatus(healthResponse.data.data.status);
       } catch (err) {
+        if (cancelled) return;
         setError('대시보드 데이터를 불러오는데 실패했습니다.');
         console.error('Dashboard data fetch error:', err);
         if (err.response?.status === 401) {
@@ -29,29 +70,18 @@ const DashboardPage = () => {
           window.location.href = '/login';
         }
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+          setRefreshing(false);
+        }
       }
     };
+
     fetchData();
-  }, []);
-
-  const dailyChartData = React.useMemo(() => {
-    if (!stats) return [];
-    const data = stats.last30Days ? [...stats.last30Days] : [];
-    const todayStr = (() => {
-      const kst = new Date(Date.now() + 9 * 60 * 60 * 1000);
-      return kst.toISOString().split('T')[0];
-    })();
-    if (!data.find(d => d.date === todayStr)) {
-      data.push({ date: todayStr, count: stats.todayDau || 0 });
-    }
-    return data;
-  }, [stats]);
-
-  const weeklyChartData = React.useMemo(() => {
-    if (!stats?.last12Weeks) return [];
-    return stats.last12Weeks;
-  }, [stats]);
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedMonth]);
 
   if (loading) {
     return (
@@ -64,12 +94,31 @@ const DashboardPage = () => {
     );
   }
 
+  const monthLabel = formatMonth(stats?.monthly?.month || selectedMonth);
+  const comparison = stats?.comparison;
+  const monthly = stats?.monthly;
+
   return (
     <div className="dashboard-container">
-      <div className="page-header">
+      <div className="page-header dashboard-header">
         <div>
           <h1 className="page-title">대시보드</h1>
-          <p className="page-subtitle">돈가스 지도 통계</p>
+          <p className="page-subtitle">월별 성장과 사용자 활동을 한눈에 확인합니다</p>
+        </div>
+        <div className="month-selector-wrap">
+          <label htmlFor="dashboard-month">조회 기간</label>
+          <select
+            id="dashboard-month"
+            className="month-selector"
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(e.target.value)}
+            disabled={refreshing}
+          >
+            {(stats?.availableMonths || [selectedMonth]).map((month) => (
+              <option key={month} value={month}>{formatMonth(month)}</option>
+            ))}
+          </select>
+          {refreshing && <span className="month-refreshing">불러오는 중...</span>}
         </div>
       </div>
 
@@ -84,7 +133,14 @@ const DashboardPage = () => {
         </div>
       )}
 
-      {/* 기본 통계 */}
+      <div className="period-summary">
+        <div>
+          <span className="period-summary-label">선택 기간</span>
+          <strong>{monthLabel}</strong>
+        </div>
+        <p>카드의 증감률은 직전 월말 누적값과 비교합니다.</p>
+      </div>
+
       <div className="stats-grid">
         <div className="stat-card">
           <div className="stat-icon" style={{ backgroundColor: '#E8D5C4' }}>
@@ -97,8 +153,9 @@ const DashboardPage = () => {
           </div>
           <div className="stat-content">
             <p className="stat-label">전체 사용자</p>
-            <p className="stat-value">{stats?.totalUsers || 0}</p>
-            <p className="stat-description">누적 가입자</p>
+            <p className="stat-value">{comparison?.users.current.toLocaleString() || 0}</p>
+            <p className="stat-description">{monthLabel} 말 누적</p>
+            <Comparison metric={comparison?.users} unit="명" />
           </div>
         </div>
 
@@ -111,8 +168,9 @@ const DashboardPage = () => {
           </div>
           <div className="stat-content">
             <p className="stat-label">전체 식당</p>
-            <p className="stat-value">{stats?.totalRestaurants || 0}</p>
-            <p className="stat-description">등록된 식당</p>
+            <p className="stat-value">{comparison?.restaurants.current.toLocaleString() || 0}</p>
+            <p className="stat-description">{monthLabel} 말 누적</p>
+            <Comparison metric={comparison?.restaurants} />
           </div>
         </div>
 
@@ -124,8 +182,9 @@ const DashboardPage = () => {
           </div>
           <div className="stat-content">
             <p className="stat-label">전체 즐겨찾기</p>
-            <p className="stat-value">{stats?.totalFavorites || 0}</p>
-            <p className="stat-description">사용자 즐겨찾기</p>
+            <p className="stat-value">{comparison?.favorites.current.toLocaleString() || 0}</p>
+            <p className="stat-description">{monthLabel} 말 누적</p>
+            <Comparison metric={comparison?.favorites} />
           </div>
         </div>
 
@@ -138,109 +197,60 @@ const DashboardPage = () => {
           </div>
           <div className="stat-content">
             <p className="stat-label">현재 동시 접속</p>
-            <p className="stat-value">{stats?.concurrentUsers || 0}</p>
-            <p className="stat-description">최근 5분 기준</p>
+            <p className="stat-value">{stats?.concurrentUsers?.toLocaleString() || 0}</p>
+            <p className="stat-description">최근 5분 기준 실시간</p>
           </div>
         </div>
       </div>
 
-      {/* 활성 사용자 지표 */}
       <div className="engagement-section">
         <div className="engagement-header">
-          <h2 className="section-title">활성 사용자</h2>
-          <p className="section-subtitle">KST 기준 DAU / WAU / MAU</p>
+          <h2 className="section-title">{monthLabel} 사용자 활동</h2>
+          <p className="section-subtitle">선택한 달의 가입과 재방문 흐름입니다</p>
         </div>
         <div className="engagement-grid">
-          {/* DAU */}
-          <div className="engagement-card">
-            <div className="engagement-label">DAU <span className="engagement-period">오늘</span></div>
-            <div className="engagement-value">{stats?.todayDau || 0}</div>
-            <div className="engagement-ratio-row">
-              <span className="engagement-ratio-label">DAU/MAU</span>
-              <span className="engagement-ratio-value">{stats?.dauMauRatio ?? 0}%</span>
-            </div>
-            <div className="engagement-ratio-bar">
-              <div
-                className="engagement-ratio-fill"
-                style={{ width: `${Math.min(stats?.dauMauRatio || 0, 100)}%` }}
-              />
-            </div>
-          </div>
-
-          {/* WAU */}
-          <div className="engagement-card">
-            <div className="engagement-label">WAU <span className="engagement-period">이번 주</span></div>
-            <div className="engagement-value">{stats?.wau || 0}</div>
-            <div className="engagement-ratio-row">
-              <span className="engagement-ratio-label">WAU/MAU</span>
-              <span className="engagement-ratio-value">{stats?.wauMauRatio ?? 0}%</span>
-            </div>
-            <div className="engagement-ratio-bar">
-              <div
-                className="engagement-ratio-fill wau"
-                style={{ width: `${Math.min(stats?.wauMauRatio || 0, 100)}%` }}
-              />
-            </div>
-          </div>
-
-          {/* MAU */}
           <div className="engagement-card engagement-card--mau">
-            <div className="engagement-label">MAU <span className="engagement-period">이번 달</span></div>
-            <div className="engagement-value">{stats?.mau || 0}</div>
-            <div className="engagement-ratio-row">
-              <span className="engagement-ratio-label">전체 대비</span>
-              <span className="engagement-ratio-value">
-                {stats?.totalUsers > 0 && stats?.mau != null ? Math.round(((stats.mau || 0) / stats.totalUsers) * 1000) / 10 : 0}%
-              </span>
+            <div className="engagement-label">MAU <span className="engagement-period">월간 활성</span></div>
+            <div className="engagement-value">{monthly?.activeUsers.toLocaleString() || 0}</div>
+            <div className={`engagement-delta ${(monthly?.activeUsersChangeRate || 0) >= 0 ? 'up' : 'down'}`}>
+              전월 대비 {(monthly?.activeUsersChangeRate || 0) > 0 ? '+' : ''}{monthly?.activeUsersChangeRate || 0}%
             </div>
-            <div className="engagement-ratio-bar">
-              <div
-                className="engagement-ratio-fill mau"
-                style={{ width: `${Math.min(stats?.totalUsers > 0 ? ((stats?.mau || 0) / stats.totalUsers) * 100 : 0, 100)}%` }}
-              />
-            </div>
+          </div>
+
+          <div className="engagement-card">
+            <div className="engagement-label">신규 가입 <span className="engagement-period">월간</span></div>
+            <div className="engagement-value">{monthly?.newUsers.toLocaleString() || 0}</div>
+            <div className="engagement-helper">누적 사용자 증가분</div>
+          </div>
+
+          <div className="engagement-card">
+            <div className="engagement-label">평균 DAU <span className="engagement-period">일평균</span></div>
+            <div className="engagement-value">{monthly?.averageDau.toLocaleString() || 0}</div>
+            <div className="engagement-helper">하루 평균 활성 사용자</div>
+          </div>
+
+          <div className="engagement-card">
+            <div className="engagement-label">최고 활성일</div>
+            <div className="engagement-value">{monthly?.peakDau.toLocaleString() || 0}</div>
+            <div className="engagement-helper">{formatDate(monthly?.peakDate)} · 활성 사용자</div>
           </div>
         </div>
       </div>
 
-      {/* 차트 */}
       <div className="chart-section">
         <div className="section-header">
           <div>
-            <h2 className="section-title">
-              {chartMode === 'daily' ? '일일 활성 사용자 (최근 30일)' : '주간 활성 사용자 (최근 12주)'}
-            </h2>
-            <p className="section-subtitle">
-              {chartMode === 'daily' ? '지난 한 달간 DAU 추이' : '지난 12주간 WAU 추이'}
-            </p>
+            <h2 className="section-title">활성 사용자와 신규 가입자 추이</h2>
+            <p className="section-subtitle">{monthLabel} 일별 변화 · 선에 마우스를 올리면 상세 수치를 볼 수 있습니다</p>
           </div>
-          <div className="chart-controls">
-            <div className="chart-toggle">
-              <button
-                className={`chart-toggle-btn ${chartMode === 'daily' ? 'active' : ''}`}
-                onClick={() => setChartMode('daily')}
-              >
-                일별
-              </button>
-              <button
-                className={`chart-toggle-btn ${chartMode === 'weekly' ? 'active' : ''}`}
-                onClick={() => setChartMode('weekly')}
-              >
-                주별
-              </button>
-            </div>
-            <div className="health-status">
-              <span className={`status-dot ${healthStatus === 'ok' ? 'status-ok' : 'status-error'}`}></span>
-              <span className="status-text">API: {healthStatus === 'ok' ? '정상' : '오류'}</span>
-            </div>
+          <div className="health-status">
+            <span className={`status-dot ${healthStatus === 'ok' ? 'status-ok' : 'status-error'}`}></span>
+            <span className="status-text">API: {healthStatus === 'ok' ? '정상' : '오류'}</span>
           </div>
         </div>
 
-        {(chartMode === 'daily' ? dailyChartData : weeklyChartData).length > 0 ? (
-          <DailyUsersChart
-            data={chartMode === 'daily' ? dailyChartData : weeklyChartData}
-            mode={chartMode}
-          />
+        {monthly?.daily?.length > 0 ? (
+          <DailyUsersChart data={monthly.daily} mode="monthly" />
         ) : (
           <div className="empty-state"><p>데이터가 없습니다</p></div>
         )}
