@@ -663,6 +663,14 @@
   gap: 10px;
 }
 
+.geo-autofill-action {
+  justify-content: flex-end;
+}
+
+.geo-autofill-action .geo-autofill-btn {
+  min-height: 37px;
+}
+
 .geo-autofill-btn {
   padding: 7px 14px;
   background-color: #EFF6FF;

@@ -1123,17 +1123,15 @@ const RestaurantsPage = () => {
                   </select>
                 </div>
 
-                <div className="form-group">
-                  <label>가격대 {showEditModal && '(수정 불가)'}</label>
-                  <input
-                    type="text"
-                    name="priceDisplay"
-                    value={formData.priceDisplay}
-                    onChange={handleFormChange}
-                    placeholder="예: 15,000~25,000원"
-                    disabled={showEditModal}
-                    className={showEditModal ? 'disabled-input' : ''}
-                  />
+                <div className="form-group geo-autofill-action">
+                  <button
+                    type="button"
+                    className="geo-autofill-btn"
+                    onClick={handleGeoAutoFill}
+                    disabled={geoSearching}
+                  >
+                    {geoSearching ? '🔍 검색 중...' : '🔍 좌표 자동 채우기'}
+                  </button>
                 </div>
 
                 <div className="form-group full-width">
@@ -1170,17 +1168,17 @@ const RestaurantsPage = () => {
                 </div>
 
                 <div className="form-group full-width">
-                  <div className="geo-autofill-bar">
-                    <button
-                      type="button"
-                      className="geo-autofill-btn"
-                      onClick={handleGeoAutoFill}
-                      disabled={geoSearching}
-                    >
-                      {geoSearching ? '🔍 검색 중...' : '🔍 좌표 자동 채우기'}
-                    </button>
-                    <span className="geo-hint">이름·지역으로 검색 후 선택하면 주소 / 위도·경도 / 카카오맵 URL 자동 입력</span>
-                  </div>
+                  <label>카카오맵 URL</label>
+                  <input
+                    type="url"
+                    name="placeUrl"
+                    value={formData.placeUrl}
+                    onChange={handleFormChange}
+                  />
+                </div>
+
+                <div className="form-group full-width">
+                  <span className="geo-hint">이름·지역으로 검색 후 선택하면 주소 / 위도·경도 / 카카오맵 URL 자동 입력</span>
                   {showGeoResults && geoResults.length > 0 && (
                     <div className="geo-results">
                       {geoResults.map((r, i) => (
@@ -1200,6 +1198,52 @@ const RestaurantsPage = () => {
                     <div ref={mapPreviewRef} className="map-preview-container" />
                   </div>
                 )}
+
+                {/* ── 영업시간 ── */}
+                <div className="form-group full-width">
+                  <label>영업시간</label>
+                  <div className="hours-paste-box">
+                    <textarea
+                      value={hoursPasteText}
+                      onChange={(e) => setHoursPasteText(e.target.value)}
+                      onPaste={handleHoursPaste}
+                      rows="6"
+                      placeholder={"영업시간\n일\n11:40 - 21:00\n15:00 - 17:40 브레이크타임\n월\n정기휴무 (매주 월요일)"}
+                      className="hours-paste-textarea"
+                    />
+                    <div className="hours-paste-actions">
+                      <button type="button" className="hours-parse-btn" onClick={() => applyParsedHoursText(hoursPasteText)}>
+                        파싱
+                      </button>
+                    </div>
+                  </div>
+                  <div className="hours-grid">
+                    {DAY_OPTIONS.map(({ key, label }) => (
+                      <div key={key} className="hours-row">
+                        <span className="hours-day-label">{label}</span>
+                        <input
+                          type="text"
+                          value={hoursData[key]}
+                          onChange={(e) => setHoursData(prev => ({ ...prev, [key]: e.target.value }))}
+                          data-autosave="true"
+                          placeholder="예: 11:30 ~ 20:30 또는 휴무일"
+                          className="hours-input"
+                        />
+                      </div>
+                    ))}
+                    <div className="hours-row">
+                      <span className="hours-day-label">브레이크</span>
+                      <input
+                        type="text"
+                        value={hoursData.breakTime}
+                        onChange={(e) => setHoursData(prev => ({ ...prev, breakTime: e.target.value }))}
+                        data-autosave="true"
+                        placeholder="예: 15:30 ~ 17:30"
+                        className="hours-input"
+                      />
+                    </div>
+                  </div>
+                </div>
 
                 <div className="form-group full-width">
                   <label>설명</label>
@@ -1343,16 +1387,6 @@ const RestaurantsPage = () => {
                   )}
                 </div>
 
-                <div className="form-group full-width">
-                  <label>카카오맵 URL</label>
-                  <input
-                    type="url"
-                    name="placeUrl"
-                    value={formData.placeUrl}
-                    onChange={handleFormChange}
-                  />
-                </div>
-
                 <div className="form-group full-width checkbox-group">
                   <label>추천 등급 <span className="grade-hint">★ 체크 안하면 별 1개</span></label>
                   <div className="checkbox-options">
@@ -1421,52 +1455,6 @@ const RestaurantsPage = () => {
                     rows="3"
                     placeholder="가게 상세 모달에 표시할 사장님 한마디를 입력하세요"
                   />
-                </div>
-
-                {/* ── 영업시간 ── */}
-                <div className="form-group full-width">
-                  <label>영업시간</label>
-                  <div className="hours-paste-box">
-                    <textarea
-                      value={hoursPasteText}
-                      onChange={(e) => setHoursPasteText(e.target.value)}
-                      onPaste={handleHoursPaste}
-                      rows="6"
-                      placeholder={"영업시간\n일\n11:40 - 21:00\n15:00 - 17:40 브레이크타임\n월\n정기휴무 (매주 월요일)"}
-                      className="hours-paste-textarea"
-                    />
-                    <div className="hours-paste-actions">
-                      <button type="button" className="hours-parse-btn" onClick={() => applyParsedHoursText(hoursPasteText)}>
-                        파싱
-                      </button>
-                    </div>
-                  </div>
-                  <div className="hours-grid">
-                    {DAY_OPTIONS.map(({ key, label }) => (
-                      <div key={key} className="hours-row">
-                        <span className="hours-day-label">{label}</span>
-                        <input
-                          type="text"
-                          value={hoursData[key]}
-                          onChange={(e) => setHoursData(prev => ({ ...prev, [key]: e.target.value }))}
-                          data-autosave="true"
-                          placeholder="예: 11:30 ~ 20:30 또는 휴무일"
-                          className="hours-input"
-                        />
-                      </div>
-                    ))}
-                    <div className="hours-row">
-                      <span className="hours-day-label">브레이크</span>
-                      <input
-                        type="text"
-                        value={hoursData.breakTime}
-                        onChange={(e) => setHoursData(prev => ({ ...prev, breakTime: e.target.value }))}
-                        data-autosave="true"
-                        placeholder="예: 15:30 ~ 17:30"
-                        className="hours-input"
-                      />
-                    </div>
-                  </div>
                 </div>
 
                 {/* ── 대표 메뉴 ── */}
