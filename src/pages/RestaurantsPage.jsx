@@ -11,7 +11,6 @@ const EMPTY_FORM_DATA = {
   addr: '',
   lat: '',
   lng: '',
-  priceDisplay: '',
   description: '',
   imageUrl: '',
   image_url_1: '',
@@ -48,7 +47,7 @@ const extractTimeRanges = (line) => {
   TIME_RANGE_PATTERN.lastIndex = 0;
   let match = TIME_RANGE_PATTERN.exec(line);
   while (match) {
-    ranges.push(`${formatTime(match[1], match[2])} ~ ${formatTime(match[3], match[4])}`);
+    ranges.push(`${formatTime(match[1], match[2])} - ${formatTime(match[3], match[4])}`);
     match = TIME_RANGE_PATTERN.exec(line);
   }
   return ranges;
@@ -151,6 +150,11 @@ const RestaurantsPage = () => {
   const [geoSearching, setGeoSearching] = useState(false);
   const [geoResults, setGeoResults] = useState([]);
   const [showGeoResults, setShowGeoResults] = useState(false);
+  const [bulkParseText, setBulkParseText] = useState('');
+  const [bulkParsing, setBulkParsing] = useState(false);
+  const [bulkParseMessage, setBulkParseMessage] = useState('');
+  const [bulkParsePartialSuccess, setBulkParsePartialSuccess] = useState(false);
+  const bulkParseInFlightRef = useRef(false);
   const mapPreviewRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const markerInstanceRef = useRef(null);
@@ -201,6 +205,9 @@ const RestaurantsPage = () => {
     setContributors([]);
     setUserSearchQuery('');
     setUserSearchResults([]);
+    setBulkParseText('');
+    setBulkParseMessage('');
+    setBulkParsePartialSuccess(false);
   };
 
   const handleAddClick = () => {
@@ -291,7 +298,6 @@ const RestaurantsPage = () => {
       addr: restaurant.addr || '',
       lat: restaurant.lat || '',
       lng: restaurant.lng || '',
-      priceDisplay: restaurant.priceDisplay || '',
       description: restaurant.description || '',
       imageUrl: restaurant.imageUrl || '',
       image_url_1: restaurant.image_url_1 || '',
@@ -573,6 +579,11 @@ const RestaurantsPage = () => {
   };
 
   const closeRestaurantForm = async () => {
+    if (bulkParseInFlightRef.current) {
+      alert('몽땅 파싱이 끝난 뒤 창을 닫아주세요.');
+      return;
+    }
+
     try {
       await queueAutoSave();
     } catch {
@@ -656,27 +667,33 @@ const RestaurantsPage = () => {
     window.kakao.maps.load(resolve);
   });
 
+  const searchKakaoPlaces = async (keyword) => {
+    await ensureKakaoLoaded();
+    const ps = new window.kakao.maps.services.Places();
+    const placeResults = await new Promise((resolve) => {
+      ps.keywordSearch(keyword, (results, status) =>
+        resolve(status === window.kakao.maps.services.Status.OK ? results : [])
+      );
+    });
+
+    return placeResults.slice(0, 5).map(r => ({
+      name: r.place_name,
+      addr: r.road_address_name || r.address_name,
+      lat: r.y,
+      lng: r.x,
+      placeUrl: r.place_url,
+    }));
+  };
+
   const handleGeoAutoFill = async () => {
     const keyword = [formData.name, formData.area].filter(Boolean).join(' ');
     if (!keyword.trim()) { alert('이름 또는 지역을 먼저 입력해주세요.'); return; }
     setGeoSearching(true);
     setShowGeoResults(false);
     try {
-      await ensureKakaoLoaded();
-      const ps = new window.kakao.maps.services.Places();
-      const placeResults = await new Promise((resolve) => {
-        ps.keywordSearch(keyword, (results, status) =>
-          resolve(status === window.kakao.maps.services.Status.OK ? results : [])
-        );
-      });
-      if (placeResults.length > 0) {
-        setGeoResults(placeResults.slice(0, 5).map(r => ({
-          name: r.place_name,
-          addr: r.road_address_name || r.address_name,
-          lat: r.y,
-          lng: r.x,
-          placeUrl: r.place_url,
-        })));
+      const results = await searchKakaoPlaces(keyword);
+      if (results.length > 0) {
+        setGeoResults(results);
         setShowGeoResults(true);
       } else {
         alert('검색 결과가 없습니다. 이름/지역을 확인해주세요.');
@@ -698,6 +715,90 @@ const RestaurantsPage = () => {
     }));
     setShowGeoResults(false);
     setGeoResults([]);
+  };
+
+  const handleBulkParse = async () => {
+    const rawText = bulkParseText.trim();
+    if (!rawText) {
+      alert('네이버 지도에서 전체 복사한 텍스트를 붙여넣어 주세요.');
+      return;
+    }
+    if (bulkParseInFlightRef.current) return;
+
+    bulkParseInFlightRef.current = true;
+    setBulkParsing(true);
+    setBulkParseMessage('AI가 식당 정보와 리뷰를 한 번에 정리하고 있습니다...');
+    setBulkParsePartialSuccess(false);
+
+    try {
+      // 사용자가 버튼을 누른 경우에만 이 API를 한 번 호출한다.
+      const response = await apiClient.post('/api/v1/admin/restaurants/parse-naver', {
+        rawText,
+      });
+      const parsed = response.data?.data;
+      if (!parsed) throw new Error('파싱 결과가 비어 있습니다.');
+
+      let geoMatch = null;
+      let geoErrorMessage = '';
+      const keyword = [parsed.name, parsed.addr || parsed.area].filter(Boolean).join(' ');
+      if (keyword) {
+        try {
+          const places = await searchKakaoPlaces(keyword);
+          const normalizedName = parsed.name.replace(/\s/g, '').toLowerCase();
+          geoMatch = places.find(
+            (place) => place.name.replace(/\s/g, '').toLowerCase() === normalizedName
+          ) || places[0] || null;
+          if (!geoMatch) {
+            geoErrorMessage = '좌표 자동 채우기 실패: 카카오맵 검색 결과가 없습니다.';
+          }
+        } catch (geoError) {
+          console.warn('몽땅 파싱 후 좌표 자동 채우기 실패:', geoError);
+          geoErrorMessage = `좌표 자동 채우기 실패: ${geoError.message}`;
+        }
+      }
+
+      const currentForm = formDataRef.current;
+      const nextFormData = {
+        ...currentForm,
+        name: parsed.name || currentForm.name,
+        area: parsed.area || currentForm.area,
+        category: parsed.category || currentForm.category,
+        addr: parsed.addr || geoMatch?.addr || currentForm.addr,
+        lat: parsed.lat ?? geoMatch?.lat ?? currentForm.lat,
+        lng: parsed.lng ?? geoMatch?.lng ?? currentForm.lng,
+        placeUrl: parsed.placeUrl || geoMatch?.placeUrl || currentForm.placeUrl,
+        description: parsed.description || currentForm.description,
+      };
+      const deterministicHours = parseBusinessHoursText(rawText);
+      const currentHours = hoursDataRef.current;
+      const hasParsedHours = Object.values(deterministicHours).some(Boolean);
+      const nextHoursData = hasParsedHours ? deterministicHours : currentHours;
+      const currentMenus = menusDataRef.current;
+      const nextMenusData = {
+        priceRate: parsed.priceRate || currentMenus.priceRate,
+        names: parsed.menus?.length ? parsed.menus.join('\n') : currentMenus.names,
+      };
+
+      formDataRef.current = nextFormData;
+      hoursDataRef.current = nextHoursData;
+      menusDataRef.current = nextMenusData;
+      setFormData(nextFormData);
+      setHoursData(nextHoursData);
+      setMenusData(nextMenusData);
+      setGeoResults([]);
+      setShowGeoResults(false);
+      setBulkParseMessage(geoErrorMessage);
+      setBulkParsePartialSuccess(Boolean(geoErrorMessage));
+    } catch (err) {
+      console.error('몽땅 파싱 실패:', err);
+      const message = err.response?.data?.message || err.message || '파싱에 실패했습니다.';
+      setBulkParseMessage(`파싱 실패: ${message}`);
+      setBulkParsePartialSuccess(false);
+      alert(`몽땅 파싱에 실패했습니다.\n${message}`);
+    } finally {
+      bulkParseInFlightRef.current = false;
+      setBulkParsing(false);
+    }
   };
 
   const getRecommendLevel = (restaurant) => {
@@ -1092,6 +1193,44 @@ const RestaurantsPage = () => {
               className="restaurant-form"
             >
               <div className="form-grid">
+                <div className="form-group full-width bulk-parser">
+                  <label className="bulk-parser-title">몽땅 파싱해버리기!!!!</label>
+                  <span className="bulk-parser-helper">버튼을 누를 때만 AI를 딱 한 번 호출합니다.</span>
+                  <textarea
+                    value={bulkParseText}
+                    onChange={(e) => {
+                      setBulkParseText(e.target.value);
+                      setBulkParseMessage('');
+                      setBulkParsePartialSuccess(false);
+                    }}
+                    rows="3"
+                    placeholder="네이버 지도 식당 상세 페이지에서 전체 복사한 텍스트를 붙여넣으세요."
+                    className="bulk-parser-textarea"
+                  />
+                  <div className="bulk-parser-actions">
+                    {(bulkParseMessage || bulkParsePartialSuccess) && (
+                      <span className="bulk-parser-status">
+                        {bulkParseMessage && (
+                          <span className={`bulk-parser-message ${bulkParseMessage.includes('실패') ? 'error' : ''}`}>
+                            {bulkParseMessage}
+                          </span>
+                        )}
+                        {bulkParsePartialSuccess && (
+                          <span className="bulk-parser-message success">· 다른 항목은 채우기 완료</span>
+                        )}
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      className="bulk-parser-btn"
+                      onClick={handleBulkParse}
+                      disabled={bulkParsing || !bulkParseText.trim()}
+                    >
+                      {bulkParsing ? '파싱 중...' : '파싱해버리기'}
+                    </button>
+                  </div>
+                </div>
+
                 <div className="form-group">
                   <label>이름 *</label>
                   <input
