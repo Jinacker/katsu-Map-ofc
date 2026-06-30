@@ -740,14 +740,11 @@ const RestaurantsPage = () => {
 
       let geoMatch = null;
       let geoErrorMessage = '';
-      const keyword = [parsed.name, parsed.addr || parsed.area].filter(Boolean).join(' ');
+      const keyword = [parsed.name, parsed.area].filter(Boolean).join(' ');
       if (keyword) {
         try {
           const places = await searchKakaoPlaces(keyword);
-          const normalizedName = parsed.name.replace(/\s/g, '').toLowerCase();
-          geoMatch = places.find(
-            (place) => place.name.replace(/\s/g, '').toLowerCase() === normalizedName
-          ) || places[0] || null;
+          geoMatch = places[0] || null;
           if (!geoMatch) {
             geoErrorMessage = '좌표 자동 채우기 실패: 카카오맵 검색 결과가 없습니다.';
           }
