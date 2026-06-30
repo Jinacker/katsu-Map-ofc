@@ -1135,6 +1135,21 @@ const RestaurantsPage = () => {
                 </div>
 
                 <div className="form-group full-width">
+                  <span className="geo-hint">이름·지역으로 검색 후 선택하면 주소 / 위도·경도 / 카카오맵 URL 자동 입력</span>
+                  {showGeoResults && geoResults.length > 0 && (
+                    <div className="geo-results">
+                      {geoResults.map((r, i) => (
+                        <button key={i} type="button" className="geo-result-item" onClick={() => applyGeoResult(r)}>
+                          <span className="geo-result-name">{r.name}</span>
+                          <span className="geo-result-address">{r.addr}</span>
+                          <span className="geo-result-coords">{parseFloat(r.lat).toFixed(6)}, {parseFloat(r.lng).toFixed(6)}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="form-group full-width">
                   <label>주소 *</label>
                   <input
                     type="text"
@@ -1175,21 +1190,6 @@ const RestaurantsPage = () => {
                     value={formData.placeUrl}
                     onChange={handleFormChange}
                   />
-                </div>
-
-                <div className="form-group full-width">
-                  <span className="geo-hint">이름·지역으로 검색 후 선택하면 주소 / 위도·경도 / 카카오맵 URL 자동 입력</span>
-                  {showGeoResults && geoResults.length > 0 && (
-                    <div className="geo-results">
-                      {geoResults.map((r, i) => (
-                        <button key={i} type="button" className="geo-result-item" onClick={() => applyGeoResult(r)}>
-                          <span className="geo-result-name">{r.name}</span>
-                          <span className="geo-result-address">{r.addr}</span>
-                          <span className="geo-result-coords">{parseFloat(r.lat).toFixed(6)}, {parseFloat(r.lng).toFixed(6)}</span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
                 </div>
 
                 {formData.lat && formData.lng && (
