@@ -18,6 +18,11 @@ const formatDate = (date) => (
   date ? new Date(`${date}T00:00:00+09:00`).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' }) : '-'
 );
 
+const getCurrentKstDateLabel = () => {
+  const kst = new Date(Date.now() + 9 * 60 * 60 * 1000);
+  return `${kst.getUTCMonth() + 1}월 ${kst.getUTCDate()}일`;
+};
+
 const Comparison = ({ metric, unit = '개' }) => {
   if (!metric) return null;
   const isUp = metric.change > 0;
@@ -95,6 +100,7 @@ const DashboardPage = () => {
   }
 
   const monthLabel = formatMonth(stats?.monthly?.month || selectedMonth);
+  const todayLabel = getCurrentKstDateLabel();
   const comparison = stats?.comparison;
   const monthly = stats?.monthly;
 
@@ -199,6 +205,37 @@ const DashboardPage = () => {
             <p className="stat-label">현재 동시 접속</p>
             <p className="stat-value">{stats?.concurrentUsers?.toLocaleString() || 0}</p>
             <p className="stat-description">최근 5분 기준 실시간</p>
+          </div>
+        </div>
+
+        <div className="stat-card">
+          <div className="stat-icon" style={{ backgroundColor: '#DDF1EA' }}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4F9B83" strokeWidth="2">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <polyline points="16 11 18 13 22 9" />
+            </svg>
+          </div>
+          <div className="stat-content">
+            <p className="stat-label">오늘 접속 유저</p>
+            <p className="stat-value">{stats?.todayDau?.toLocaleString() || 0}</p>
+            <p className="stat-description">{todayLabel} 기준 · 오늘 접속한 고유 사용자</p>
+          </div>
+        </div>
+
+        <div className="stat-card">
+          <div className="stat-icon" style={{ backgroundColor: '#E1EEF7' }}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#548BA8" strokeWidth="2">
+              <path d="M15 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+              <circle cx="8" cy="7" r="4" />
+              <line x1="19" y1="8" x2="19" y2="14" />
+              <line x1="16" y1="11" x2="22" y2="11" />
+            </svg>
+          </div>
+          <div className="stat-content">
+            <p className="stat-label">오늘 가입자 수</p>
+            <p className="stat-value">{stats?.todayNewUsers?.toLocaleString() || 0}</p>
+            <p className="stat-description">오늘 새로 가입한 사용자</p>
           </div>
         </div>
       </div>
