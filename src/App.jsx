@@ -11,6 +11,7 @@ import UserRecordsPage from './pages/UserRecordsPage';
 import PushNotificationsPage from './pages/PushNotificationsPage';
 import CommunityPage from './pages/CommunityPage';
 import OgSettingsPage from './pages/OgSettingsPage';
+import EncyclopediaPostsPage from './pages/EncyclopediaPostsPage';
 import NotFoundPage from './pages/NotFoundPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminLayout from './components/AdminLayout';
@@ -106,6 +107,16 @@ function App() {
             <ProtectedRoute>
               <AdminLayout>
                 <CommunityPage />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/encyclopedia"
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <EncyclopediaPostsPage />
               </AdminLayout>
             </ProtectedRoute>
           }
