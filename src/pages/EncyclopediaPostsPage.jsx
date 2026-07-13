@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import apiClient from '../api/axios';
+import { uploadImageToGCS } from '../api/gcs';
 import './EncyclopediaPostsPage.css';
 
 const emptyForm = {
@@ -306,21 +307,17 @@ export default function EncyclopediaPostsPage() {
       return;
     }
 
-    const formData = new FormData();
-    formData.append('image', file);
     setUploading(true);
     setMessage('');
 
     try {
-      const response = await apiClient.post('/api/v1/admin/encyclopedia-posts/upload-image', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      const data = unwrap(response);
-      handleChange('thumbnailUrl', data.url);
+      // 가게 등록과 동일한 압축 로직(최대 1920px, JPEG 0.85) 후 GCS 업로드
+      const url = await uploadImageToGCS(file, 'encyclopedia');
+      handleChange('thumbnailUrl', url);
       setMessage('이미지 업로드 완료');
     } catch (error) {
       console.error(error);
-      setMessage(error.response?.data?.message || '이미지 업로드에 실패했습니다.');
+      setMessage(error.response?.data?.message || error.message || '이미지 업로드에 실패했습니다.');
     } finally {
       setUploading(false);
     }
@@ -339,21 +336,17 @@ export default function EncyclopediaPostsPage() {
       return;
     }
 
-    const formData = new FormData();
-    formData.append('image', file);
     setBodyImageUploading(true);
     setMessage('');
 
     try {
-      const response = await apiClient.post('/api/v1/admin/encyclopedia-posts/upload-image', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      const data = unwrap(response);
-      setBodyImageUrl(data.url);
+      // 가게 등록과 동일한 압축 로직(최대 1920px, JPEG 0.85) 후 GCS 업로드
+      const url = await uploadImageToGCS(file, 'encyclopedia');
+      setBodyImageUrl(url);
       setMessage('본문 이미지 URL 생성 완료');
     } catch (error) {
       console.error(error);
-      setMessage(error.response?.data?.message || '이미지 업로드에 실패했습니다.');
+      setMessage(error.response?.data?.message || error.message || '이미지 업로드에 실패했습니다.');
     } finally {
       setBodyImageUploading(false);
     }
