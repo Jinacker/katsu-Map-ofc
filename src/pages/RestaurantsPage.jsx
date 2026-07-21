@@ -564,6 +564,20 @@ const RestaurantsPage = () => {
 
   const handleAddSubmit = async (e) => {
     e.preventDefault();
+
+    // 같은 가게명이 이미 있는지 확인 (자동저장으로 생성 중인 draft는 제외)
+    const newName = (formData.name || '').trim();
+    const currentDraftId = autoSaveRestaurantIdRef.current;
+    if (newName) {
+      const dupCount = restaurants.filter(
+        (r) => r.id !== currentDraftId && (r.name || '').trim() === newName
+      ).length;
+      if (dupCount > 0) {
+        const proceed = window.confirm(`같은 가게명이 ${dupCount}개 있습니다.\n진짜로 등록하실겁니까?`);
+        if (!proceed) return;
+      }
+    }
+
     try {
       await queueAutoSave();
       const payload = createRestaurantPayload();
