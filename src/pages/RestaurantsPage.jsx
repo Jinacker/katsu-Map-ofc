@@ -66,10 +66,30 @@ const pickMostFrequent = (items) => {
   return best;
 };
 
+const ALL_DAYS_KEYS = DAY_OPTIONS.map(({ key }) => key);
+const ALL_DAYS_TOKEN = /^(?:매일|연중\s*무휴|연중무휴)$/;
+const ALL_DAYS_INLINE = /^(?:매일|연중\s*무휴|연중무휴)[\s:]+(.+)$/;
+
 const parseBusinessHoursText = (rawText) => {
   const parsed = { ...EMPTY_HOURS };
   const breakCandidates = [];
   let currentDayKey = null;
+
+  // currentDayKey가 'all'이면 아직 비어 있는 모든 요일에 값을 채운다.
+  const setHours = (value) => {
+    if (currentDayKey === 'all') {
+      ALL_DAYS_KEYS.forEach((key) => {
+        if (!parsed[key]) parsed[key] = value;
+      });
+    } else if (currentDayKey && !parsed[currentDayKey]) {
+      parsed[currentDayKey] = value;
+    }
+  };
+
+  const hasHours = () =>
+    currentDayKey === 'all'
+      ? ALL_DAYS_KEYS.every((key) => parsed[key])
+      : !!parsed[currentDayKey];
 
   rawText
     .split(/\r?\n/)
@@ -78,6 +98,7 @@ const parseBusinessHoursText = (rawText) => {
     .forEach((line) => {
       const dayOnlyMatch = line.match(/^(월|화|수|목|금|토|일)(?:요일)?$/);
       const dayInlineMatch = line.match(/^(월|화|수|목|금|토|일)(?:요일)?[\s:]+(.+)$/);
+      const allDayInlineMatch = line.match(ALL_DAYS_INLINE);
       let contentLine = line;
 
       if (dayOnlyMatch) {
@@ -85,15 +106,23 @@ const parseBusinessHoursText = (rawText) => {
         return;
       }
 
+      if (ALL_DAYS_TOKEN.test(line)) {
+        currentDayKey = 'all';
+        return;
+      }
+
       if (dayInlineMatch) {
         currentDayKey = DAY_LABEL_TO_KEY[dayInlineMatch[1]];
         contentLine = dayInlineMatch[2].trim();
+      } else if (allDayInlineMatch) {
+        currentDayKey = 'all';
+        contentLine = allDayInlineMatch[1].trim();
       }
 
       if (!currentDayKey) return;
 
-      if (/휴무/.test(contentLine) && !parsed[currentDayKey]) {
-        parsed[currentDayKey] = contentLine;
+      if (/휴무/.test(contentLine) && !hasHours()) {
+        setHours(contentLine);
         return;
       }
 
@@ -105,9 +134,7 @@ const parseBusinessHoursText = (rawText) => {
         return;
       }
 
-      if (!parsed[currentDayKey]) {
-        parsed[currentDayKey] = ranges.join(' / ');
-      }
+      setHours(ranges.join(' / '));
     });
 
   parsed.breakTime = pickMostFrequent(breakCandidates);
@@ -773,7 +800,7 @@ const RestaurantsPage = () => {
       const currentMenus = menusDataRef.current;
       const nextMenusData = {
         priceRate: parsed.priceRate || currentMenus.priceRate,
-        names: parsed.menus?.length ? parsed.menus.join('\n') : currentMenus.names,
+        names: parsed.menus?.length ? parsed.menus.slice(0, 5).join('\n') : currentMenus.names,
       };
 
       formDataRef.current = nextFormData;
