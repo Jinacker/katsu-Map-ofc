@@ -185,6 +185,8 @@ const RestaurantsPage = () => {
   const mapPreviewRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const markerInstanceRef = useRef(null);
+  const detailMapRef = useRef(null);
+  const detailMapInstanceRef = useRef(null);
 
   useEffect(() => {
     formDataRef.current = formData;
@@ -374,6 +376,26 @@ const RestaurantsPage = () => {
       formData: nextFormData,
       hoursData: nextHoursData,
       menusData: nextMenusData,
+    });
+  };
+
+  // 목록 클릭 시 상세 모달 즉시 열고, 영업시간/메뉴/기여자는 상세 API로 보강
+  const handleViewClick = async (restaurant) => {
+    setSelectedRestaurant(restaurant);
+    const [detailRes, contribRes] = await Promise.all([
+      apiClient.get(`/api/v1/admin/restaurants/${restaurant.id}`).catch(() => null),
+      apiClient.get(`/api/v1/admin/restaurants/${restaurant.id}/contributors`).catch(() => null),
+    ]);
+    const detail = detailRes?.data?.data;
+    const contributorList = contribRes?.data?.data || [];
+    setSelectedRestaurant((prev) => {
+      if (!prev || prev.id !== restaurant.id) return prev;
+      return {
+        ...prev,
+        hours: detail?.hours || null,
+        menus: detail?.menus || [],
+        contributors: contributorList,
+      };
     });
   };
 
@@ -688,6 +710,29 @@ const RestaurantsPage = () => {
     }
   }, [formData.lat, formData.lng]);
 
+  // 상세 모달 지도 미리보기
+  useEffect(() => {
+    detailMapInstanceRef.current = null;
+    if (!selectedRestaurant) return;
+    const lat = parseFloat(selectedRestaurant.lat);
+    const lng = parseFloat(selectedRestaurant.lng);
+    if (!lat || !lng) return;
+
+    const renderMap = () => {
+      if (!detailMapRef.current) return;
+      const center = new window.kakao.maps.LatLng(lat, lng);
+      const map = new window.kakao.maps.Map(detailMapRef.current, { center, level: 4 });
+      new window.kakao.maps.Marker({ position: center, map });
+      detailMapInstanceRef.current = map;
+    };
+
+    if (window.kakao?.maps?.services) {
+      renderMap();
+    } else {
+      window.kakao?.maps?.load(renderMap);
+    }
+  }, [selectedRestaurant?.id, selectedRestaurant?.lat, selectedRestaurant?.lng]);
+
   const ensureKakaoLoaded = () => new Promise((resolve, reject) => {
     if (!window.kakao) { reject(new Error('카카오맵 SDK 로드 실패')); return; }
     if (window.kakao?.maps?.services) { resolve(); return; }
@@ -996,7 +1041,7 @@ const RestaurantsPage = () => {
               displayedRestaurants.map((restaurant) => (
                 <tr
                   key={restaurant.id}
-                  onClick={() => setSelectedRestaurant(restaurant)}
+                  onClick={() => handleViewClick(restaurant)}
                   className="restaurant-row"
                 >
                   <td>{restaurant.id}</td>
@@ -1111,7 +1156,7 @@ const RestaurantsPage = () => {
 
                 <div className="detail-item">
                   <span className="detail-label">가격대</span>
-                  <span className="detail-value">{selectedRestaurant.priceDisplay || '-'}</span>
+                  <span className="detail-value">{selectedRestaurant.priceDisplay || selectedRestaurant.menus?.[0]?.priceRate || '-'}</span>
                 </div>
 
                 <div className="detail-item full-width">
@@ -1129,6 +1174,44 @@ const RestaurantsPage = () => {
                   <span className="detail-value">{selectedRestaurant.lng}</span>
                 </div>
 
+                {(() => {
+                  const hoursLines = selectedRestaurant.hours
+                    ? [
+                        ...DAY_OPTIONS
+                          .filter(({ key }) => selectedRestaurant.hours[key])
+                          .map(({ key, label }) => `${label} ${selectedRestaurant.hours[key]}`),
+                        ...(selectedRestaurant.hours.breakTime ? [`브레이크 ${selectedRestaurant.hours.breakTime}`] : []),
+                      ]
+                    : [];
+                  const menuLines = (selectedRestaurant.menus || []).map((m) => m.name);
+                  if (!hoursLines.length && !menuLines.length) return null;
+                  return (
+                    <div className="detail-item full-width detail-hours-menus">
+                      {hoursLines.length > 0 && (
+                        <div className="detail-inline-block">
+                          <span className="detail-label">영업시간</span>
+                          <span className="detail-value">
+                            {hoursLines.map((line, i) => (
+                              <div key={i}>{line}</div>
+                            ))}
+                          </span>
+                        </div>
+                      )}
+                      {hoursLines.length > 0 && menuLines.length > 0 && <span className="detail-inline-divider">|</span>}
+                      {menuLines.length > 0 && (
+                        <div className="detail-inline-block">
+                          <span className="detail-label">대표 메뉴</span>
+                          <span className="detail-value">
+                            {menuLines.map((line, i) => (
+                              <div key={i}>{line}</div>
+                            ))}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+
                 {selectedRestaurant.isKatsuHunterPick && (
                   <div className="detail-item full-width katsu-hunter-section">
                     <div className="katsu-hunter-badge">
@@ -1141,12 +1224,25 @@ const RestaurantsPage = () => {
                   </div>
                 )}
 
-                {selectedRestaurant.ownerComment && (
-                  <div className="detail-item full-width">
-                    <span className="detail-label">사장님 한마디</span>
-                    <span className="detail-value description">{selectedRestaurant.ownerComment}</span>
-                  </div>
-                )}
+                <div className="detail-item full-width">
+                  <span className="detail-label">사장님 한마디</span>
+                  <span className="detail-value description">{selectedRestaurant.ownerComment || '-'}</span>
+                </div>
+
+                <div className="detail-item full-width">
+                  <span className="detail-label">제보 기여자</span>
+                  {selectedRestaurant.contributors?.length > 0 ? (
+                    <div className="contributor-list">
+                      {selectedRestaurant.contributors.map((c) => (
+                        <div key={c.userId} className="contributor-chip">
+                          <span>#{c.user?.id} {c.user?.nickname ?? '닉네임 없음'}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <span className="detail-value">-</span>
+                  )}
+                </div>
 
                 {selectedRestaurant.description && (
                   <div className="detail-item full-width">
@@ -1168,6 +1264,13 @@ const RestaurantsPage = () => {
                     </a>
                   </div>
                 )}
+
+                {parseFloat(selectedRestaurant.lat) && parseFloat(selectedRestaurant.lng) ? (
+                  <div className="detail-item full-width">
+                    <span className="detail-label">지도</span>
+                    <div ref={detailMapRef} className="map-preview-container" />
+                  </div>
+                ) : null}
               </div>
 
               <div className="modal-actions">

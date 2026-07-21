@@ -827,6 +827,28 @@
   overflow: hidden;
 }
 
+.detail-hours-menus {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--space-md);
+}
+
+.detail-hours-menus .detail-inline-block {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.detail-hours-menus .detail-inline-divider {
+  align-self: stretch;
+  color: var(--color-border);
+  font-weight: 300;
+}
+
 .image-preview {
   margin-top: var(--space-sm);
   max-width: 200px;
