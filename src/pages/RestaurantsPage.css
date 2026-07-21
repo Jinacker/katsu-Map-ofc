@@ -827,6 +827,17 @@
   overflow: hidden;
 }
 
+.duplicate-name-warning {
+  margin: 0;
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid #DC2626;
+  border-radius: var(--radius-md);
+  background: #FEF2F2;
+  color: #DC2626;
+  font-weight: 600;
+  font-size: 14px;
+}
+
 .detail-hours-menus {
   display: flex;
   flex-direction: row;

@@ -564,20 +564,6 @@ const RestaurantsPage = () => {
 
   const handleAddSubmit = async (e) => {
     e.preventDefault();
-
-    // 같은 가게명이 이미 있는지 확인 (자동저장으로 생성 중인 draft는 제외)
-    const newName = (formData.name || '').trim();
-    const currentDraftId = autoSaveRestaurantIdRef.current;
-    if (newName) {
-      const dupCount = restaurants.filter(
-        (r) => r.id !== currentDraftId && (r.name || '').trim() === newName
-      ).length;
-      if (dupCount > 0) {
-        const proceed = window.confirm(`같은 가게명이 ${dupCount}개 있습니다.\n진짜로 등록하실겁니까?`);
-        if (!proceed) return;
-      }
-    }
-
     try {
       await queueAutoSave();
       const payload = createRestaurantPayload();
@@ -824,6 +810,21 @@ const RestaurantsPage = () => {
       const parsed = response.data?.data;
       if (!parsed) throw new Error('파싱 결과가 비어 있습니다.');
 
+      // 파싱된 가게명이 기존과 중복이면 채우기 전에 확인 (신규 등록 시에만)
+      const parsedName = (parsed.name || '').trim();
+      if (showAddModal && parsedName) {
+        const dupCount = restaurants.filter(
+          (r) => r.id !== autoSaveRestaurantIdRef.current && (r.name || '').trim() === parsedName
+        ).length;
+        if (dupCount > 0) {
+          const proceed = window.confirm(`동일한 가게명이 ${dupCount}개 있습니다.\n그래도 파싱 내용을 넣으시겠습니까?`);
+          if (!proceed) {
+            setBulkParseMessage('');
+            return;
+          }
+        }
+      }
+
       let geoMatch = null;
       let geoErrorMessage = '';
       const keyword = [parsed.name, parsed.area].filter(Boolean).join(' ');
@@ -926,6 +927,14 @@ const RestaurantsPage = () => {
   const totalFilteredCount = filteredRestaurants.length;
   const displayedRestaurants = filteredRestaurants.slice(0, displayCount);
   const hasMore = displayCount < totalFilteredCount;
+
+  // 신규 등록 시 동일 가게명 개수 (자동저장 draft 제외)
+  const trimmedNewName = (formData.name || '').trim();
+  const duplicateNameCount = showAddModal && trimmedNewName
+    ? restaurants.filter(
+        (r) => r.id !== autoSaveRestaurantIdRef.current && (r.name || '').trim() === trimmedNewName
+      ).length
+    : 0;
 
   // 무한 스크롤 로직
   const loadMore = useCallback(() => {
@@ -1371,6 +1380,14 @@ const RestaurantsPage = () => {
                     </button>
                   </div>
                 </div>
+
+                {duplicateNameCount > 0 && (
+                  <div className="form-group full-width">
+                    <p className="duplicate-name-warning">
+                      ⚠️ 동일한 가게명이 {duplicateNameCount}개 있습니다! 확인해주세요!
+                    </p>
+                  </div>
+                )}
 
                 <div className="form-group">
                   <label>이름 *</label>
