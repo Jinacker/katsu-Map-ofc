@@ -11,6 +11,7 @@ import UserRecordsPage from './pages/UserRecordsPage';
 import PushNotificationsPage from './pages/PushNotificationsPage';
 import CommunityPage from './pages/CommunityPage';
 import GradeVotesPage from './pages/GradeVotesPage';
+import RankingPage from './pages/RankingPage';
 import OgSettingsPage from './pages/OgSettingsPage';
 import EncyclopediaPostsPage from './pages/EncyclopediaPostsPage';
 import NotFoundPage from './pages/NotFoundPage';
@@ -68,6 +69,16 @@ function App() {
             <ProtectedRoute>
               <AdminLayout>
                 <UsersPage />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/ranking"
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <RankingPage />
               </AdminLayout>
             </ProtectedRoute>
           }

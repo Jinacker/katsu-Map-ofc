@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import apiClient from '../api/axios';
+import UserProfileModal from '../components/UserProfileModal';
 import './UsersPage.css';
 
 const UsersPage = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedUserId, setSelectedUserId] = useState(null);
 
   useEffect(() => {
     fetchUsers();
@@ -109,7 +111,12 @@ const UsersPage = () => {
               </tr>
             ) : (
               filteredUsers.map((user) => (
-                <tr key={user.id} className="user-row">
+                <tr
+                  key={user.id}
+                  className="user-row"
+                  onClick={() => setSelectedUserId(user.id)}
+                  style={{ cursor: 'pointer' }}
+                >
                   <td>{user.id}</td>
                   <td className="user-nickname">
                     {user.nickname || <span className="no-nickname">미설정</span>}
@@ -137,6 +144,8 @@ const UsersPage = () => {
           </tbody>
         </table>
       </div>
+
+      <UserProfileModal userId={selectedUserId} onClose={() => setSelectedUserId(null)} />
     </div>
   );
 };
