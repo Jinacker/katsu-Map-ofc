@@ -10,6 +10,7 @@ import HunterContentPage from './pages/HunterContentPage';
 import UserRecordsPage from './pages/UserRecordsPage';
 import PushNotificationsPage from './pages/PushNotificationsPage';
 import CommunityPage from './pages/CommunityPage';
+import GradeVotesPage from './pages/GradeVotesPage';
 import OgSettingsPage from './pages/OgSettingsPage';
 import EncyclopediaPostsPage from './pages/EncyclopediaPostsPage';
 import NotFoundPage from './pages/NotFoundPage';
@@ -107,6 +108,16 @@ function App() {
             <ProtectedRoute>
               <AdminLayout>
                 <CommunityPage />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/grade-votes"
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <GradeVotesPage />
               </AdminLayout>
             </ProtectedRoute>
           }
