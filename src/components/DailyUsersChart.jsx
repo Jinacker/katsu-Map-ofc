@@ -1,7 +1,7 @@
 import React from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
-const DailyUsersChart = ({ data, mode = 'daily' }) => {
+const DailyUsersChart = ({ data, mode = 'daily', onDaySelect }) => {
   const chartData = data.map(item => {
     if (mode === 'monthly') {
       return {
@@ -61,7 +61,17 @@ const DailyUsersChart = ({ data, mode = 'daily' }) => {
 
   return (
     <ResponsiveContainer width="100%" height={300}>
-      <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+      <AreaChart
+        data={chartData}
+        margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+        onClick={onDaySelect ? (state) => {
+          // recharts 3의 차트 onClick 인자에는 activePayload가 없어 인덱스로 날짜를 찾는다
+          const index = Number(state?.activeTooltipIndex ?? state?.activeIndex);
+          const date = Number.isInteger(index) ? chartData[index]?.date : undefined;
+          if (date) onDaySelect(date);
+        } : undefined}
+        style={onDaySelect ? { cursor: 'pointer' } : undefined}
+      >
         <defs>
           <linearGradient id="colorUsers" x1="0" y1="0" x2="0" y2="1">
             <stop offset="5%" stopColor="#D4A574" stopOpacity={0.3}/>

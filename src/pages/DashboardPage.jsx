@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import apiClient from '../api/axios';
 import DailyUsersChart from '../components/DailyUsersChart';
+import HourlyVisitsChart from '../components/HourlyVisitsChart';
 import './DashboardPage.css';
 import { clearAdminToken } from '../utils/adminAuth';
 
@@ -45,6 +46,7 @@ const DashboardPage = () => {
   const [stats, setStats] = useState(null);
   const [healthStatus, setHealthStatus] = useState(null);
   const [selectedMonth, setSelectedMonth] = useState(getCurrentKstMonth);
+  const [selectedDate, setSelectedDate] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -103,6 +105,12 @@ const DashboardPage = () => {
   const todayLabel = getCurrentKstDateLabel();
   const comparison = stats?.comparison;
   const monthly = stats?.monthly;
+  const selectedDayStat = selectedDate
+    ? monthly?.daily?.find((day) => day.date === selectedDate)
+    : null;
+  const hourlyData = selectedDayStat
+    ? (selectedDayStat.hourly || []).map((count, hour) => ({ hour, count }))
+    : monthly?.hourly || [];
 
   return (
     <div className="dashboard-container">
@@ -117,7 +125,10 @@ const DashboardPage = () => {
             id="dashboard-month"
             className="month-selector"
             value={selectedMonth}
-            onChange={(e) => setSelectedMonth(e.target.value)}
+            onChange={(e) => {
+              setSelectedMonth(e.target.value);
+              setSelectedDate(null);
+            }}
             disabled={refreshing}
           >
             {(stats?.availableMonths || [selectedMonth]).map((month) => (
@@ -271,6 +282,22 @@ const DashboardPage = () => {
             <div className="engagement-value">{monthly?.peakDau.toLocaleString() || 0}</div>
             <div className="engagement-helper">{formatDate(monthly?.peakDate)} · 활성 사용자</div>
           </div>
+
+          <div className="engagement-card">
+            <div className="engagement-label">최다 방문 시간대</div>
+            <div className="engagement-value">{monthly?.peakHour != null ? `${monthly.peakHour}시` : '-'}</div>
+            <div className="engagement-helper">
+              {monthly?.peakHour != null ? `${monthly.peakHourCount.toLocaleString()}회 방문` : '데이터 없음'}
+            </div>
+          </div>
+
+          <div className="engagement-card">
+            <div className="engagement-label">최소 방문 시간대</div>
+            <div className="engagement-value">{monthly?.quietHour != null ? `${monthly.quietHour}시` : '-'}</div>
+            <div className="engagement-helper">
+              {monthly?.quietHour != null ? `${monthly.quietHourCount.toLocaleString()}회 방문` : '데이터 없음'}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -278,7 +305,7 @@ const DashboardPage = () => {
         <div className="section-header">
           <div>
             <h2 className="section-title">활성 사용자와 신규 가입자 추이</h2>
-            <p className="section-subtitle">{monthLabel} 일별 변화 · 선에 마우스를 올리면 상세 수치를 볼 수 있습니다</p>
+            <p className="section-subtitle">{monthLabel} 일별 변화 · 날짜를 클릭하면 아래 방문 시간대 분포가 해당 날짜로 바뀝니다</p>
           </div>
           <div className="health-status">
             <span className={`status-dot ${healthStatus === 'ok' ? 'status-ok' : 'status-error'}`}></span>
@@ -287,7 +314,39 @@ const DashboardPage = () => {
         </div>
 
         {monthly?.daily?.length > 0 ? (
-          <DailyUsersChart data={monthly.daily} mode="monthly" />
+          <DailyUsersChart
+            data={monthly.daily}
+            mode="monthly"
+            onDaySelect={(date) => setSelectedDate((prev) => (prev === date ? null : date))}
+          />
+        ) : (
+          <div className="empty-state"><p>데이터가 없습니다</p></div>
+        )}
+      </div>
+
+      <div className="chart-section">
+        <div className="section-header">
+          <div>
+            <h2 className="section-title">
+              {selectedDate
+                ? `${formatDate(selectedDate)} 방문 시간대 분포`
+                : `${monthLabel} 전체 방문 시간대 분포`}
+            </h2>
+            <p className="section-subtitle">시간대별 방문 (KST) · 위 추이 그래프에서 날짜를 클릭하면 해당 날짜로 바뀝니다</p>
+          </div>
+          {selectedDate && (
+            <button
+              type="button"
+              className="hourly-reset-button"
+              onClick={() => setSelectedDate(null)}
+            >
+              전체보기
+            </button>
+          )}
+        </div>
+
+        {hourlyData.length === 24 ? (
+          <HourlyVisitsChart data={hourlyData} />
         ) : (
           <div className="empty-state"><p>데이터가 없습니다</p></div>
         )}
