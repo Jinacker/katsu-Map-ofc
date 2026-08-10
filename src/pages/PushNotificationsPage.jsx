@@ -19,8 +19,32 @@ export default function PushNotificationsPage() {
   const [confirmStep, setConfirmStep] = useState(0); // 0 = 닫힘, 1~3 = 확인 단계
   const [isSending, setIsSending] = useState(false);
   const [result, setResult] = useState(null);
+  const [dispatch, setDispatch] = useState(null); // 진행 중/완료된 발송 상태
+  const [pollingId, setPollingId] = useState(null); // 폴링 대상 dispatchId
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [templateRefreshKey, setTemplateRefreshKey] = useState(0);
+
+  // 발송 진행 상황 폴링 (1.5초 간격, 완료 시 중단, 최대 3분)
+  useEffect(() => {
+    if (!pollingId) return undefined;
+    const interval = setInterval(async () => {
+      try {
+        const res = await apiClient.get(`/api/v1/admin/push/dispatches/${pollingId}`);
+        const d = res.data?.data;
+        if (d) {
+          setDispatch(d);
+          if (d.status === 'completed') setPollingId(null);
+        }
+      } catch {
+        // 일시 오류는 다음 폴링에서 재시도
+      }
+    }, 1500);
+    const timeout = setTimeout(() => setPollingId(null), 180000);
+    return () => {
+      clearInterval(interval);
+      clearTimeout(timeout);
+    };
+  }, [pollingId]);
 
   useEffect(() => {
     apiClient.get('/api/v1/admin/users').then(res => {
@@ -72,8 +96,16 @@ export default function PushNotificationsPage() {
         ...(targetMode === 'specific' ? { userIds: selectedUsers.map(u => u.id) } : {}),
       };
       const res = await apiClient.post('/api/v1/admin/push/send', payload);
-      const sent = res.data?.data?.sent ?? 0;
-      setResult({ success: true, sent });
+      const data = res.data?.data ?? {};
+      const sent = data.sent ?? 0;
+      if (data.dispatchId) {
+        // 진행 바 모드: 폴링으로 상태 갱신
+        setResult(null);
+        setDispatch({ targets: sent, totalChunks: 0, sentChunks: 0, failedChunks: 0, status: 'in_progress' });
+        setPollingId(data.dispatchId);
+      } else {
+        setResult({ success: true, sent });
+      }
       setTitle('');
       setBody('');
       setSelectedUsers([]);
@@ -112,6 +144,29 @@ export default function PushNotificationsPage() {
           <button style={styles.dismissBtn} onClick={() => setResult(null)}>✕</button>
         </div>
       )}
+      {dispatch && (() => {
+        const done = (dispatch.sentChunks ?? 0) + (dispatch.failedChunks ?? 0);
+        const total = dispatch.totalChunks || 0;
+        const pct = dispatch.status === 'completed' ? 100 : total ? Math.round((done / total) * 100) : 0;
+        const isDone = dispatch.status === 'completed';
+        return (
+          <div style={{ ...styles.resultBanner, display: 'block', background: isDone ? '#e8f5e9' : '#e3f2fd', borderColor: isDone ? '#a5d6a7' : '#90caf9' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span>
+                {isDone
+                  ? `✅ 발송 완료 — 대상 ${dispatch.targets}명${dispatch.failedChunks ? ` · 실패 ${dispatch.failedChunks}묶음` : ''}`
+                  : `📤 발송 중 — ${pct}% (${done}/${total || '?'}묶음 · 대상 ${dispatch.targets}명)`}
+              </span>
+              {isDone && (
+                <button style={styles.dismissBtn} onClick={() => setDispatch(null)}>✕</button>
+              )}
+            </div>
+            <div style={styles.progressOuter}>
+              <div style={{ ...styles.progressInner, width: `${pct}%`, background: isDone ? '#4caf50' : '#2196f3' }} />
+            </div>
+          </div>
+        );
+      })()}
 
       <div style={styles.card}>
         <div style={styles.formGroup}>
@@ -273,6 +328,8 @@ const styles = {
     fontSize: 14,
   },
   dismissBtn: { background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, color: '#666' },
+  progressOuter: { marginTop: 10, height: 8, borderRadius: 4, background: 'rgba(0,0,0,0.08)', overflow: 'hidden' },
+  progressInner: { height: '100%', borderRadius: 4, transition: 'width 0.6s ease' },
   card: { background: '#fff', borderRadius: 12, padding: 24, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' },
   formGroup: { marginBottom: 20 },
   label: { display: 'block', fontWeight: 600, marginBottom: 8, fontSize: 14 },
