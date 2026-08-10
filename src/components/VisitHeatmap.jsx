@@ -31,6 +31,7 @@ export default function VisitHeatmap() {
   const [data, setData] = useState(null);
   const [error, setError] = useState(false);
   const [tooltip, setTooltip] = useState(null); // {x, y, text}
+  const [selMonth, setSelMonth] = useState('all'); // 'all' | 'YYYY-MM'
   const wrapRef = useRef(null);
   const [pushMap, setPushMap] = useState(new Map()); // 'YYYY-MM-DD' → [{title, targets}]
 
@@ -179,40 +180,75 @@ export default function VisitHeatmap() {
         </div>
       </div>
 
-      {/* ── 요일 × 시간대 패턴 (같은 팔레트) ── */}
-      <div style={{ marginTop: 28, marginBottom: 10 }}>
-        <span style={headingStyle}>요일 × 시간대 패턴</span>
-        <span style={{ ...subStyle, marginLeft: 8 }}>{periodLabel} 합산 · 하루 첫 접속 시각 기준</span>
-      </div>
-      <div style={{ overflowX: 'auto' }}>
-        <div style={{ display: 'inline-block' }}>
-          <div style={{ display: 'flex', gap: 4, marginLeft: 34, marginBottom: 6 }}>
-            {Array.from({ length: 24 }, (_, h) => (
-              <div key={h} style={{ ...hourCell, height: 15, fontSize: 12.5, color: '#8B8378' }}>
-                {h % 3 === 0 ? h : ''}
-              </div>
-            ))}
-          </div>
-          {data.days.map((row) => (
-            <div key={row.day} style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 4 }}>
-              <div style={{ width: 30, fontSize: 12.5, color: '#8B8378' }}>{row.day}</div>
-              {row.hours.map((count, hour) => (
-                <div
-                  key={hour}
-                  onMouseEnter={(e) => showTip(e, `${row.day}요일 ${hour}시 — ${count}회 방문`)}
-                  onMouseLeave={hideTip}
-                  style={{
-                    ...hourCell,
-                    background: SCALE[levelFor(count, data.maxCount)],
-                    border: '1px solid rgba(0,0,0,0.05)',
-                    cursor: 'default',
-                  }}
-                />
-              ))}
+      {/* ── 요일 × 시간대 패턴 (같은 팔레트, 월별 탭) ── */}
+      {(() => {
+        const byMonth = data.byMonth ?? [];
+        const selected =
+          selMonth === 'all' ? null : byMonth.find((m) => m.month === selMonth) || null;
+        const matrixDays = selected ? selected.days : data.days;
+        const matrixMax = selected ? selected.maxCount : data.maxCount;
+        const rangeLabel = selected ? `${selected.label} 한 달` : `${periodLabel} 합산`;
+        const tabStyle = (active) => ({
+          padding: '5px 12px',
+          borderRadius: 16,
+          fontSize: 12.5,
+          fontWeight: active ? 700 : 400,
+          border: '1px solid',
+          borderColor: active ? '#D4A574' : '#E5DFD6',
+          background: active ? '#D4A574' : '#fff',
+          color: active ? '#fff' : '#8B8378',
+          cursor: 'pointer',
+        });
+        return (
+          <>
+            <div style={{ marginTop: 28, marginBottom: 10, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+              <span style={headingStyle}>요일 × 시간대 패턴</span>
+              <span style={subStyle}>{rangeLabel} · 하루 첫 접속 시각 기준</span>
+              <span style={{ display: 'inline-flex', gap: 6, marginLeft: 'auto' }}>
+                <button type="button" style={tabStyle(selMonth === 'all')} onClick={() => setSelMonth('all')}>
+                  전체
+                </button>
+                {byMonth.map((m) => (
+                  <button key={m.month} type="button" style={tabStyle(selMonth === m.month)} onClick={() => setSelMonth(m.month)}>
+                    {m.label}
+                  </button>
+                ))}
+              </span>
             </div>
-          ))}
-        </div>
-      </div>
+            <div style={{ overflowX: 'auto' }}>
+              <div style={{ display: 'inline-block' }}>
+                <div style={{ display: 'flex', gap: 4, marginLeft: 34, marginBottom: 6 }}>
+                  {Array.from({ length: 24 }, (_, h) => (
+                    <div key={h} style={{ ...hourCell, height: 15, fontSize: 12.5, color: '#8B8378' }}>
+                      {h % 3 === 0 ? h : ''}
+                    </div>
+                  ))}
+                </div>
+                {matrixDays.map((row) => (
+                  <div key={row.day} style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 4 }}>
+                    <div style={{ width: 30, fontSize: 12.5, color: '#8B8378' }}>{row.day}</div>
+                    {row.hours.map((count, hour) => (
+                      <div
+                        key={hour}
+                        onMouseEnter={(e) =>
+                          showTip(e, `${selected ? `${selected.label} ` : ''}${row.day}요일 ${hour}시 — ${count}회 방문`)
+                        }
+                        onMouseLeave={hideTip}
+                        style={{
+                          ...hourCell,
+                          background: SCALE[levelFor(count, matrixMax)],
+                          border: '1px solid rgba(0,0,0,0.05)',
+                          cursor: 'default',
+                        }}
+                      />
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
+        );
+      })()}
     </div>
   );
 }
