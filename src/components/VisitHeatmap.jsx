@@ -1,25 +1,36 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import apiClient from '../api/axios';
 
-// 파랑 5단계 — 0은 가장 옅게, maxCount에 가까울수록 진하게
-const SCALE = ['#eef4fb', '#cfe0f5', '#9cc2ea', '#5b97d9', '#2f6fbe'];
+// 어드민 테마(웜 브라운) 5단계 — index.css의 --color-accent-primary(#D4A574) 계열
+const SCALE = ['#F1ECE4', '#EAD9C2', '#D4A574', '#B97C46', '#8A5626'];
+const DAY_LABELS = ['월', '화', '수', '목', '금', '토', '일'];
 
-function colorFor(count, maxCount) {
-  if (!count || !maxCount) return SCALE[0];
-  const ratio = count / maxCount;
-  if (ratio <= 0.25) return SCALE[1];
-  if (ratio <= 0.5) return SCALE[2];
-  if (ratio <= 0.75) return SCALE[3];
-  return SCALE[4];
+function levelFor(count, max) {
+  if (!count || !max) return 0;
+  const ratio = count / max;
+  if (ratio <= 0.25) return 1;
+  if (ratio <= 0.5) return 2;
+  if (ratio <= 0.75) return 3;
+  return 4;
 }
+
+const parseDate = (s) => {
+  const [y, m, d] = s.split('-').map(Number);
+  return new Date(y, m - 1, d);
+};
+const fmtKey = (d) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const addDays = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
 
 export default function VisitHeatmap() {
   const [data, setData] = useState(null);
   const [error, setError] = useState(false);
+  const [tooltip, setTooltip] = useState(null); // {x, y, text}
+  const wrapRef = useRef(null);
 
   useEffect(() => {
     apiClient
-      .get('/api/v1/admin/stats/visit-heatmap')
+      .get('/api/v1/admin/stats/visit-heatmap', { params: { weeks: 12 } })
       .then((res) => setData(res.data?.data ?? null))
       .catch(() => setError(true));
   }, []);
@@ -27,45 +38,149 @@ export default function VisitHeatmap() {
   if (error) return <div className="empty-state"><p>히트맵을 불러오지 못했습니다</p></div>;
   if (!data) return <div className="empty-state"><p>불러오는 중...</p></div>;
 
-  const cell = { width: 24, height: 24, borderRadius: 5 };
+  const countMap = new Map((data.daily ?? []).map((d) => [d.date, d.count]));
+  const today = new Date();
+  const startDate = parseDate(data.startDate);
+  const firstMonday = addDays(startDate, -((startDate.getDay() + 6) % 7));
+
+  // 주 단위 컬럼 (월요일 시작)
+  const weekCols = [];
+  for (let mon = firstMonday; mon <= today; mon = addDays(mon, 7)) {
+    weekCols.push(mon);
+  }
+
+  const showTip = (e, text) => {
+    const wrap = wrapRef.current?.getBoundingClientRect();
+    const cell = e.currentTarget.getBoundingClientRect();
+    if (!wrap) return;
+    setTooltip({
+      x: cell.left - wrap.left + cell.width / 2,
+      y: cell.top - wrap.top - 8,
+      text,
+    });
+  };
+  const hideTip = () => setTooltip(null);
+
+  const grassCell = { width: 15, height: 15, borderRadius: 3.5 };
+  const hourCell = { width: 21, height: 21, borderRadius: 4.5 };
 
   return (
-    <div>
-      {/* 범례 */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12, fontSize: 12, color: '#888' }}>
-        <span>낮음</span>
-        {SCALE.map((c) => (
-          <span key={c} style={{ ...cell, width: 16, height: 16, background: c, display: 'inline-block', border: '1px solid rgba(0,0,0,0.06)' }} />
-        ))}
-        <span>높음</span>
-        <span style={{ marginLeft: 'auto' }}>
-          {data.startDate} ~ 오늘 · 최근 {data.weeks}주 · 셀 최대 {data.maxCount}회
-        </span>
+    <div ref={wrapRef} style={{ position: 'relative' }}>
+      {tooltip && (
+        <div
+          style={{
+            position: 'absolute',
+            left: tooltip.x,
+            top: tooltip.y,
+            transform: 'translate(-50%, -100%)',
+            background: '#2D2926',
+            color: '#fff',
+            fontSize: 12,
+            padding: '6px 10px',
+            borderRadius: 6,
+            whiteSpace: 'nowrap',
+            pointerEvents: 'none',
+            zIndex: 10,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.25)',
+          }}
+        >
+          {tooltip.text}
+        </div>
+      )}
+
+      {/* ── 일별 방문 잔디 (깃헙 스타일: 가로 = 주/월, 세로 = 요일) ── */}
+      <div style={{ overflowX: 'auto', paddingBottom: 4 }}>
+        <div style={{ display: 'inline-block' }}>
+          {/* 월 라벨 */}
+          <div style={{ display: 'flex', gap: 3, marginLeft: 26, marginBottom: 4 }}>
+            {weekCols.map((mon, i) => {
+              const prev = i > 0 ? weekCols[i - 1] : null;
+              const showMonth = !prev || prev.getMonth() !== mon.getMonth();
+              return (
+                <div key={fmtKey(mon)} style={{ ...grassCell, height: 14, fontSize: 11, color: '#8B8378', overflow: 'visible', whiteSpace: 'nowrap' }}>
+                  {showMonth ? `${mon.getMonth() + 1}월` : ''}
+                </div>
+              );
+            })}
+          </div>
+          {/* 요일 행 (월/수/금만 라벨) */}
+          {DAY_LABELS.map((label, dow) => (
+            <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 3, marginBottom: 3 }}>
+              <div style={{ width: 22, fontSize: 11, color: '#8B8378', textAlign: 'left' }}>
+                {dow % 2 === 0 ? label : ''}
+              </div>
+              {weekCols.map((mon) => {
+                const date = addDays(mon, dow);
+                const inRange = date >= startDate && date <= today;
+                if (!inRange) {
+                  return <div key={dow + fmtKey(mon)} style={{ ...grassCell, background: 'transparent' }} />;
+                }
+                const count = countMap.get(fmtKey(date)) ?? 0;
+                return (
+                  <div
+                    key={dow + fmtKey(mon)}
+                    onMouseEnter={(e) =>
+                      showTip(e, `${date.getMonth() + 1}월 ${date.getDate()}일 (${label}) — ${count}명 방문`)
+                    }
+                    onMouseLeave={hideTip}
+                    style={{
+                      ...grassCell,
+                      background: SCALE[levelFor(count, data.maxDailyCount)],
+                      border: '1px solid rgba(0,0,0,0.05)',
+                      cursor: 'default',
+                    }}
+                  />
+                );
+              })}
+            </div>
+          ))}
+          {/* 범례 */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 8, marginLeft: 26, fontSize: 11, color: '#8B8378' }}>
+            <span style={{ marginRight: 2 }}>적음</span>
+            {SCALE.map((c) => (
+              <span key={c} style={{ ...grassCell, width: 12, height: 12, background: c, display: 'inline-block', border: '1px solid rgba(0,0,0,0.05)' }} />
+            ))}
+            <span style={{ marginLeft: 2 }}>많음</span>
+            <span style={{ marginLeft: 'auto' }}>
+              {data.startDate} ~ 오늘 · 하루 최대 {data.maxDailyCount}명
+            </span>
+          </div>
+        </div>
       </div>
 
-      <div style={{ overflowX: 'auto' }}>
-        <div style={{ display: 'inline-block' }}>
-          {/* 시간 라벨 (3시간 간격) */}
-          <div style={{ display: 'flex', gap: 4, marginLeft: 34, marginBottom: 4 }}>
-            {Array.from({ length: 24 }, (_, h) => (
-              <div key={h} style={{ ...cell, height: 14, fontSize: 11, color: '#999', textAlign: 'left' }}>
-                {h % 3 === 0 ? h : ''}
+      {/* ── 요일 × 시간대 패턴 (같은 팔레트) ── */}
+      <div style={{ marginTop: 24 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: '#5C554D', marginBottom: 8 }}>
+          요일 × 시간대 패턴 <span style={{ fontWeight: 400, color: '#8B8378' }}>· 하루 첫 접속 시각 기준</span>
+        </div>
+        <div style={{ overflowX: 'auto' }}>
+          <div style={{ display: 'inline-block' }}>
+            <div style={{ display: 'flex', gap: 3, marginLeft: 30, marginBottom: 4 }}>
+              {Array.from({ length: 24 }, (_, h) => (
+                <div key={h} style={{ ...hourCell, height: 13, fontSize: 11, color: '#8B8378' }}>
+                  {h % 3 === 0 ? h : ''}
+                </div>
+              ))}
+            </div>
+            {data.days.map((row) => (
+              <div key={row.day} style={{ display: 'flex', alignItems: 'center', gap: 3, marginBottom: 3 }}>
+                <div style={{ width: 26, fontSize: 11, color: '#8B8378', textAlign: 'center' }}>{row.day}</div>
+                {row.hours.map((count, hour) => (
+                  <div
+                    key={hour}
+                    onMouseEnter={(e) => showTip(e, `${row.day}요일 ${hour}시 — ${count}회 방문`)}
+                    onMouseLeave={hideTip}
+                    style={{
+                      ...hourCell,
+                      background: SCALE[levelFor(count, data.maxCount)],
+                      border: '1px solid rgba(0,0,0,0.05)',
+                      cursor: 'default',
+                    }}
+                  />
+                ))}
               </div>
             ))}
           </div>
-          {/* 요일 행 */}
-          {data.days.map((row) => (
-            <div key={row.day} style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 4 }}>
-              <div style={{ width: 30, fontSize: 12, color: '#888', textAlign: 'center' }}>{row.day}</div>
-              {row.hours.map((count, hour) => (
-                <div
-                  key={hour}
-                  title={`${row.day} ${hour}시 — ${count}회 방문`}
-                  style={{ ...cell, background: colorFor(count, data.maxCount), border: '1px solid rgba(0,0,0,0.05)' }}
-                />
-              ))}
-            </div>
-          ))}
         </div>
       </div>
     </div>

@@ -328,8 +328,8 @@ const DashboardPage = () => {
       <div className="chart-section">
         <div className="section-header">
           <div>
-            <h2 className="section-title">요일 × 시간대 방문 히트맵</h2>
-            <p className="section-subtitle">최근 8주 · KST · 유저별 하루 첫 접속 기준 — 요일별 방문 패턴 비교용</p>
+            <h2 className="section-title">방문 히트맵</h2>
+            <p className="section-subtitle">최근 12주 · KST — 일별 방문 잔디와 요일×시간대 패턴 (칸에 마우스를 올리면 방문 수가 표시됩니다)</p>
           </div>
         </div>
         <VisitHeatmap />
