@@ -177,7 +177,7 @@ export default function VisitHeatmap() {
       {/* ── 요일 × 시간대 패턴 (같은 팔레트) ── */}
       <div style={{ marginTop: 24 }}>
         <div style={{ fontSize: 13, fontWeight: 600, color: '#5C554D', marginBottom: 8 }}>
-          요일 × 시간대 패턴 <span style={{ fontWeight: 400, color: '#8B8378' }}>· 하루 첫 접속 시각 기준</span>
+          요일 × 시간대 패턴 <span style={{ fontWeight: 400, color: '#8B8378' }}>· {data.startDate} ~ 오늘 {data.weeks}주 합산 · 하루 첫 접속 시각 기준</span>
         </div>
         <div style={{ overflowX: 'auto' }}>
           <div style={{ display: 'inline-block' }}>
