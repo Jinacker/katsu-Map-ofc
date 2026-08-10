@@ -328,16 +328,6 @@ const DashboardPage = () => {
       <div className="chart-section">
         <div className="section-header">
           <div>
-            <h2 className="section-title">방문 히트맵</h2>
-            <p className="section-subtitle">최근 12주 · KST — 일별 방문 잔디와 요일×시간대 패턴 (칸에 마우스를 올리면 방문 수가 표시됩니다)</p>
-          </div>
-        </div>
-        <VisitHeatmap />
-      </div>
-
-      <div className="chart-section">
-        <div className="section-header">
-          <div>
             <h2 className="section-title">
               {selectedDate
                 ? `${formatDate(selectedDate)} 방문 시간대 분포`
@@ -361,6 +351,16 @@ const DashboardPage = () => {
         ) : (
           <div className="empty-state"><p>데이터가 없습니다</p></div>
         )}
+      </div>
+
+      <div className="chart-section">
+        <div className="section-header">
+          <div>
+            <h2 className="section-title">방문 히트맵</h2>
+            <p className="section-subtitle">최근 12주 · KST · 칸에 마우스를 올리면 방문 수와 푸시 발송 내역이 표시됩니다</p>
+          </div>
+        </div>
+        <VisitHeatmap />
       </div>
     </div>
   );

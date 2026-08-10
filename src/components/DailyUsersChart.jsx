@@ -4,13 +4,15 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 const DailyUsersChart = ({ data, mode = 'daily', onDaySelect }) => {
   const chartData = data.map(item => {
     if (mode === 'monthly') {
+      const d = new Date(`${item.date}T00:00:00+09:00`);
       return {
         ...item,
-        displayDate: new Date(`${item.date}T00:00:00+09:00`).toLocaleDateString('ko-KR', {
+        displayDate: d.toLocaleDateString('ko-KR', {
           month: 'short',
           day: 'numeric',
+          weekday: 'short',
         }),
-        tooltipDate: item.date,
+        tooltipDate: `${item.date} (${d.toLocaleDateString('ko-KR', { weekday: 'short' })})`,
       };
     }
     if (mode === 'weekly') {
@@ -27,8 +29,12 @@ const DailyUsersChart = ({ data, mode = 'daily', onDaySelect }) => {
     }
     return {
       ...item,
-      displayDate: new Date(item.date).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' }),
-      tooltipDate: item.date,
+      displayDate: new Date(item.date).toLocaleDateString('ko-KR', {
+        month: 'short',
+        day: 'numeric',
+        weekday: 'short',
+      }),
+      tooltipDate: `${item.date} (${new Date(item.date).toLocaleDateString('ko-KR', { weekday: 'short' })})`,
     };
   });
 
