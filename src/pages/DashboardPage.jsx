@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import apiClient from '../api/axios';
 import DailyUsersChart from '../components/DailyUsersChart';
 import HourlyVisitsChart from '../components/HourlyVisitsChart';
+import VisitHeatmap from '../components/VisitHeatmap';
 import './DashboardPage.css';
 import { clearAdminToken } from '../utils/adminAuth';
 
@@ -322,6 +323,16 @@ const DashboardPage = () => {
         ) : (
           <div className="empty-state"><p>데이터가 없습니다</p></div>
         )}
+      </div>
+
+      <div className="chart-section">
+        <div className="section-header">
+          <div>
+            <h2 className="section-title">요일 × 시간대 방문 히트맵</h2>
+            <p className="section-subtitle">최근 8주 · KST · 유저별 하루 첫 접속 기준 — 요일별 방문 패턴 비교용</p>
+          </div>
+        </div>
+        <VisitHeatmap />
       </div>
 
       <div className="chart-section">

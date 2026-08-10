@@ -8,15 +8,21 @@ const UsersPage = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedUserId, setSelectedUserId] = useState(null);
+  const [minVisitDays, setMinVisitDays] = useState('');
+  const [maxVisitDays, setMaxVisitDays] = useState('');
+  const [visitedOn, setVisitedOn] = useState(''); // YYYY-MM-DD (KST) — 그날 방문한 유저만
 
   useEffect(() => {
-    fetchUsers();
-  }, []);
+    fetchUsers(visitedOn);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visitedOn]);
 
-  const fetchUsers = async () => {
+  const fetchUsers = async (visitedOnDate) => {
     try {
       setLoading(true);
-      const response = await apiClient.get('/api/v1/admin/users');
+      const response = await apiClient.get('/api/v1/admin/users', {
+        params: visitedOnDate ? { visitedOn: visitedOnDate } : {},
+      });
       setUsers(response.data.data);
     } catch (err) {
       console.error(err);
@@ -43,6 +49,12 @@ const UsersPage = () => {
       const nickname = user.nickname || '';
       return nickname.toLowerCase().includes(searchTerm.toLowerCase()) ||
              user.id.toString().includes(searchTerm);
+    })
+    .filter((user) => {
+      const days = user.visitDays ?? 0;
+      if (minVisitDays !== '' && days < Number(minVisitDays)) return false;
+      if (maxVisitDays !== '' && days > Number(maxVisitDays)) return false;
+      return true;
     })
     .sort((a, b) => {
       // 최근 접속자순 정렬 (null은 맨 뒤로)
@@ -86,7 +98,48 @@ const UsersPage = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          <span style={{ fontSize: 13, color: '#666' }}>방문일수</span>
+          <input
+            type="number"
+            min="0"
+            placeholder="이상"
+            value={minVisitDays}
+            onChange={(e) => setMinVisitDays(e.target.value)}
+            style={{ width: 70, padding: '6px 8px', border: '1px solid #ddd', borderRadius: 6 }}
+          />
+          <span style={{ color: '#999' }}>~</span>
+          <input
+            type="number"
+            min="0"
+            placeholder="이하"
+            value={maxVisitDays}
+            onChange={(e) => setMaxVisitDays(e.target.value)}
+            style={{ width: 70, padding: '6px 8px', border: '1px solid #ddd', borderRadius: 6 }}
+          />
+          <span style={{ fontSize: 13, color: '#666', marginLeft: 12 }}>방문일(KST)</span>
+          <input
+            type="date"
+            value={visitedOn}
+            onChange={(e) => setVisitedOn(e.target.value)}
+            style={{ padding: '6px 8px', border: '1px solid #ddd', borderRadius: 6 }}
+          />
+          {(minVisitDays !== '' || maxVisitDays !== '' || visitedOn) && (
+            <button
+              type="button"
+              onClick={() => { setMinVisitDays(''); setMaxVisitDays(''); setVisitedOn(''); }}
+              style={{ padding: '6px 10px', border: '1px solid #ddd', borderRadius: 6, background: '#fff', cursor: 'pointer', fontSize: 13 }}
+            >
+              필터 초기화
+            </button>
+          )}
+        </div>
       </div>
+      {visitedOn && (
+        <p style={{ fontSize: 13, color: '#1976d2', margin: '0 0 12px' }}>
+          {visitedOn} (KST)에 방문한 유저만 표시 중 — {users.length}명
+        </p>
+      )}
 
       {/* Users Table */}
       <div className="table-container">
@@ -98,6 +151,7 @@ const UsersPage = () => {
               <th>제보</th>
               <th>즐찾</th>
               <th>기록</th>
+              <th>방문일수</th>
               <th>마지막 접속</th>
               <th>가입일</th>
             </tr>
@@ -105,7 +159,7 @@ const UsersPage = () => {
           <tbody>
             {filteredUsers.length === 0 ? (
               <tr>
-                <td colSpan="7" className="empty-cell">
+                <td colSpan="8" className="empty-cell">
                   검색 결과가 없습니다
                 </td>
               </tr>
@@ -134,6 +188,11 @@ const UsersPage = () => {
                   <td>
                     <span className={`stat-count ${user.tastingNoteCount > 0 ? 'has-value' : ''}`}>
                       {user.tastingNoteCount ?? 0}
+                    </span>
+                  </td>
+                  <td>
+                    <span className={`stat-count ${user.visitDays > 0 ? 'has-value' : ''}`}>
+                      {user.visitDays ?? 0}
                     </span>
                   </td>
                   <td>{formatDate(user.lastAccessedAt)}</td>

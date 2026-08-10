@@ -33,7 +33,10 @@ export default function PushNotificationsPage() {
         const d = res.data?.data;
         if (d) {
           setDispatch(d);
-          if (d.status === 'completed') setPollingId(null);
+          if (d.status === 'completed') {
+            setPollingId(null);
+            fetchHistory(); // 완료된 발송을 기록 목록에 반영
+          }
         }
       } catch {
         // 일시 오류는 다음 폴링에서 재시도
@@ -45,6 +48,24 @@ export default function PushNotificationsPage() {
       clearTimeout(timeout);
     };
   }, [pollingId]);
+
+  const [history, setHistory] = useState([]);
+  const fetchHistory = () => {
+    apiClient
+      .get('/api/v1/admin/push/dispatches', { params: { limit: 20 } })
+      .then((res) => setHistory(res.data?.data ?? []))
+      .catch(() => {});
+  };
+  useEffect(() => {
+    fetchHistory();
+  }, []);
+
+  const formatKst = (iso) => {
+    if (!iso) return '-';
+    return new Date(iso).toLocaleString('ko-KR', {
+      month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit',
+    });
+  };
 
   useEffect(() => {
     apiClient.get('/api/v1/admin/users').then(res => {
@@ -292,6 +313,46 @@ export default function PushNotificationsPage() {
           </div>
         </div>
       )}
+
+      {/* 발송 기록 — 방문 급증과 대조할 수 있게 시각·내용·대상 수를 남긴다 */}
+      <div style={{ ...styles.card, marginTop: 24 }}>
+        <h2 style={{ fontSize: 16, fontWeight: 700, margin: '0 0 4px' }}>발송 기록</h2>
+        <p style={{ fontSize: 13, color: '#888', margin: '0 0 16px' }}>
+          최근 20건 · 방문자 추이와 대조용 (기록은 2026-08-10 이후 발송부터)
+        </p>
+        {history.length === 0 ? (
+          <p style={{ fontSize: 14, color: '#999' }}>아직 기록이 없습니다.</p>
+        ) : (
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+            <thead>
+              <tr style={{ textAlign: 'left', color: '#888', borderBottom: '1px solid #eee' }}>
+                <th style={{ padding: '8px 6px' }}>발송 시각</th>
+                <th style={{ padding: '8px 6px' }}>제목</th>
+                <th style={{ padding: '8px 6px' }}>내용</th>
+                <th style={{ padding: '8px 6px', textAlign: 'right' }}>대상</th>
+                <th style={{ padding: '8px 6px' }}>상태</th>
+              </tr>
+            </thead>
+            <tbody>
+              {history.map((d) => (
+                <tr key={d.id} style={{ borderBottom: '1px solid #f5f5f5' }}>
+                  <td style={{ padding: '8px 6px', whiteSpace: 'nowrap' }}>{formatKst(d.createdAt)}</td>
+                  <td style={{ padding: '8px 6px', fontWeight: 600 }}>{d.title}</td>
+                  <td style={{ padding: '8px 6px', color: '#666', maxWidth: 320, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {d.body || '-'}
+                  </td>
+                  <td style={{ padding: '8px 6px', textAlign: 'right' }}>{d.targets}명</td>
+                  <td style={{ padding: '8px 6px' }}>
+                    {d.status === 'completed'
+                      ? (d.failedChunks > 0 ? `완료 (실패 ${d.failedChunks}묶음)` : '완료')
+                      : '진행 중'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
 
       <AdminTemplateModal
         open={showTemplateModal}
