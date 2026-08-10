@@ -78,8 +78,14 @@ export default function PushNotificationsPage() {
       setBody('');
       setSelectedUsers([]);
       setUserSearch('');
-    } catch {
-      setResult({ success: false });
+    } catch (err) {
+      setResult({
+        success: false,
+        message:
+          err?.response?.status === 409
+            ? '이미 진행 중인 발송이 있습니다. 잠시 후 다시 시도해주세요.'
+            : null,
+      });
     } finally {
       setIsSending(false);
       setConfirmStep(0);
@@ -101,8 +107,8 @@ export default function PushNotificationsPage() {
       {result && (
         <div style={{ ...styles.resultBanner, background: result.success ? '#e8f5e9' : '#fdecea', borderColor: result.success ? '#a5d6a7' : '#ef9a9a' }}>
           {result.success
-            ? `✅ 발송 완료 — ${result.sent}명에게 전송되었습니다.`
-            : '❌ 발송에 실패했습니다. 다시 시도해주세요.'}
+            ? `✅ 발송 시작 — 대상 ${result.sent}명에게 순차 전송 중입니다.`
+            : `❌ ${result.message || '발송에 실패했습니다. 다시 시도해주세요.'}`}
           <button style={styles.dismissBtn} onClick={() => setResult(null)}>✕</button>
         </div>
       )}
