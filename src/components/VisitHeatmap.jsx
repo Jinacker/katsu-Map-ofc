@@ -28,11 +28,26 @@ export default function VisitHeatmap() {
   const [tooltip, setTooltip] = useState(null); // {x, y, text}
   const wrapRef = useRef(null);
 
+  const [pushMap, setPushMap] = useState(new Map()); // 'YYYY-MM-DD' → [{title, targets}]
+
   useEffect(() => {
     apiClient
       .get('/api/v1/admin/stats/visit-heatmap', { params: { weeks: 12 } })
       .then((res) => setData(res.data?.data ?? null))
       .catch(() => setError(true));
+    // 푸시 발송일 오버레이 (기록은 2026-08-10 이후 발송분부터)
+    apiClient
+      .get('/api/v1/admin/push/dispatches', { params: { limit: 100 } })
+      .then((res) => {
+        const map = new Map();
+        (res.data?.data ?? []).forEach((d) => {
+          const key = fmtKey(new Date(d.createdAt));
+          if (!map.has(key)) map.set(key, []);
+          map.get(key).push({ title: d.title, targets: d.targets });
+        });
+        setPushMap(map);
+      })
+      .catch(() => {});
   }, []);
 
   if (error) return <div className="empty-state"><p>히트맵을 불러오지 못했습니다</p></div>;
@@ -84,7 +99,9 @@ export default function VisitHeatmap() {
             boxShadow: '0 2px 8px rgba(0,0,0,0.25)',
           }}
         >
-          {tooltip.text}
+          {(Array.isArray(tooltip.text) ? tooltip.text : [tooltip.text]).map((line, i) => (
+            <div key={i} style={i > 0 ? { marginTop: 3, color: '#F5D9A8' } : undefined}>{line}</div>
+          ))}
         </div>
       )}
 
@@ -115,18 +132,23 @@ export default function VisitHeatmap() {
                 if (!inRange) {
                   return <div key={dow + fmtKey(mon)} style={{ ...grassCell, background: 'transparent' }} />;
                 }
-                const count = countMap.get(fmtKey(date)) ?? 0;
+                const key = fmtKey(date);
+                const count = countMap.get(key) ?? 0;
+                const pushes = pushMap.get(key) ?? [];
+                const tipLines = [
+                  `${date.getMonth() + 1}월 ${date.getDate()}일 (${label}) — ${count}명 방문`,
+                  ...pushes.map((p) => `푸시 「${p.title}」 · 대상 ${p.targets}명`),
+                ];
                 return (
                   <div
                     key={dow + fmtKey(mon)}
-                    onMouseEnter={(e) =>
-                      showTip(e, `${date.getMonth() + 1}월 ${date.getDate()}일 (${label}) — ${count}명 방문`)
-                    }
+                    onMouseEnter={(e) => showTip(e, tipLines)}
                     onMouseLeave={hideTip}
                     style={{
                       ...grassCell,
                       background: SCALE[levelFor(count, data.maxDailyCount)],
                       border: '1px solid rgba(0,0,0,0.05)',
+                      boxShadow: pushes.length ? 'inset 0 0 0 2px #E2574C' : 'none',
                       cursor: 'default',
                     }}
                   />
@@ -141,6 +163,10 @@ export default function VisitHeatmap() {
               <span key={c} style={{ ...grassCell, width: 12, height: 12, background: c, display: 'inline-block', border: '1px solid rgba(0,0,0,0.05)' }} />
             ))}
             <span style={{ marginLeft: 2 }}>많음</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginLeft: 14 }}>
+              <span style={{ ...grassCell, width: 12, height: 12, background: SCALE[1], display: 'inline-block', boxShadow: 'inset 0 0 0 2px #E2574C' }} />
+              푸시 발송일
+            </span>
             <span style={{ marginLeft: 'auto' }}>
               {data.startDate} ~ 오늘 · 하루 최대 {data.maxDailyCount}명
             </span>
