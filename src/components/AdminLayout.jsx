@@ -77,7 +77,7 @@ const AdminLayout = ({ children }) => {
           <line x1="6" y1="20" x2="6" y2="14" />
         </svg>
       ),
-      label: '등급 투표'
+      label: '가게 리서치'
     },
     {
       path: '/users',

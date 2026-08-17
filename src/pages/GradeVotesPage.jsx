@@ -26,6 +26,113 @@ function formatDate(iso) {
   });
 }
 
+// ── 요즘 많이 조회되는 가게 (익명 집계 기반) ─────────────────
+const RANGE_TABS = [
+  { key: '7d', label: '최근 7일', days: 7 },
+  { key: '30d', label: '최근 30일', days: 30 },
+];
+const TOP_PREVIEW_COUNT = 5;
+
+const kstDayLabel = (offsetDays = 0) =>
+  new Date(Date.now() + 9 * 60 * 60 * 1000 - offsetDays * 24 * 60 * 60 * 1000)
+    .toISOString()
+    .slice(0, 10);
+
+function TrendingRestaurants() {
+  const [range, setRange] = useState('7d');
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [expanded, setExpanded] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      setLoading(true);
+      setError('');
+      try {
+        const days = RANGE_TABS.find((t) => t.key === range)?.days ?? 7;
+        const res = await api.get('/api/v1/admin/analytics/restaurants', {
+          params: { from: kstDayLabel(days - 1), to: kstDayLabel(0), limit: 100 },
+        });
+        const d = res.data?.data ?? res.data;
+        if (!cancelled) setItems(d.items ?? []);
+      } catch (e) {
+        if (!cancelled) setError('조회수 데이터를 불러오지 못했습니다.');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    load();
+    return () => { cancelled = true; };
+  }, [range]);
+
+  const visibleItems = expanded ? items : items.slice(0, TOP_PREVIEW_COUNT);
+
+  return (
+    <section style={s.trendingSection}>
+      <div style={s.sectionHeader}>
+        <div>
+          <h2 style={s.sectionTitle}>요즘 많이 조회되는 가게</h2>
+          <p style={s.subtitle}>앱에서 가게 상세를 연 횟수 · 참여 유저는 일별 순 사용자 합 (익명 집계)</p>
+        </div>
+        <div style={s.tabs}>
+          {RANGE_TABS.map((t) => (
+            <button
+              key={t.key}
+              onClick={() => setRange(t.key)}
+              style={{ ...s.tab, ...(range === t.key ? s.tabActive : {}) }}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {error ? (
+        <div style={s.empty}>{error}</div>
+      ) : loading ? (
+        <div style={s.loading}>불러오는 중...</div>
+      ) : items.length === 0 ? (
+        <div style={s.empty}>기간 내 가게 조회 기록이 없습니다.</div>
+      ) : (
+        <div style={s.trendingCard}>
+          {visibleItems.map((item, index) => {
+            const grade = getGradeLabel(item);
+            return (
+              <div
+                key={`${item.restaurantId}-${index}`}
+                style={{
+                  ...s.trendingRow,
+                  ...(index === visibleItems.length - 1 && items.length <= TOP_PREVIEW_COUNT
+                    ? { borderBottom: 'none' }
+                    : {}),
+                }}
+              >
+                <span style={s.rank}>{index + 1}</span>
+                <div style={s.nameWrap}>
+                  <span style={{ ...s.badge, background: grade.bg }}>{grade.text}</span>
+                  <span style={s.name}>{item.name ?? `삭제된 가게 #${item.restaurantId}`}</span>
+                  {item.area && <span style={s.area}>{item.area}</span>}
+                </div>
+                <div style={s.trendingNums}>
+                  <span style={s.viewCount}>{(item.count ?? 0).toLocaleString()}회</span>
+                  <span style={s.viewUsers}>{(item.uniqueUsers ?? 0).toLocaleString()}명</span>
+                </div>
+              </div>
+            );
+          })}
+          {items.length > TOP_PREVIEW_COUNT && (
+            <button style={s.expandBtn} onClick={() => setExpanded((prev) => !prev)}>
+              {expanded ? '접기' : `전체보기 (${items.length}곳)`}
+            </button>
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
+
 export default function GradeVotesPage() {
   const [sort, setSort] = useState('latest');
   const [items, setItems] = useState([]);
@@ -88,7 +195,16 @@ export default function GradeVotesPage() {
     <div style={s.page}>
       <div style={s.header}>
         <div>
-          <h1 style={s.title}>가게 등급 투표</h1>
+          <h1 style={s.title}>가게 리서치</h1>
+          <p style={s.subtitle}>가게 조회수와 등급 투표를 한눈에 봅니다</p>
+        </div>
+      </div>
+
+      <TrendingRestaurants />
+
+      <div style={s.sectionHeader}>
+        <div>
+          <h2 style={s.sectionTitle}>가게 등급 투표</h2>
           <p style={s.subtitle}>등급 변경 투표가 있는 가게 {total.toLocaleString()}곳</p>
         </div>
         <div style={s.tabs}>
@@ -164,6 +280,32 @@ const s = {
   },
   title: { margin: 0, fontSize: 22, fontWeight: 700 },
   subtitle: { margin: '4px 0 0', fontSize: 14, color: '#6b7280' },
+  trendingSection: { marginBottom: 28 },
+  sectionHeader: {
+    marginBottom: 12, display: 'flex', justifyContent: 'space-between',
+    alignItems: 'flex-end', flexWrap: 'wrap', gap: 12,
+  },
+  sectionTitle: { margin: 0, fontSize: 17, fontWeight: 700 },
+  trendingCard: { background: '#fff', borderRadius: 12, border: '1px solid #e5e7eb', overflow: 'hidden' },
+  trendingRow: {
+    display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px',
+    borderBottom: '1px solid #f3f4f6',
+  },
+  rank: {
+    width: 24, textAlign: 'center', fontSize: 14, fontWeight: 700,
+    color: '#9ca3af', flexShrink: 0, fontVariantNumeric: 'tabular-nums',
+  },
+  trendingNums: {
+    marginLeft: 'auto', display: 'flex', alignItems: 'baseline', gap: 10,
+    flexShrink: 0, fontVariantNumeric: 'tabular-nums',
+  },
+  viewCount: { fontSize: 15, fontWeight: 700, color: '#111827' },
+  viewUsers: { fontSize: 13, color: '#9ca3af' },
+  expandBtn: {
+    display: 'block', width: '100%', padding: '10px 0', border: 'none',
+    borderTop: '1px solid #f3f4f6', background: '#fafafa', color: '#6b7280',
+    fontSize: 13, fontWeight: 600, cursor: 'pointer',
+  },
   tabs: { display: 'flex', gap: 6, background: '#f3f4f6', padding: 4, borderRadius: 10 },
   tab: {
     padding: '6px 16px', border: 'none', borderRadius: 8, background: 'transparent',
