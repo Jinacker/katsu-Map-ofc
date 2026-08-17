@@ -23,6 +23,7 @@ const EMPTY_FORM_DATA = {
   isKatsuHunterPick: false,
   katsuHunterDescription: '',
   ownerComment: '',
+  reporterComment: '',
 };
 const EMPTY_MENUS = { priceRate: '', names: '' };
 const DAY_OPTIONS = [
@@ -339,6 +340,7 @@ const RestaurantsPage = () => {
       isKatsuHunterPick: restaurant.isKatsuHunterPick || false,
       katsuHunterDescription: restaurant.katsuHunterDescription || '',
       ownerComment: restaurant.ownerComment || '',
+      reporterComment: restaurant.reporterComment || '',
     };
     formDataRef.current = nextFormData;
     setFormData(nextFormData);
@@ -1253,6 +1255,11 @@ const RestaurantsPage = () => {
                 </div>
 
                 <div className="detail-item full-width">
+                  <span className="detail-label">제보자 한마디</span>
+                  <span className="detail-value description">{selectedRestaurant.reporterComment || '-'}</span>
+                </div>
+
+                <div className="detail-item full-width">
                   <span className="detail-label">제보 기여자</span>
                   {selectedRestaurant.contributors?.length > 0 ? (
                     <div className="contributor-list">
@@ -1751,6 +1758,17 @@ const RestaurantsPage = () => {
                     onChange={handleFormChange}
                     rows="3"
                     placeholder="가게 상세 모달에 표시할 사장님 한마디를 입력하세요"
+                  />
+                </div>
+
+                <div className="form-group full-width">
+                  <label>제보자 한마디</label>
+                  <textarea
+                    name="reporterComment"
+                    value={formData.reporterComment}
+                    onChange={handleFormChange}
+                    rows="3"
+                    placeholder="제보자 한마디를 입력하세요 (비워두면 앱에서 섹션이 숨겨집니다)"
                   />
                 </div>
 
