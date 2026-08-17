@@ -76,9 +76,9 @@ function HunterStatsSection() {
   const clickCount = (name) => clicks.find((c) => c.name === name) ?? { count: 0, uniqueUsers: 0 };
 
   return (
-    <div style={s.section}>
+    <div style={styles.section}>
       <div style={statsStyles.header}>
-        <h2 style={{ ...s.sectionTitle, margin: 0 }}>📊 카츠헌터 집계</h2>
+        <h2 style={{ ...styles.sectionTitle, margin: 0 }}>📊 카츠헌터 집계</h2>
         <div style={statsStyles.tabs}>
           {STATS_RANGES.map((t) => (
             <button
