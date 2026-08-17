@@ -1,0 +1,216 @@
+.analytics-page {
+  max-width: 1100px;
+}
+
+.analytics-page .page-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-lg);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-xl);
+}
+
+.analytics-subtitle {
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+/* 기간 선택 */
+.analytics-controls {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.range-btn {
+  padding: 8px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface);
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.range-btn:hover {
+  border-color: var(--color-accent-light);
+  color: var(--color-text-primary);
+}
+
+.range-btn.active {
+  background-color: var(--color-accent-primary);
+  border-color: var(--color-accent-primary);
+  color: #fff;
+}
+
+.range-btn.refresh:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.analytics-error,
+.analytics-loading,
+.analytics-empty {
+  padding: var(--space-lg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background-color: var(--color-surface);
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  text-align: center;
+}
+
+.analytics-error {
+  color: #c0392b;
+}
+
+/* 요약 카드 */
+.analytics-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-md);
+  margin-bottom: var(--space-xl);
+}
+
+.summary-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: var(--space-lg);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.summary-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.summary-value {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.summary-hint {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+/* 섹션 */
+.analytics-section {
+  margin-bottom: var(--space-xl);
+  padding: var(--space-lg);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.analytics-section-header {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-md);
+}
+
+.analytics-section-header h2 {
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.analytics-caption {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+/* 테이블 */
+.analytics-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.analytics-table th {
+  padding: 8px 12px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.analytics-table td {
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-primary);
+}
+
+.analytics-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.analytics-table .col-rank {
+  width: 48px;
+  text-align: center;
+  color: var(--color-text-secondary);
+}
+
+.analytics-table .col-num {
+  width: 96px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.analytics-table .muted {
+  color: var(--color-text-secondary);
+}
+
+/* 이름 + 비율 바 */
+.analytics-name-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.analytics-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.analytics-name-bar {
+  height: 4px;
+  border-radius: 2px;
+  background-color: var(--color-accent-light);
+}
+
+.live-badge {
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background-color: var(--color-accent-light);
+  color: var(--color-text-primary);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+@media (max-width: 640px) {
+  .analytics-page .page-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .analytics-table .col-num {
+    width: 64px;
+  }
+}
