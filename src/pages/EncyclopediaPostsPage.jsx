@@ -649,6 +649,7 @@ export default function EncyclopediaPostsPage() {
                   <div className="post-meta">
                     <span className={`post-status ${post.status}`}>{post.status === 'published' ? '발행' : '임시저장'}</span>
                     <span>{post.category}</span>
+                    <span className="post-views">조회 {(post.viewCount ?? 0).toLocaleString()}</span>
                   </div>
                   <h3>{post.title}</h3>
                   <p>{post.summary}</p>
