@@ -8,12 +8,19 @@ const AdminLayout = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const [unrepliedCount, setUnrepliedCount] = useState(0);
+  const [pendingPlacesCount, setPendingPlacesCount] = useState(0);
 
   useEffect(() => {
     apiClient.get('/api/v1/messages/admin/all')
       .then(res => {
         const msgs = res.data?.data ?? [];
         setUnrepliedCount(msgs.filter(m => !m.reply).length);
+      })
+      .catch(() => {});
+    // 미등록 가게 승인 대기 건수 (total만 필요해서 limit=1)
+    apiClient.get('/api/v1/admin/tasting-notes', { params: { pending: 'true', page: 1, limit: 1 } })
+      .then(res => {
+        setPendingPlacesCount(res.data?.data?.total ?? 0);
       })
       .catch(() => {});
   }, []);
@@ -212,6 +219,9 @@ const AdminLayout = ({ children }) => {
               {item.path === '/messages' && unrepliedCount > 0 && (
                 <span className="tabbar-badge" />
               )}
+              {item.path === '/pending-places' && pendingPlacesCount > 0 && (
+                <span className="tabbar-badge" />
+              )}
             </div>
             <span>{item.label}</span>
           </Link>
@@ -241,6 +251,9 @@ const AdminLayout = ({ children }) => {
               <span>{item.label}</span>
               {item.path === '/messages' && unrepliedCount > 0 && (
                 <span className="nav-badge">{unrepliedCount}</span>
+              )}
+              {item.path === '/pending-places' && pendingPlacesCount > 0 && (
+                <span className="nav-badge">{pendingPlacesCount}</span>
               )}
             </Link>
           ))}
