@@ -22,6 +22,157 @@ const moveItem = (arr, idx, dir) => {
   return next;
 };
 
+// ── 카츠헌터 집계 (익명 이용 통계) ─────────────────────────
+const STATS_RANGES = [
+  { key: '7d', label: '최근 7일', days: 7 },
+  { key: '30d', label: '최근 30일', days: 30 },
+];
+
+const CLICK_LABELS = {
+  NOTICE: '📣 한마디 열람',
+  YOUTUBE_URL: '유튜브 버튼',
+  INSTAGRAM_URL: '인스타 버튼',
+  BLOG_URL: '블로그 버튼',
+  PICK: '추천 가게 픽',
+};
+
+const POST_SOURCE_LABELS = { insta: '인스타', youtube: '유튜브', blog: '블로그', store: '스토어' };
+
+const statsKstDay = (offsetDays = 0) =>
+  new Date(Date.now() + 9 * 60 * 60 * 1000 - offsetDays * 24 * 60 * 60 * 1000)
+    .toISOString()
+    .slice(0, 10);
+
+function HunterStatsSection() {
+  const [range, setRange] = useState('7d');
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      setLoading(true);
+      setError('');
+      try {
+        const days = STATS_RANGES.find((t) => t.key === range)?.days ?? 7;
+        const res = await api.get('/api/v1/admin/analytics/hunter', {
+          params: { from: statsKstDay(days - 1), to: statsKstDay(0) },
+        });
+        const d = res.data?.data ?? res.data;
+        if (!cancelled) setStats(d);
+      } catch (e) {
+        if (!cancelled) setError('집계 데이터를 불러오지 못했습니다.');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    load();
+    return () => { cancelled = true; };
+  }, [range]);
+
+  const clicks = stats?.clicks ?? [];
+  const posts = stats?.posts ?? [];
+  const clickCount = (name) => clicks.find((c) => c.name === name) ?? { count: 0, uniqueUsers: 0 };
+
+  return (
+    <div style={s.section}>
+      <div style={statsStyles.header}>
+        <h2 style={{ ...s.sectionTitle, margin: 0 }}>📊 카츠헌터 집계</h2>
+        <div style={statsStyles.tabs}>
+          {STATS_RANGES.map((t) => (
+            <button
+              key={t.key}
+              onClick={() => setRange(t.key)}
+              style={{ ...statsStyles.tab, ...(range === t.key ? statsStyles.tabActive : {}) }}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+      </div>
+      <p style={statsStyles.caption}>익명 집계 · 참여 유저는 일별 순 사용자 합</p>
+
+      {error ? (
+        <div style={statsStyles.empty}>{error}</div>
+      ) : loading ? (
+        <div style={statsStyles.empty}>불러오는 중...</div>
+      ) : (
+        <>
+          <div style={statsStyles.cardRow}>
+            <div style={statsStyles.card}>
+              <span style={statsStyles.cardLabel}>탭 조회수</span>
+              <strong style={statsStyles.cardValue}>{(stats?.tab?.count ?? 0).toLocaleString()}</strong>
+              <span style={statsStyles.cardHint}>유저 {(stats?.tab?.uniqueUsers ?? 0).toLocaleString()}명</span>
+            </div>
+            {Object.entries(CLICK_LABELS).map(([key, label]) => {
+              const item = clickCount(key);
+              return (
+                <div key={key} style={statsStyles.card}>
+                  <span style={statsStyles.cardLabel}>{label}</span>
+                  <strong style={statsStyles.cardValue}>{(item.count ?? 0).toLocaleString()}</strong>
+                  <span style={statsStyles.cardHint}>유저 {(item.uniqueUsers ?? 0).toLocaleString()}명</span>
+                </div>
+              );
+            })}
+          </div>
+
+          <h3 style={statsStyles.subTitle}>포스트별 조회수</h3>
+          {posts.length === 0 ? (
+            <div style={statsStyles.empty}>기간 내 포스트 클릭 기록이 없습니다.</div>
+          ) : (
+            <div style={statsStyles.postList}>
+              {posts.map((post) => (
+                <div key={post.key} style={statsStyles.postRow}>
+                  <span style={statsStyles.postSource}>{POST_SOURCE_LABELS[post.source] ?? post.source}</span>
+                  <span style={statsStyles.postTitle}>
+                    {post.title ?? `삭제된 포스트 (${post.key})`}
+                  </span>
+                  <span style={statsStyles.postNums}>
+                    {(post.count ?? 0).toLocaleString()}회 · {(post.uniqueUsers ?? 0).toLocaleString()}명
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+const statsStyles = {
+  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' },
+  tabs: { display: 'flex', gap: 6, background: '#f3f4f6', padding: 4, borderRadius: 10 },
+  tab: {
+    padding: '5px 14px', border: 'none', borderRadius: 8, background: 'transparent',
+    fontSize: 13, fontWeight: 600, color: '#6b7280', cursor: 'pointer',
+  },
+  tabActive: { background: '#fff', color: '#111827', boxShadow: '0 1px 2px rgba(0,0,0,0.08)' },
+  caption: { margin: '6px 0 14px', fontSize: 12, color: '#9ca3af' },
+  cardRow: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 10, marginBottom: 18 },
+  card: {
+    display: 'flex', flexDirection: 'column', gap: 2, padding: '10px 12px',
+    background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 10,
+  },
+  cardLabel: { fontSize: 12, fontWeight: 600, color: '#6b7280' },
+  cardValue: { fontSize: 20, fontWeight: 700, color: '#111827', fontVariantNumeric: 'tabular-nums' },
+  cardHint: { fontSize: 11, color: '#9ca3af', fontVariantNumeric: 'tabular-nums' },
+  subTitle: { margin: '0 0 8px', fontSize: 14, fontWeight: 700, color: '#111827' },
+  postList: { display: 'flex', flexDirection: 'column' },
+  postRow: {
+    display: 'flex', alignItems: 'center', gap: 10, padding: '8px 4px',
+    borderBottom: '1px solid #f3f4f6', fontSize: 13,
+  },
+  postSource: {
+    flexShrink: 0, fontSize: 11, fontWeight: 700, color: '#6b7280',
+    background: '#f3f4f6', borderRadius: 6, padding: '2px 8px',
+  },
+  postTitle: { flex: 1, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+  postNums: { flexShrink: 0, color: '#6b7280', fontVariantNumeric: 'tabular-nums' },
+  empty: { padding: 20, textAlign: 'center', color: '#9ca3af', fontSize: 13 },
+};
+
 // 이미지 업로드 버튼 컴포넌트
 function ImageUploadCell({ value, onChange, uploading, onUpload }) {
   return (
@@ -245,6 +396,9 @@ export default function HunterContentPage() {
         </button>
       </div>
       {msg && <div style={{ ...s.msg, color: msg.startsWith('✅') ? '#16a34a' : '#dc2626' }}>{msg}</div>}
+
+      {/* ── 0. 카츠헌터 집계 (익명 이용 통계) ── */}
+      <HunterStatsSection />
 
       {/* ── 1. 카츠헌터 한마디 ── */}
       <Section title="📣 카츠헌터 한마디">
