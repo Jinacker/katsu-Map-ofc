@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import apiClient from '../api/axios';
 import { uploadImageToGCS } from '../api/gcs';
 import './RestaurantsPage.css';
@@ -143,6 +144,10 @@ const parseBusinessHoursText = (rawText) => {
 };
 
 const RestaurantsPage = () => {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  // 미등록 제보 기록에서 넘어온 경우: 등록 성공 시 해당 기록을 자동 연결(승인)한다
+  const pendingNoteIdRef = useRef(null);
   const [restaurants, setRestaurants] = useState([]);
   const [loading, setLoading] = useState(true);
   const [displayCount, setDisplayCount] = useState(20);
@@ -253,6 +258,33 @@ const RestaurantsPage = () => {
     setAutoSaveError('');
     setShowAddModal(true);
   };
+
+  // 미등록 가게 페이지에서 [가게 등록＋승인]으로 진입한 경우 — 제보 내용을 프리필해 등록 폼을 연다
+  useEffect(() => {
+    const pendingNoteId = Number(searchParams.get('pendingNoteId'));
+    if (!pendingNoteId) return;
+    pendingNoteIdRef.current = pendingNoteId;
+
+    const prefilled = {
+      ...EMPTY_FORM_DATA,
+      name: searchParams.get('pendingName') || '',
+      addr: searchParams.get('pendingAddr') || '',
+    };
+    setEditingRestaurant(null);
+    resetFormData();
+    formDataRef.current = prefilled;
+    setFormData(prefilled);
+    autoSaveRestaurantIdRef.current = null;
+    lastSavedSnapshotRef.current = JSON.stringify({
+      formData: prefilled,
+      hoursData: EMPTY_HOURS,
+      menusData: EMPTY_MENUS,
+    });
+    setAutoSaveStatus('idle');
+    setAutoSaveError('');
+    setShowAddModal(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   const loadContributors = async (restaurantId) => {
     try {
@@ -591,6 +623,27 @@ const RestaurantsPage = () => {
           } catch (contributorErr) {
             contributorSaveError = contributorErr;
           }
+        }
+      }
+
+      // 미등록 제보 기록에서 온 경우: 기록을 이 가게에 연결(승인)하고 목록으로 복귀
+      if (pendingNoteIdRef.current && createdRestaurantId) {
+        try {
+          await apiClient.post(
+            `/api/v1/admin/tasting-notes/${pendingNoteIdRef.current}/link-restaurant`,
+            { restaurantId: createdRestaurantId },
+          );
+          alert('식당이 등록되고 제보 기록이 커뮤니티에 공개됐습니다. 작성자에게 푸시를 보냈어요.');
+          pendingNoteIdRef.current = null;
+          setShowAddModal(false);
+          autoSaveRestaurantIdRef.current = null;
+          resetFormData();
+          navigate('/pending-places');
+          return;
+        } catch (linkErr) {
+          console.error(linkErr);
+          alert(`식당은 등록됐지만 기록 연결에 실패했습니다. 미등록 가게 페이지에서 [기존 가게에 연결]로 다시 시도하세요.\n${linkErr.response?.data?.message || linkErr.message}`);
+          pendingNoteIdRef.current = null;
         }
       }
 

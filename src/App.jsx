@@ -15,6 +15,7 @@ import RankingPage from './pages/RankingPage';
 import OgSettingsPage from './pages/OgSettingsPage';
 import EncyclopediaPostsPage from './pages/EncyclopediaPostsPage';
 import AnalyticsPage from './pages/AnalyticsPage';
+import PendingPlacesPage from './pages/PendingPlacesPage';
 import NotFoundPage from './pages/NotFoundPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminLayout from './components/AdminLayout';
@@ -140,6 +141,16 @@ function App() {
             <ProtectedRoute>
               <AdminLayout>
                 <EncyclopediaPostsPage />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/pending-places"
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <PendingPlacesPage />
               </AdminLayout>
             </ProtectedRoute>
           }

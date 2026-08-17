@@ -69,6 +69,17 @@ const AdminLayout = ({ children }) => {
       label: '맛집 관리'
     },
     {
+      path: '/pending-places',
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+          <line x1="12" y1="7" x2="12" y2="11" />
+          <line x1="12" y1="14" x2="12.01" y2="14" />
+        </svg>
+      ),
+      label: '미등록 가게'
+    },
+    {
       path: '/grade-votes',
       icon: (
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
