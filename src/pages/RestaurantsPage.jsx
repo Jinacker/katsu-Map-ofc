@@ -282,6 +282,18 @@ const RestaurantsPage = () => {
     });
     setAutoSaveStatus('idle');
     setAutoSaveError('');
+
+    // 제보자를 기여자로 미리 채워둔다 (resetFormData가 기여자를 비우므로 그 뒤에서 세팅)
+    const pendingUserId = Number(searchParams.get('pendingUserId'));
+    if (pendingUserId) {
+      setContributors([
+        {
+          userId: pendingUserId,
+          user: { id: pendingUserId, nickname: searchParams.get('pendingUserNickname') || '닉네임 없음' },
+        },
+      ]);
+    }
+
     setShowAddModal(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);

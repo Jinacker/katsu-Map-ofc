@@ -139,7 +139,9 @@ export default function PendingPlacesPage() {
                     navigate(
                       `/restaurants?pendingNoteId=${note.id}` +
                         `&pendingName=${encodeURIComponent(note.restaurantName)}` +
-                        `&pendingAddr=${encodeURIComponent(note.pendingAddr || '')}`,
+                        `&pendingAddr=${encodeURIComponent(note.pendingAddr || '')}` +
+                        `&pendingUserId=${note.userId ?? ''}` +
+                        `&pendingUserNickname=${encodeURIComponent(note.userNickname || '')}`,
                     )
                   }
                 >
