@@ -452,6 +452,8 @@
 
 .post-views {
   font-variant-numeric: tabular-nums;
+  color: #dc2626;
+  font-weight: 700;
 }
 
 .post-main h3 {
