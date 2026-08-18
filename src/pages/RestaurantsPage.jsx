@@ -324,6 +324,11 @@ const RestaurantsPage = () => {
     loadFeatureTags();
   }, [loadFeatureTags]);
 
+  // 이미 쓰고 있는 분류 목록 — 태그 관리 모달에서 골라 쓸 수 있게 모아둔다 (직접 입력도 그대로 허용)
+  const featureTagCategories = [
+    ...new Set(featureTags.map((tag) => tag.category).filter(Boolean)),
+  ].sort((a, b) => a.localeCompare(b, 'ko'));
+
   const selectedFeatureTagIds = formData.featureTagIds || [];
 
   const featureTagById = (id) => featureTags.find((t) => t.id === id);
@@ -1571,6 +1576,12 @@ const RestaurantsPage = () => {
               </button>
             </div>
 
+            <datalist id="feature-tag-category-options">
+              {featureTagCategories.map((category) => (
+                <option key={category} value={category} />
+              ))}
+            </datalist>
+
             <div className="feature-tag-create-row">
               <input
                 type="text"
@@ -1597,6 +1608,7 @@ const RestaurantsPage = () => {
                 }}
                 placeholder="분류 (선택, 예: 조리방식)"
                 className="feature-tag-input category"
+                list="feature-tag-category-options"
               />
               <button
                 type="button"
@@ -1638,6 +1650,7 @@ const RestaurantsPage = () => {
                             setEditingFeatureTag((prev) => ({ ...prev, category: e.target.value }))
                           }
                           placeholder="분류 (선택)"
+                          list="feature-tag-category-options"
                         />
                         <div className="feature-tag-row-actions">
                           <button
