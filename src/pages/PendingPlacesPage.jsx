@@ -24,6 +24,7 @@ export default function PendingPlacesPage() {
   const [restaurants, setRestaurants] = useState(null); // 전체 가게 목록 (최초 1회 로드)
   const [linkQuery, setLinkQuery] = useState('');
   const [linking, setLinking] = useState(false);
+  const [rejectingId, setRejectingId] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -89,6 +90,39 @@ export default function PendingPlacesPage() {
     }
   };
 
+  const handleReject = async (note) => {
+    if (rejectingId != null) return;
+    const input = window.prompt(
+      `'${note.restaurantName}' 가게 등록 요청을 반려할 사유를 입력해 주세요.\n작성자가 푸시 알림을 켜두었다면 입력한 내용이 전달됩니다.`,
+    );
+    if (input == null) return;
+    const reason = input.trim();
+    if (!reason) {
+      alert('반려 사유를 입력해 주세요.');
+      return;
+    }
+    if (reason.length > 200) {
+      alert('반려 사유는 200자 이하로 입력해 주세요.');
+      return;
+    }
+    if (!window.confirm('이 기록을 나만보기로 보존하고 가게 등록 요청만 반려할까요?')) return;
+
+    setRejectingId(note.id);
+    try {
+      await apiClient.post(`/api/v1/admin/tasting-notes/${note.id}/reject-pending-place`, {
+        reason,
+      });
+      alert('가게 등록 요청을 반려했습니다. 푸시가 켜진 작성자에게 사유가 전달됩니다.');
+      if (linkTargetId === note.id) setLinkTargetId(null);
+      await load();
+    } catch (e) {
+      console.error(e);
+      alert(`반려 처리에 실패했습니다: ${e.response?.data?.message || e.message}`);
+    } finally {
+      setRejectingId(null);
+    }
+  };
+
   return (
     <div style={s.page}>
       <div style={s.header}>
@@ -149,6 +183,13 @@ export default function PendingPlacesPage() {
                 </button>
                 <button style={s.secondaryBtn} onClick={() => openLinkPanel(note.id)}>
                   기존 가게에 연결
+                </button>
+                <button
+                  style={s.rejectBtn}
+                  onClick={() => handleReject(note)}
+                  disabled={rejectingId != null}
+                >
+                  {rejectingId === note.id ? '반려 처리 중...' : '반려'}
                 </button>
               </div>
 
@@ -230,6 +271,10 @@ const s = {
   secondaryBtn: {
     padding: '8px 14px', border: '1px solid #e5e7eb', borderRadius: 10, background: '#fff',
     color: '#374151', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+  },
+  rejectBtn: {
+    marginLeft: 'auto', padding: '8px 14px', border: '1px solid #ef4444', borderRadius: 10,
+    background: '#fff', color: '#dc2626', fontSize: 13, fontWeight: 700, cursor: 'pointer',
   },
   linkPanel: { marginTop: 10, borderTop: '1px solid #f3f4f6', paddingTop: 10 },
   linkInput: {
