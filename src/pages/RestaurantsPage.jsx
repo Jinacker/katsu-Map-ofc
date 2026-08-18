@@ -25,8 +25,10 @@ const EMPTY_FORM_DATA = {
   katsuHunterDescription: '',
   ownerComment: '',
   reporterComment: '',
+  featureTagIds: [],
 };
 const EMPTY_MENUS = { priceRate: '', names: '' };
+const MAX_FEATURE_TAGS = 5;
 const DAY_OPTIONS = [
   { key: 'mon', label: '월' },
   { key: 'tue', label: '화' },
@@ -178,6 +180,14 @@ const RestaurantsPage = () => {
   const [userSearchQuery, setUserSearchQuery] = useState('');
   const [userSearchResults, setUserSearchResults] = useState([]);
   const [contributorSearching, setContributorSearching] = useState(false);
+  // 가게 특징 태그 — 마스터 목록은 한 번 받아두고, 가게별 선택은 formData.featureTagIds가 들고 있다
+  const [featureTags, setFeatureTags] = useState([]);
+  const [featureTagQuery, setFeatureTagQuery] = useState('');
+  const [showFeatureTagModal, setShowFeatureTagModal] = useState(false);
+  const [newFeatureTagName, setNewFeatureTagName] = useState('');
+  const [newFeatureTagCategory, setNewFeatureTagCategory] = useState('');
+  const [featureTagSaving, setFeatureTagSaving] = useState(false);
+  const [editingFeatureTag, setEditingFeatureTag] = useState(null); // { id, name, category }
   const [uploading, setUploading] = useState({});
   const [draggingOver, setDraggingOver] = useState(null);
   const [geoSearching, setGeoSearching] = useState(false);
@@ -298,6 +308,124 @@ const RestaurantsPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
+  // ── 가게 특징 태그 ──────────────────────────────────────────────
+  // 마스터 태그는 어드민이 [태그 관리]에서만 만들고, 가게 폼에서는 고르기만 한다.
+
+  const loadFeatureTags = useCallback(async () => {
+    try {
+      const res = await apiClient.get('/api/v1/admin/feature-tags');
+      setFeatureTags(res.data?.data || []);
+    } catch (err) {
+      console.error(err);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadFeatureTags();
+  }, [loadFeatureTags]);
+
+  const selectedFeatureTagIds = formData.featureTagIds || [];
+
+  const featureTagById = (id) => featureTags.find((t) => t.id === id);
+
+  const setSelectedFeatureTagIds = (updater) => {
+    setFormData((prev) => {
+      const current = prev.featureTagIds || [];
+      const next = typeof updater === 'function' ? updater(current) : updater;
+      return { ...prev, featureTagIds: next };
+    });
+  };
+
+  const handleAddFeatureTag = (tagId) => {
+    if (selectedFeatureTagIds.includes(tagId)) return;
+    if (selectedFeatureTagIds.length >= MAX_FEATURE_TAGS) {
+      alert(`특징 태그는 최대 ${MAX_FEATURE_TAGS}개까지 붙일 수 있습니다.`);
+      return;
+    }
+    setSelectedFeatureTagIds((prev) => [...prev, tagId]);
+    setFeatureTagQuery('');
+  };
+
+  const handleRemoveFeatureTag = (tagId) => {
+    setSelectedFeatureTagIds((prev) => prev.filter((id) => id !== tagId));
+  };
+
+  // 폼에서 고를 수 있는 후보: 활성 태그 중 아직 안 고른 것 (검색어가 있으면 필터)
+  const featureTagCandidates = featureTags
+    .filter((tag) => tag.isActive && !selectedFeatureTagIds.includes(tag.id))
+    .filter((tag) => {
+      const query = featureTagQuery.trim().toLowerCase();
+      if (!query) return true;
+      return (
+        tag.name.toLowerCase().includes(query) ||
+        (tag.category || '').toLowerCase().includes(query)
+      );
+    })
+    .slice(0, 12);
+
+  const handleCreateFeatureTag = async () => {
+    const name = newFeatureTagName.trim();
+    if (!name) return;
+    setFeatureTagSaving(true);
+    try {
+      await apiClient.post('/api/v1/admin/feature-tags', {
+        name,
+        category: newFeatureTagCategory.trim() || undefined,
+      });
+      setNewFeatureTagName('');
+      setNewFeatureTagCategory('');
+      await loadFeatureTags();
+    } catch (err) {
+      alert(err.response?.data?.message || '태그 생성에 실패했습니다.');
+    } finally {
+      setFeatureTagSaving(false);
+    }
+  };
+
+  const handleSaveFeatureTagEdit = async () => {
+    if (!editingFeatureTag) return;
+    const name = editingFeatureTag.name.trim();
+    if (!name) return;
+    setFeatureTagSaving(true);
+    try {
+      await apiClient.put(`/api/v1/admin/feature-tags/${editingFeatureTag.id}`, {
+        name,
+        category: editingFeatureTag.category.trim(),
+      });
+      setEditingFeatureTag(null);
+      await loadFeatureTags();
+    } catch (err) {
+      alert(err.response?.data?.message || '태그 수정에 실패했습니다.');
+    } finally {
+      setFeatureTagSaving(false);
+    }
+  };
+
+  const handleToggleFeatureTagActive = async (tag) => {
+    setFeatureTagSaving(true);
+    try {
+      await apiClient.put(`/api/v1/admin/feature-tags/${tag.id}`, { isActive: !tag.isActive });
+      await loadFeatureTags();
+    } catch (err) {
+      alert(err.response?.data?.message || '태그 상태 변경에 실패했습니다.');
+    } finally {
+      setFeatureTagSaving(false);
+    }
+  };
+
+  const handleDeleteFeatureTag = async (tag) => {
+    if (!window.confirm(`'${tag.name}' 태그를 삭제할까요?`)) return;
+    setFeatureTagSaving(true);
+    try {
+      await apiClient.delete(`/api/v1/admin/feature-tags/${tag.id}`);
+      await loadFeatureTags();
+    } catch (err) {
+      alert(err.response?.data?.message || '태그 삭제에 실패했습니다.');
+    } finally {
+      setFeatureTagSaving(false);
+    }
+  };
+
   const loadContributors = async (restaurantId) => {
     try {
       const res = await apiClient.get(`/api/v1/admin/restaurants/${restaurantId}/contributors`);
@@ -385,6 +513,9 @@ const RestaurantsPage = () => {
       katsuHunterDescription: restaurant.katsuHunterDescription || '',
       ownerComment: restaurant.ownerComment || '',
       reporterComment: restaurant.reporterComment || '',
+      // 상세 응답이 오기 전에는 태그를 모르는 상태다. 빈 배열을 두면 그 사이에 자동 저장이
+      // 돌았을 때 기존 태그가 지워지므로, 값을 확인하기 전까지는 아예 보내지 않는다.
+      featureTagIds: undefined,
     };
     formDataRef.current = nextFormData;
     setFormData(nextFormData);
@@ -414,12 +545,24 @@ const RestaurantsPage = () => {
       priceRate: ms[0]?.priceRate || '',
       names: ms.map(m => m.name).join('\n'),
     };
+    // 기존에 붙어 있던 특징 태그를 폼에 채운다 (붙은 순서 그대로 내려온다).
+    // 상세 조회가 실패했거나 응답에 featureTags가 없으면 태그를 모르는 상태이므로
+    // undefined로 두어 저장 시 서버가 기존 태그를 유지하게 한다.
+    const nextFormDataWithTags = {
+      ...nextFormData,
+      featureTagIds: Array.isArray(detail?.featureTags)
+        ? detail.featureTags.map((t) => t.id)
+        : undefined,
+    };
+    formDataRef.current = nextFormDataWithTags;
+    setFormData(nextFormDataWithTags);
     hoursDataRef.current = nextHoursData;
     menusDataRef.current = nextMenusData;
     setHoursData(nextHoursData);
     setMenusData(nextMenusData);
+    // 방금 불러온 상태를 "저장된 상태"로 기록해야 자동 저장이 헛돌지 않는다
     lastSavedSnapshotRef.current = JSON.stringify({
-      formData: nextFormData,
+      formData: nextFormDataWithTags,
       hoursData: nextHoursData,
       menusData: nextMenusData,
     });
@@ -441,6 +584,7 @@ const RestaurantsPage = () => {
         hours: detail?.hours || null,
         menus: detail?.menus || [],
         contributors: contributorList,
+        featureTags: detail?.featureTags || [],
       };
     });
   };
@@ -1051,9 +1195,14 @@ const RestaurantsPage = () => {
           <h1 className="page-title">맛집 관리</h1>
           <p className="page-subtitle">전체 {totalCount}개의 맛집</p>
         </div>
-        <button className="add-btn" onClick={handleAddClick}>
-          + 새 식당 등록
-        </button>
+        <div className="page-header-actions">
+          <button className="feature-tag-manage-btn" onClick={() => setShowFeatureTagModal(true)}>
+            태그 관리
+          </button>
+          <button className="add-btn" onClick={handleAddClick}>
+            + 새 식당 등록
+          </button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -1325,6 +1474,21 @@ const RestaurantsPage = () => {
                 </div>
 
                 <div className="detail-item full-width">
+                  <span className="detail-label">가게 특징 태그</span>
+                  {selectedRestaurant.featureTags?.length > 0 ? (
+                    <div className="feature-tag-list">
+                      {selectedRestaurant.featureTags.map((tag) => (
+                        <div key={tag.id} className="feature-tag-chip readonly">
+                          <span>{tag.name}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <span className="detail-value">-</span>
+                  )}
+                </div>
+
+                <div className="detail-item full-width">
                   <span className="detail-label">제보 기여자</span>
                   {selectedRestaurant.contributors?.length > 0 ? (
                     <div className="contributor-list">
@@ -1382,6 +1546,170 @@ const RestaurantsPage = () => {
                   삭제
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 가게 특징 태그 관리 모달 — 마스터 태그는 여기서만 만들고 고친다 */}
+      {showFeatureTagModal && (
+        <div className="modal-overlay" onClick={() => setShowFeatureTagModal(false)}>
+          <div className="modal-content feature-tag-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div>
+                <h2>가게 특징 태그 관리</h2>
+                <div className="feature-tag-modal-subtitle">
+                  여기서 만든 태그를 가게 등록·수정 화면에서 최대 {MAX_FEATURE_TAGS}개까지 붙입니다.
+                </div>
+              </div>
+              <button
+                type="button"
+                className="modal-close"
+                onClick={() => setShowFeatureTagModal(false)}
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="feature-tag-create-row">
+              <input
+                type="text"
+                value={newFeatureTagName}
+                onChange={(e) => setNewFeatureTagName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleCreateFeatureTag();
+                  }
+                }}
+                placeholder="태그 이름 (예: 저온조리)"
+                className="feature-tag-input"
+              />
+              <input
+                type="text"
+                value={newFeatureTagCategory}
+                onChange={(e) => setNewFeatureTagCategory(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleCreateFeatureTag();
+                  }
+                }}
+                placeholder="분류 (선택, 예: 조리방식)"
+                className="feature-tag-input category"
+              />
+              <button
+                type="button"
+                className="feature-tag-create-btn"
+                onClick={handleCreateFeatureTag}
+                disabled={featureTagSaving || !newFeatureTagName.trim()}
+              >
+                추가
+              </button>
+            </div>
+
+            <div className="feature-tag-table">
+              {featureTags.length === 0 ? (
+                <div className="feature-tag-empty-row">
+                  아직 태그가 없습니다. 위에서 첫 태그를 추가해보세요.
+                </div>
+              ) : (
+                featureTags.map((tag) => (
+                  <div
+                    key={tag.id}
+                    className={`feature-tag-row ${tag.isActive ? '' : 'inactive'}`}
+                  >
+                    {editingFeatureTag?.id === tag.id ? (
+                      <>
+                        <input
+                          type="text"
+                          className="feature-tag-input"
+                          value={editingFeatureTag.name}
+                          onChange={(e) =>
+                            setEditingFeatureTag((prev) => ({ ...prev, name: e.target.value }))
+                          }
+                          autoFocus
+                        />
+                        <input
+                          type="text"
+                          className="feature-tag-input category"
+                          value={editingFeatureTag.category}
+                          onChange={(e) =>
+                            setEditingFeatureTag((prev) => ({ ...prev, category: e.target.value }))
+                          }
+                          placeholder="분류 (선택)"
+                        />
+                        <div className="feature-tag-row-actions">
+                          <button
+                            type="button"
+                            className="feature-tag-save-btn"
+                            onClick={handleSaveFeatureTagEdit}
+                            disabled={featureTagSaving}
+                          >
+                            저장
+                          </button>
+                          <button
+                            type="button"
+                            className="feature-tag-cancel-btn"
+                            onClick={() => setEditingFeatureTag(null)}
+                          >
+                            취소
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="feature-tag-row-name">
+                          {tag.name}
+                          {tag.category ? (
+                            <span className="feature-tag-category">{tag.category}</span>
+                          ) : null}
+                          {!tag.isActive && <span className="feature-tag-inactive-badge">비활성</span>}
+                        </div>
+                        <div className="feature-tag-row-count">
+                          {tag.restaurantCount > 0 ? `${tag.restaurantCount}곳 사용 중` : '미사용'}
+                        </div>
+                        <div className="feature-tag-row-actions">
+                          <button
+                            type="button"
+                            className="feature-tag-edit-btn"
+                            onClick={() =>
+                              setEditingFeatureTag({
+                                id: tag.id,
+                                name: tag.name,
+                                category: tag.category || '',
+                              })
+                            }
+                          >
+                            수정
+                          </button>
+                          <button
+                            type="button"
+                            className="feature-tag-toggle-btn"
+                            onClick={() => handleToggleFeatureTagActive(tag)}
+                            disabled={featureTagSaving}
+                          >
+                            {tag.isActive ? '비활성화' : '활성화'}
+                          </button>
+                          <button
+                            type="button"
+                            className="feature-tag-delete-btn"
+                            onClick={() => handleDeleteFeatureTag(tag)}
+                            disabled={featureTagSaving || tag.restaurantCount > 0}
+                            title={
+                              tag.restaurantCount > 0
+                                ? '사용 중인 태그는 삭제할 수 없습니다. 비활성화를 쓰세요.'
+                                : ''
+                            }
+                          >
+                            삭제
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>
@@ -1862,6 +2190,75 @@ const RestaurantsPage = () => {
                     rows="4"
                     placeholder={"메뉴명을 한 줄에 하나씩 입력하세요\n예:\n히레카츠 정식\n로스카츠 정식\n모리아와세카츠"}
                   />
+                </div>
+
+                {/* ── 가게 특징 태그 ── */}
+                <div className="form-group full-width">
+                  <label>
+                    가게 특징 태그{' '}
+                    <span style={{ fontWeight: 'normal', color: '#888', fontSize: 12 }}>
+                      (최대 {MAX_FEATURE_TAGS}개 · 새 태그는 상단 [태그 관리]에서 추가)
+                    </span>
+                  </label>
+
+                  {selectedFeatureTagIds.length > 0 && (
+                    <div className="feature-tag-list">
+                      {selectedFeatureTagIds.map((tagId) => {
+                        const tag = featureTagById(tagId);
+                        return (
+                          <div key={tagId} className="feature-tag-chip">
+                            <span>{tag ? tag.name : `#${tagId}`}</span>
+                            <button
+                              type="button"
+                              className="feature-tag-remove-btn"
+                              onClick={() => handleRemoveFeatureTag(tagId)}
+                            >
+                              ×
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {selectedFeatureTagIds.length < MAX_FEATURE_TAGS ? (
+                    <>
+                      <input
+                        type="text"
+                        className="feature-tag-search-input"
+                        value={featureTagQuery}
+                        onChange={(e) => setFeatureTagQuery(e.target.value)}
+                        placeholder="태그 검색 (예: 저온조리)"
+                      />
+                      <div className="feature-tag-candidates">
+                        {featureTagCandidates.length === 0 ? (
+                          <span className="feature-tag-empty">
+                            {featureTags.filter((t) => t.isActive).length === 0
+                              ? '등록된 태그가 없습니다. [태그 관리]에서 먼저 추가하세요.'
+                              : '조건에 맞는 태그가 없습니다.'}
+                          </span>
+                        ) : (
+                          featureTagCandidates.map((tag) => (
+                            <button
+                              key={tag.id}
+                              type="button"
+                              className="feature-tag-candidate"
+                              onClick={() => handleAddFeatureTag(tag.id)}
+                            >
+                              {tag.name}
+                              {tag.category ? (
+                                <span className="feature-tag-category">{tag.category}</span>
+                              ) : null}
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <span className="feature-tag-empty">
+                      최대 {MAX_FEATURE_TAGS}개를 모두 채웠습니다. 바꾸려면 먼저 하나를 빼세요.
+                    </span>
+                  )}
                 </div>
 
                 {/* ── 제보 기여자 ── */}
