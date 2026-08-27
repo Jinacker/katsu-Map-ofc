@@ -202,6 +202,7 @@ const RestaurantsPage = () => {
   const mapPreviewRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const markerInstanceRef = useRef(null);
+  const skipPlaceUrlAutoFillRef = useRef(false);
   const detailMapRef = useRef(null);
   const detailMapInstanceRef = useRef(null);
 
@@ -898,12 +899,17 @@ const RestaurantsPage = () => {
     const lng = parseFloat(formData.lng);
     if (!lat || !lng) return;
 
-    // placeUrl 비어있을 때만 좌표 기반 URL 생성 (기존 URL 덮어쓰지 않음)
-    setFormData(prev => {
-      if (prev.placeUrl) return prev;
-      const name = encodeURIComponent(prev.name || '위치');
-      return { ...prev, placeUrl: `https://map.kakao.com/link/map/${name},${lat},${lng}` };
-    });
+    // 주소 검색으로 채운 좌표는 카카오맵 URL을 자동 생성하지 않는다.
+    if (skipPlaceUrlAutoFillRef.current) {
+      skipPlaceUrlAutoFillRef.current = false;
+    } else {
+      // placeUrl 비어있을 때만 좌표 기반 URL 생성 (기존 URL 덮어쓰지 않음)
+      setFormData(prev => {
+        if (prev.placeUrl) return prev;
+        const name = encodeURIComponent(prev.name || '위치');
+        return { ...prev, placeUrl: `https://map.kakao.com/link/map/${name},${lat},${lng}` };
+      });
+    }
 
     if (!mapPreviewRef.current) return;
 
@@ -1032,17 +1038,14 @@ const RestaurantsPage = () => {
         return;
       }
 
-      setFormData((prev) => {
-        const lat = result.y;
-        const lng = result.x;
-        const name = encodeURIComponent(prev.name || '위치');
-        return {
-          ...prev,
-          lat,
-          lng,
-          placeUrl: `https://map.kakao.com/link/map/${name},${lat},${lng}`,
-        };
-      });
+      const coordinatesChanged = String(formData.lat) !== String(result.y)
+        || String(formData.lng) !== String(result.x);
+      skipPlaceUrlAutoFillRef.current = coordinatesChanged;
+      setFormData((prev) => ({
+        ...prev,
+        lat: result.y,
+        lng: result.x,
+      }));
     } catch (error) {
       alert('주소로 좌표를 찾는 중 오류가 발생했습니다: ' + error.message);
     } finally {
