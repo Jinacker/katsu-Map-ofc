@@ -114,6 +114,21 @@ const findAvailablePinOffset = (baseLat, baseLng, existingRestaurants) => {
   };
 };
 
+const normalizeRestaurantName = (name = '') => name
+  .normalize('NFKC')
+  .replace(/\s+/g, '')
+  .toLocaleLowerCase('ko-KR');
+
+const findDuplicateRestaurants = (name, existingRestaurants, excludedRestaurantId = null) => {
+  const normalizedName = normalizeRestaurantName(name);
+  if (!normalizedName) return [];
+
+  return existingRestaurants.filter((restaurant) => (
+    restaurant.id !== excludedRestaurantId
+    && normalizeRestaurantName(restaurant.name) === normalizedName
+  ));
+};
+
 const ALL_DAYS_KEYS = DAY_OPTIONS.map(({ key }) => key);
 const ALL_DAYS_TOKEN = /^(?:매일|연중\s*무휴|연중무휴)$/;
 const ALL_DAYS_INLINE = /^(?:매일|연중\s*무휴|연중무휴)[\s:]+(.+)$/;
@@ -735,11 +750,24 @@ const RestaurantsPage = () => {
     menusData: menusDataRef.current,
   });
 
-  const queueAutoSave = () => {
+  const queueAutoSave = ({ allowDuplicateName = false } = {}) => {
     const snapshot = getCurrentFormSnapshot();
     const serializedSnapshot = JSON.stringify(snapshot);
     if (serializedSnapshot === lastSavedSnapshotRef.current) {
       return autoSaveQueueRef.current;
+    }
+
+    const duplicateRestaurantsForSnapshot = showAddModal
+      ? findDuplicateRestaurants(
+          snapshot.formData.name,
+          restaurants,
+          autoSaveRestaurantIdRef.current,
+        )
+      : [];
+    if (!allowDuplicateName && duplicateRestaurantsForSnapshot.length > 0) {
+      setAutoSaveStatus('duplicate');
+      setAutoSaveError('');
+      return Promise.resolve();
     }
 
     setAutoSaveStatus('saving');
@@ -808,8 +836,28 @@ const RestaurantsPage = () => {
 
   const handleAddSubmit = async (e) => {
     e.preventDefault();
+
+    const duplicateRestaurantsForSubmit = findDuplicateRestaurants(
+      formDataRef.current.name,
+      restaurants,
+      autoSaveRestaurantIdRef.current,
+    );
+    if (duplicateRestaurantsForSubmit.length > 0) {
+      const duplicateSummary = duplicateRestaurantsForSubmit
+        .slice(0, 5)
+        .map((restaurant) => `#${restaurant.id} ${restaurant.name} (${restaurant.area || '지역 없음'})`)
+        .join('\n');
+      const remainingCount = duplicateRestaurantsForSubmit.length - 5;
+      const proceed = window.confirm(
+        `이름이 같은 기존 가게가 ${duplicateRestaurantsForSubmit.length}개 있습니다.\n\n${duplicateSummary}`
+        + `${remainingCount > 0 ? `\n외 ${remainingCount}개` : ''}`
+        + '\n\n그래도 새 가게로 등록하시겠습니까?',
+      );
+      if (!proceed) return;
+    }
+
     try {
-      await queueAutoSave();
+      await queueAutoSave({ allowDuplicateName: true });
       const payload = createRestaurantPayload();
       let createdRestaurantId = autoSaveRestaurantIdRef.current;
 
@@ -1163,17 +1211,14 @@ const RestaurantsPage = () => {
       if (!parsed) throw new Error('파싱 결과가 비어 있습니다.');
 
       // 파싱된 가게명이 기존과 중복이면 채우기 전에 확인 (신규 등록 시에만)
-      const parsedName = (parsed.name || '').trim();
-      if (showAddModal && parsedName) {
-        const dupCount = restaurants.filter(
-          (r) => r.id !== autoSaveRestaurantIdRef.current && (r.name || '').trim() === parsedName
-        ).length;
-        if (dupCount > 0) {
-          const proceed = window.confirm(`동일한 가게명이 ${dupCount}개 있습니다.\n그래도 파싱 내용을 넣으시겠습니까?`);
-          if (!proceed) {
-            setBulkParseMessage('');
-            return;
-          }
+      const parsedDuplicates = showAddModal
+        ? findDuplicateRestaurants(parsed.name, restaurants, autoSaveRestaurantIdRef.current)
+        : [];
+      if (parsedDuplicates.length > 0) {
+        const proceed = window.confirm(`동일한 가게명이 ${parsedDuplicates.length}개 있습니다.\n그래도 파싱 내용을 넣으시겠습니까?`);
+        if (!proceed) {
+          setBulkParseMessage('');
+          return;
         }
       }
 
@@ -1280,13 +1325,11 @@ const RestaurantsPage = () => {
   const displayedRestaurants = filteredRestaurants.slice(0, displayCount);
   const hasMore = displayCount < totalFilteredCount;
 
-  // 신규 등록 시 동일 가게명 개수 (자동저장 draft 제외)
-  const trimmedNewName = (formData.name || '').trim();
-  const duplicateNameCount = showAddModal && trimmedNewName
-    ? restaurants.filter(
-        (r) => r.id !== autoSaveRestaurantIdRef.current && (r.name || '').trim() === trimmedNewName
-      ).length
-    : 0;
+  // 신규 등록 시 공백·대소문자를 정규화한 동일 가게 목록 (자동저장 draft 제외)
+  const duplicateNameRestaurants = showAddModal
+    ? findDuplicateRestaurants(formData.name, restaurants, autoSaveRestaurantIdRef.current)
+    : [];
+  const duplicateNameCount = duplicateNameRestaurants.length;
 
   // 무한 스크롤 로직
   const loadMore = useCallback(() => {
@@ -1875,6 +1918,7 @@ const RestaurantsPage = () => {
                   {autoSaveStatus === 'saving' && '자동 저장 중...'}
                   {autoSaveStatus === 'saved' && '✓ 자동 저장됨'}
                   {autoSaveStatus === 'error' && `자동 저장 실패: ${autoSaveError}`}
+                  {autoSaveStatus === 'duplicate' && '중복 이름 확인 전까지 자동 저장하지 않습니다'}
                   {autoSaveStatus === 'idle' && '입력칸을 벗어나면 자동 저장됩니다'}
                 </div>
               </div>
@@ -1930,14 +1974,6 @@ const RestaurantsPage = () => {
                   </div>
                 </div>
 
-                {duplicateNameCount > 0 && (
-                  <div className="form-group full-width">
-                    <p className="duplicate-name-warning">
-                      ⚠️ 동일한 가게명이 {duplicateNameCount}개 있습니다! 확인해주세요!
-                    </p>
-                  </div>
-                )}
-
                 <div className="form-group">
                   <label>이름 *</label>
                   <input
@@ -1960,6 +1996,21 @@ const RestaurantsPage = () => {
                     placeholder="예: 강남, 홍대, 종로"
                   />
                 </div>
+
+                {duplicateNameCount > 0 && (
+                  <div className="form-group full-width duplicate-name-warning">
+                    <strong>⚠️ 이름이 같은 기존 가게가 {duplicateNameCount}개 있습니다.</strong>
+                    <span>공백·대소문자를 제외하고 비교했습니다. 확인 전에는 자동 저장하지 않습니다.</span>
+                    <ul>
+                      {duplicateNameRestaurants.map((restaurant) => (
+                        <li key={restaurant.id}>
+                          <b>#{restaurant.id} {restaurant.name}</b>
+                          <span>{[restaurant.area, restaurant.addr].filter(Boolean).join(' · ') || '지역·주소 없음'}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
 
                 <div className="form-group">
                   <label>카테고리</label>
@@ -2484,7 +2535,7 @@ const RestaurantsPage = () => {
                   취소
                 </button>
                 <button type="submit" className="submit-btn">
-                  {showAddModal ? '등록' : '수정'}
+                  {showAddModal && duplicateNameCount > 0 ? '중복 확인 후 등록' : (showAddModal ? '등록' : '수정')}
                 </button>
               </div>
             </form>

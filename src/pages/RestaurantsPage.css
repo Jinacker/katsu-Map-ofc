@@ -473,6 +473,10 @@
   color: #DC2626;
 }
 
+.autosave-status.duplicate {
+  color: #DC2626;
+}
+
 .form-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -843,14 +847,43 @@
 }
 
 .duplicate-name-warning {
-  margin: 0;
   padding: var(--space-sm) var(--space-md);
   border: 1px solid #DC2626;
   border-radius: var(--radius-md);
   background: #FEF2F2;
   color: #DC2626;
-  font-weight: 600;
   font-size: 14px;
+  line-height: 1.5;
+}
+
+.duplicate-name-warning > strong,
+.duplicate-name-warning > span {
+  display: block;
+}
+
+.duplicate-name-warning > span {
+  margin-top: 2px;
+  font-size: 12px;
+}
+
+.duplicate-name-warning ul {
+  display: grid;
+  gap: 6px;
+  margin: var(--space-sm) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.duplicate-name-warning li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 8px;
+  padding-top: 6px;
+  border-top: 1px solid #FECACA;
+}
+
+.duplicate-name-warning li span {
+  color: #991B1B;
 }
 
 .coordinate-collision-warning {
