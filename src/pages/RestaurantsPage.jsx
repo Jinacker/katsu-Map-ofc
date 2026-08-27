@@ -157,7 +157,7 @@ const RestaurantsPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStars, setFilterStars] = useState(['top5', 'best', 'good', 'none']);
   const [filterKatsuPick, setFilterKatsuPick] = useState(false);
-  const [sortOrder, setSortOrder] = useState('asc'); // 'asc' = 등록순, 'desc' = 역순
+  const [sortOrder, setSortOrder] = useState('desc'); // 'asc' = 등록순, 'desc' = 최신순
   const observerRef = useRef(null);
   const loadMoreRef = useRef(null);
   const [selectedRestaurant, setSelectedRestaurant] = useState(null);
