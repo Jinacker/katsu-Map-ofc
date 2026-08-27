@@ -29,6 +29,8 @@ const EMPTY_FORM_DATA = {
 };
 const EMPTY_MENUS = { priceRate: '', names: '' };
 const MAX_FEATURE_TAGS = 5;
+const PIN_OFFSET_METERS = 8;
+const MIN_PIN_DISTANCE_METERS = 6;
 const DAY_OPTIONS = [
   { key: 'mon', label: '월' },
   { key: 'tue', label: '화' },
@@ -68,6 +70,48 @@ const pickMostFrequent = (items) => {
     }
   });
   return best;
+};
+
+const getCoordinateDistanceMeters = (lat1, lng1, lat2, lng2) => {
+  const toRadians = (degree) => (degree * Math.PI) / 180;
+  const earthRadius = 6371000;
+  const dLat = toRadians(lat2 - lat1);
+  const dLng = toRadians(lng2 - lng1);
+  const a = Math.sin(dLat / 2) ** 2
+    + Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) * Math.sin(dLng / 2) ** 2;
+  return earthRadius * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+};
+
+const findAvailablePinOffset = (baseLat, baseLng, existingRestaurants) => {
+  const occupiedCoordinates = existingRestaurants
+    .map((restaurant) => ({ lat: Number(restaurant.lat), lng: Number(restaurant.lng) }))
+    .filter(({ lat, lng }) => Number.isFinite(lat) && Number.isFinite(lng));
+
+  for (let slot = 0; slot < 24; slot += 1) {
+    const ring = Math.floor(slot / 8) + 1;
+    const angle = ((slot % 8) * Math.PI) / 4;
+    const distance = PIN_OFFSET_METERS * ring;
+    const lat = baseLat + (Math.sin(angle) * distance) / 111320;
+    const lng = baseLng + (Math.cos(angle) * distance)
+      / (111320 * Math.cos((baseLat * Math.PI) / 180));
+    const isAvailable = occupiedCoordinates.every((occupied) => (
+      getCoordinateDistanceMeters(lat, lng, occupied.lat, occupied.lng) >= MIN_PIN_DISTANCE_METERS
+    ));
+
+    if (isAvailable) {
+      return {
+        lat: Number(lat.toFixed(12)),
+        lng: Number(lng.toFixed(12)),
+        distance,
+      };
+    }
+  }
+
+  return {
+    lat: baseLat,
+    lng: Number((baseLng + 0.0004).toFixed(12)),
+    distance: 32,
+  };
 };
 
 const ALL_DAYS_KEYS = DAY_OPTIONS.map(({ key }) => key);
@@ -192,6 +236,7 @@ const RestaurantsPage = () => {
   const [draggingOver, setDraggingOver] = useState(null);
   const [geoSearching, setGeoSearching] = useState(false);
   const [addressGeoSearching, setAddressGeoSearching] = useState(false);
+  const [coordinateCollisionNotice, setCoordinateCollisionNotice] = useState(null);
   const [geoResults, setGeoResults] = useState([]);
   const [showGeoResults, setShowGeoResults] = useState(false);
   const [bulkParseText, setBulkParseText] = useState('');
@@ -203,6 +248,7 @@ const RestaurantsPage = () => {
   const mapInstanceRef = useRef(null);
   const markerInstanceRef = useRef(null);
   const skipPlaceUrlAutoFillRef = useRef(false);
+  const skipCoordinateCollisionCheckRef = useRef(false);
   const detailMapRef = useRef(null);
   const detailMapInstanceRef = useRef(null);
 
@@ -255,6 +301,7 @@ const RestaurantsPage = () => {
     setBulkParseText('');
     setBulkParseMessage('');
     setBulkParsePartialSuccess(false);
+    setCoordinateCollisionNotice(null);
   };
 
   const handleAddClick = () => {
@@ -932,6 +979,47 @@ const RestaurantsPage = () => {
       window.kakao?.maps?.load(initOrUpdateMap);
     }
   }, [formData.lat, formData.lng]);
+
+  // 신규 등록 좌표가 기존 식당과 완전히 같으면 비어 있는 가까운 위치로 핀을 옮긴다.
+  useEffect(() => {
+    if (!showAddModal) return;
+    if (skipCoordinateCollisionCheckRef.current) {
+      skipCoordinateCollisionCheckRef.current = false;
+      return;
+    }
+
+    const lat = Number(formData.lat);
+    const lng = Number(formData.lng);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng) || !formData.lat || !formData.lng) {
+      setCoordinateCollisionNotice(null);
+      return;
+    }
+
+    const matches = restaurants.filter((restaurant) => (
+      Number(restaurant.lat) === lat && Number(restaurant.lng) === lng
+    ));
+
+    if (matches.length === 0) {
+      setCoordinateCollisionNotice(null);
+      return;
+    }
+
+    const adjusted = findAvailablePinOffset(lat, lng, restaurants);
+    const nextFormData = {
+      ...formDataRef.current,
+      lat: adjusted.lat,
+      lng: adjusted.lng,
+    };
+    skipCoordinateCollisionCheckRef.current = true;
+    skipPlaceUrlAutoFillRef.current = true;
+    formDataRef.current = nextFormData;
+    setFormData(nextFormData);
+    setCoordinateCollisionNotice({
+      count: matches.length,
+      names: matches.map((restaurant) => restaurant.name || `ID ${restaurant.id}`),
+      distance: adjusted.distance,
+    });
+  }, [formData.lat, formData.lng, restaurants, showAddModal]);
 
   // 상세 모달 지도 미리보기
   useEffect(() => {
@@ -1949,6 +2037,16 @@ const RestaurantsPage = () => {
                     step="any"
                   />
                 </div>
+
+                {coordinateCollisionNotice && (
+                  <div className="form-group full-width">
+                    <p className="coordinate-collision-warning">
+                      ⚠️ 위·경도가 같은 가게 {coordinateCollisionNotice.count}개
+                      {' '}({coordinateCollisionNotice.names.join(' / ')})를 확인해 새 식당 좌표를 약
+                      {' '}{coordinateCollisionNotice.distance}m 이동하여 핀 겹침을 방지했습니다.
+                    </p>
+                  </div>
+                )}
 
                 <div className="form-group full-width">
                   <label>카카오맵 URL</label>
