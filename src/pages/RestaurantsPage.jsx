@@ -191,6 +191,7 @@ const RestaurantsPage = () => {
   const [uploading, setUploading] = useState({});
   const [draggingOver, setDraggingOver] = useState(null);
   const [geoSearching, setGeoSearching] = useState(false);
+  const [addressGeoSearching, setAddressGeoSearching] = useState(false);
   const [geoResults, setGeoResults] = useState([]);
   const [showGeoResults, setShowGeoResults] = useState(false);
   const [bulkParseText, setBulkParseText] = useState('');
@@ -973,6 +974,16 @@ const RestaurantsPage = () => {
     }));
   };
 
+  const searchKakaoAddress = async (address) => {
+    await ensureKakaoLoaded();
+    const geocoder = new window.kakao.maps.services.Geocoder();
+    return new Promise((resolve) => {
+      geocoder.addressSearch(address, (results, status) =>
+        resolve(status === window.kakao.maps.services.Status.OK ? results : [])
+      );
+    });
+  };
+
   const handleGeoAutoFill = async () => {
     const keyword = [formData.name, formData.area].filter(Boolean).join(' ');
     if (!keyword.trim()) { alert('이름 또는 지역을 먼저 입력해주세요.'); return; }
@@ -1003,6 +1014,40 @@ const RestaurantsPage = () => {
     }));
     setShowGeoResults(false);
     setGeoResults([]);
+  };
+
+  const handleAddressGeoFill = async () => {
+    const address = formData.addr.trim();
+    if (!address) {
+      alert('주소를 먼저 입력해주세요.');
+      return;
+    }
+
+    setAddressGeoSearching(true);
+    try {
+      const results = await searchKakaoAddress(address);
+      const result = results[0];
+      if (!result) {
+        alert('주소 검색 결과가 없습니다. 주소를 확인해주세요.');
+        return;
+      }
+
+      setFormData((prev) => {
+        const lat = result.y;
+        const lng = result.x;
+        const name = encodeURIComponent(prev.name || '위치');
+        return {
+          ...prev,
+          lat,
+          lng,
+          placeUrl: `https://map.kakao.com/link/map/${name},${lat},${lng}`,
+        };
+      });
+    } catch (error) {
+      alert('주소로 좌표를 찾는 중 오류가 발생했습니다: ' + error.message);
+    } finally {
+      setAddressGeoSearching(false);
+    }
   };
 
   const handleBulkParse = async () => {
@@ -1861,13 +1906,23 @@ const RestaurantsPage = () => {
 
                 <div className="form-group full-width">
                   <label>주소 *</label>
-                  <input
-                    type="text"
-                    name="addr"
-                    value={formData.addr}
-                    onChange={handleFormChange}
-                    required
-                  />
+                  <div className="address-geocode-row">
+                    <input
+                      type="text"
+                      name="addr"
+                      value={formData.addr}
+                      onChange={handleFormChange}
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="geo-autofill-btn address-geocode-btn"
+                      onClick={handleAddressGeoFill}
+                      disabled={addressGeoSearching}
+                    >
+                      {addressGeoSearching ? '주소 검색 중...' : '주소로 위·경도 구하기'}
+                    </button>
+                  </div>
                 </div>
 
                 <div className="form-group">
