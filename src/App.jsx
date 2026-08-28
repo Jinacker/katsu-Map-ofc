@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Navigate, Routes, Route } from 'react-router-dom';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import MessagesPage from './pages/MessagesPage';
@@ -9,7 +9,6 @@ import UsersPage from './pages/UsersPage';
 import HunterContentPage from './pages/HunterContentPage';
 import UserRecordsPage from './pages/UserRecordsPage';
 import PushNotificationsPage from './pages/PushNotificationsPage';
-import CommunityPage from './pages/CommunityPage';
 import GradeVotesPage from './pages/GradeVotesPage';
 import RankingPage from './pages/RankingPage';
 import OgSettingsPage from './pages/OgSettingsPage';
@@ -117,13 +116,7 @@ function App() {
         />
         <Route
           path="/community"
-          element={
-            <ProtectedRoute>
-              <AdminLayout>
-                <CommunityPage />
-              </AdminLayout>
-            </ProtectedRoute>
-          }
+          element={<Navigate to="/records" replace />}
         />
         <Route
           path="/grade-votes"

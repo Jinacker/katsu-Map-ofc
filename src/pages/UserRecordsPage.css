@@ -1,0 +1,549 @@
+.tasting-feed-page {
+  max-width: 1500px;
+  margin: 0 auto;
+  padding: 28px;
+  color: #24211d;
+}
+
+.tasting-page-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 18px;
+}
+
+.tasting-page-header h1 {
+  margin: 0;
+  font-size: 26px;
+}
+
+.tasting-page-header p {
+  margin: 6px 0 0;
+  color: #756f68;
+  font-size: 14px;
+}
+
+.tasting-search {
+  display: flex;
+  gap: 7px;
+}
+
+.tasting-search input {
+  width: 280px;
+  padding: 10px 12px;
+  border: 1px solid #d8d2ca;
+  border-radius: 9px;
+  background: #fff;
+  font-size: 14px;
+}
+
+.tasting-search button,
+.tasting-filters button,
+.tasting-pagination button {
+  border: 1px solid #d8d2ca;
+  border-radius: 9px;
+  background: #fff;
+  color: #514b45;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.tasting-search button {
+  padding: 0 14px;
+}
+
+.tasting-search button:not(.clear) {
+  border-color: #d6483e;
+  background: #d6483e;
+  color: #fff;
+}
+
+.tasting-filters {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.tasting-filters button {
+  padding: 8px 14px;
+}
+
+.tasting-filters button.active {
+  border-color: #d6483e;
+  background: #fff2ef;
+  color: #b8322a;
+}
+
+.tasting-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  align-items: start;
+}
+
+.tasting-card {
+  overflow: hidden;
+  border: 1px solid #e4dfd8;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 3px 14px rgba(62, 52, 42, 0.06);
+}
+
+.tasting-card.is-hidden {
+  border-color: #e8a6a1;
+  background: #fffbfa;
+}
+
+.tasting-card-header,
+.tasting-restaurant-row,
+.tasting-rating-row,
+.tasting-card-footer {
+  display: flex;
+  align-items: center;
+}
+
+.tasting-card-header {
+  gap: 9px;
+  padding: 14px 15px 10px;
+}
+
+.tasting-avatar {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #d6483e;
+  color: #fff;
+  font-weight: 700;
+}
+
+.tasting-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.tasting-author {
+  min-width: 0;
+  flex: 1;
+}
+
+.tasting-author strong,
+.tasting-author span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tasting-author strong {
+  font-size: 13px;
+}
+
+.tasting-author strong small {
+  color: #918980;
+  font-weight: 500;
+}
+
+.tasting-author span {
+  margin-top: 2px;
+  color: #918980;
+  font-size: 11px;
+}
+
+.tasting-visibility {
+  flex: 0 0 auto;
+  padding: 4px 7px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.tasting-visibility.public { background: #eaf8ef; color: #168447; }
+.tasting-visibility.private { background: #f0f1f3; color: #656b73; }
+.tasting-visibility.hidden { background: #fee8e7; color: #c32f29; }
+.tasting-visibility.pending { background: #fff4d8; color: #9a6500; }
+.tasting-visibility.rejected { background: #f4eafb; color: #75409a; }
+
+.tasting-restaurant-row {
+  justify-content: space-between;
+  gap: 12px;
+  padding: 3px 15px 12px;
+}
+
+.tasting-restaurant-row h2 {
+  display: inline;
+  margin: 0;
+  font-size: 17px;
+}
+
+.tasting-restaurant-row > div:first-child > span {
+  margin-left: 7px;
+  color: #8b837a;
+  font-size: 12px;
+}
+
+.tasting-visit-meta {
+  min-width: 0;
+  text-align: right;
+}
+
+.tasting-visit-meta span {
+  display: block;
+  color: #777068;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.tasting-media-stack {
+  display: grid;
+  gap: 6px;
+  padding: 0 15px;
+}
+
+.tasting-media-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  padding: 0 15px;
+}
+
+.tasting-media-stack .tasting-media-row {
+  padding: 0;
+}
+
+.tasting-media-photo,
+.tasting-photo-empty,
+.tasting-parameter-panel {
+  aspect-ratio: 1;
+  min-width: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 12px;
+}
+
+.tasting-media-photo {
+  padding: 0;
+  background: #eee;
+  cursor: zoom-in;
+}
+
+.tasting-media-photo.wide {
+  width: calc(100% - 30px);
+  height: 180px;
+  margin: 0 15px;
+  aspect-ratio: auto;
+}
+
+.tasting-media-stack > .tasting-media-photo.wide {
+  width: 100%;
+  margin: 0;
+}
+
+.tasting-media-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.2s ease;
+}
+
+.tasting-media-photo:hover img {
+  transform: scale(1.025);
+}
+
+.tasting-photo-empty {
+  display: grid;
+  place-items: center;
+  background: #f3f0eb;
+  color: #aaa198;
+  font-size: 13px;
+}
+
+.tasting-parameter-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #eee9e1;
+  background: #faf8f4;
+  padding: 5px;
+}
+
+.tasting-parameter-panel > strong {
+  max-width: 100%;
+  margin-top: -3px;
+  overflow: hidden;
+  color: #302c28;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tasting-parameter-panel > span {
+  margin-top: 1px;
+  color: #777068;
+  font-size: 10px;
+}
+
+.tasting-radar-wrap {
+  width: 100%;
+  min-height: 0;
+}
+
+.tasting-radar {
+  display: block;
+  width: min(112px, 72%);
+  margin: -3px auto -5px;
+}
+
+.tasting-radar-labels {
+  display: flex;
+  justify-content: center;
+  gap: 3px;
+  flex-wrap: wrap;
+}
+
+.tasting-radar-labels span {
+  color: #8b837a;
+  font-size: 8px;
+}
+
+.tasting-rating-row {
+  gap: 5px;
+  padding: 12px 15px 7px;
+}
+
+.tasting-stars {
+  color: #d6483e;
+  font-size: 17px;
+  letter-spacing: 1px;
+}
+
+.tasting-stars i {
+  color: #ddd7cf;
+  font-style: normal;
+}
+
+.tasting-rating-row > b {
+  font-size: 12px;
+}
+
+.tasting-revisit {
+  margin-left: auto;
+  color: #716a62;
+  font-size: 11px;
+}
+
+.tasting-revisit.yes { color: #d6483e; }
+
+.tasting-review {
+  min-height: 38px;
+  max-height: 112px;
+  margin: 0;
+  padding: 3px 15px 10px;
+  overflow-y: auto;
+  color: #3f3a35;
+  font-size: 13px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
+.tasting-review.empty {
+  color: #aaa39b;
+}
+
+.tasting-card-footer {
+  justify-content: space-between;
+  gap: 10px;
+  padding: 11px 15px 14px;
+  border-top: 1px solid #f0ece7;
+}
+
+.tasting-stats {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #746d65;
+  font-size: 11px;
+}
+
+.tasting-stats button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #746d65;
+  cursor: pointer;
+  font-size: 11px;
+  text-decoration: underline;
+}
+
+.tasting-action {
+  padding: 7px 10px;
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.tasting-action.hide { border: 1px solid #efa6a1; color: #c8342d; }
+.tasting-action.unhide { border: 1px solid #8fc3a3; color: #147a42; }
+
+.tasting-hidden-at {
+  padding: 0 15px 11px;
+  color: #bd4842;
+  font-size: 10px;
+  text-align: right;
+}
+
+.tasting-state {
+  padding: 70px 20px;
+  color: #918980;
+  text-align: center;
+}
+
+.tasting-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 28px;
+}
+
+.tasting-pagination button {
+  padding: 7px 11px;
+}
+
+.tasting-pagination button.active {
+  border-color: #d6483e;
+  background: #d6483e;
+  color: #fff;
+}
+
+.tasting-pagination button:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.tasting-pagination span {
+  margin-left: 6px;
+  color: #918980;
+  font-size: 12px;
+}
+
+.tasting-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(24, 21, 18, 0.58);
+}
+
+.tasting-comments-modal {
+  display: flex;
+  flex-direction: column;
+  width: min(560px, 92vw);
+  max-height: 82vh;
+  overflow: hidden;
+  border-radius: 16px;
+  background: #fff;
+}
+
+.tasting-comments-modal > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 18px 20px;
+  border-bottom: 1px solid #eee9e3;
+}
+
+.tasting-comments-modal h2 {
+  margin: 0;
+  font-size: 17px;
+}
+
+.tasting-comments-modal header span {
+  display: block;
+  margin-top: 3px;
+  color: #8b837a;
+  font-size: 12px;
+}
+
+.tasting-comments-modal header button {
+  border: 0;
+  background: none;
+  color: #847d75;
+  cursor: pointer;
+  font-size: 24px;
+}
+
+.tasting-comment-list {
+  overflow-y: auto;
+}
+
+.tasting-comment-list article {
+  padding: 13px 20px;
+  border-bottom: 1px solid #f3efea;
+}
+
+.tasting-comment-list article.reply {
+  padding-left: 36px;
+  background: #faf9f7;
+}
+
+.tasting-comment-list article > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.tasting-comment-list article strong { font-size: 12px; }
+.tasting-comment-list article span { color: #999087; font-size: 10px; }
+.tasting-comment-list article p { margin: 6px 0 9px; font-size: 13px; line-height: 1.5; }
+.tasting-comment-list article button { padding: 4px 8px; border: 1px solid #efa6a1; border-radius: 6px; background: #fff; color: #c8342d; cursor: pointer; font-size: 10px; }
+
+.tasting-modal-backdrop.photo {
+  background: rgba(0, 0, 0, 0.88);
+}
+
+.tasting-modal-backdrop.photo > img {
+  max-width: 86vw;
+  max-height: 86vh;
+  object-fit: contain;
+}
+
+.photo-close,
+.photo-nav {
+  position: fixed;
+  border: 0;
+  background: rgba(0, 0, 0, 0.35);
+  color: #fff;
+  cursor: pointer;
+}
+
+.photo-close { top: 22px; right: 28px; font-size: 34px; }
+.photo-nav { top: 50%; padding: 5px 14px 10px; border-radius: 10px; font-size: 48px; transform: translateY(-50%); }
+.photo-nav.prev { left: 28px; }
+.photo-nav.next { right: 28px; }
+.photo-count { position: fixed; bottom: 22px; color: #fff; font-size: 13px; }
+
+@media (max-width: 1180px) {
+  .tasting-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 760px) {
+  .tasting-feed-page { padding: 18px 12px 90px; }
+  .tasting-page-header { align-items: stretch; flex-direction: column; }
+  .tasting-search input { width: 100%; min-width: 0; }
+  .tasting-search { width: 100%; }
+  .tasting-grid { grid-template-columns: 1fr; }
+  .tasting-filters { overflow-x: auto; }
+  .tasting-filters button { flex: 0 0 auto; }
+  .tasting-pagination { flex-wrap: wrap; }
+}
