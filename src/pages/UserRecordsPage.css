@@ -403,6 +403,13 @@
   font-weight: 700;
 }
 
+.tasting-card-actions {
+  display: flex;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
+.tasting-action.edit { border: 1px solid #c9bba9; color: #66584a; }
 .tasting-action.hide { border: 1px solid #efa6a1; color: #c8342d; }
 .tasting-action.unhide { border: 1px solid #8fc3a3; color: #147a42; }
 
@@ -518,8 +525,281 @@
 
 .tasting-comment-list article strong { font-size: 12px; }
 .tasting-comment-list article span { color: #999087; font-size: 10px; }
-.tasting-comment-list article p { margin: 6px 0 9px; font-size: 13px; line-height: 1.5; }
-.tasting-comment-list article button { padding: 4px 8px; border: 1px solid #efa6a1; border-radius: 6px; background: #fff; color: #c8342d; cursor: pointer; font-size: 10px; }
+.tasting-comment-list article p { margin: 6px 0 9px; font-size: 13px; line-height: 1.5; white-space: pre-wrap; }
+
+.tasting-comment-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.tasting-comment-actions button {
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 10px;
+}
+
+.tasting-comment-actions button.edit,
+.tasting-comment-actions button.cancel { border: 1px solid #c9bba9; color: #66584a; }
+.tasting-comment-actions button.save { border: 1px solid #8fc3a3; color: #147a42; }
+.tasting-comment-actions button.delete { border: 1px solid #efa6a1; color: #c8342d; }
+.tasting-comment-actions button:disabled { cursor: not-allowed; opacity: 0.5; }
+
+.tasting-comment-edit {
+  position: relative;
+  margin: 8px 0;
+}
+
+.tasting-comment-edit textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 88px;
+  resize: vertical;
+  padding: 9px 10px 22px;
+  border: 1px solid #d8d2ca;
+  border-radius: 8px;
+  font: inherit;
+  line-height: 1.5;
+}
+
+.tasting-comment-edit small {
+  position: absolute;
+  right: 9px;
+  bottom: 7px;
+  color: #999087;
+  font-size: 10px;
+}
+
+.tasting-edit-modal {
+  display: flex;
+  flex-direction: column;
+  width: min(860px, 94vw);
+  max-height: 92vh;
+  overflow: hidden;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 20px 70px rgba(28, 23, 19, 0.25);
+}
+
+.tasting-edit-modal > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 18px 22px;
+  border-bottom: 1px solid #eee9e3;
+}
+
+.tasting-edit-modal > header h2 {
+  margin: 0;
+  font-size: 19px;
+}
+
+.tasting-edit-modal > header span {
+  display: block;
+  margin-top: 4px;
+  color: #8b837a;
+  font-size: 12px;
+}
+
+.tasting-edit-modal > header button {
+  border: 0;
+  background: none;
+  color: #847d75;
+  cursor: pointer;
+  font-size: 26px;
+}
+
+.tasting-edit-body {
+  display: grid;
+  gap: 20px;
+  padding: 20px 22px 24px;
+  overflow-y: auto;
+}
+
+.tasting-edit-section {
+  display: grid;
+  gap: 10px;
+}
+
+.tasting-edit-section-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.tasting-edit-section-title span {
+  color: #8b837a;
+  font-size: 11px;
+}
+
+.tasting-edit-photos {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.tasting-edit-photo,
+.tasting-edit-photo-add {
+  position: relative;
+  min-height: 170px;
+  overflow: hidden;
+  border-radius: 12px;
+  background: #f3f0eb;
+}
+
+.tasting-edit-photo img {
+  width: 100%;
+  height: 170px;
+  object-fit: cover;
+}
+
+.tasting-edit-photo > b {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  display: grid;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.65);
+  color: #fff;
+  font-size: 11px;
+}
+
+.tasting-edit-photo > div {
+  position: absolute;
+  right: 7px;
+  bottom: 7px;
+  left: 7px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 5px;
+}
+
+.tasting-edit-photo button {
+  padding: 5px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.93);
+  color: #4d453e;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.tasting-edit-photo button.remove { color: #c8342d; }
+.tasting-edit-photo button:disabled { cursor: not-allowed; opacity: 0.45; }
+
+.tasting-edit-photo-add {
+  display: grid;
+  place-items: center;
+  border: 1px dashed #cfc4b6;
+  color: #7b7065;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.tasting-edit-photo-add input { display: none; }
+.tasting-edit-photo-add.is-loading { cursor: wait; opacity: 0.7; }
+
+.tasting-edit-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.tasting-edit-grid label,
+.tasting-edit-flavors label,
+.tasting-edit-review {
+  display: grid;
+  gap: 6px;
+}
+
+.tasting-edit-grid label > span,
+.tasting-edit-flavors label > span,
+.tasting-edit-review > span {
+  color: #625a52;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.tasting-edit-grid input,
+.tasting-edit-grid select,
+.tasting-edit-flavors input,
+.tasting-edit-review textarea {
+  box-sizing: border-box;
+  width: 100%;
+  border: 1px solid #d8d2ca;
+  border-radius: 8px;
+  background: #fff;
+  color: #302c28;
+  font: inherit;
+  font-size: 13px;
+}
+
+.tasting-edit-grid input,
+.tasting-edit-grid select,
+.tasting-edit-flavors input { height: 39px; padding: 0 10px; }
+
+.tasting-edit-flavors {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.tasting-edit-flavors input { text-align: center; }
+
+.tasting-edit-review {
+  position: relative;
+}
+
+.tasting-edit-review textarea {
+  min-height: 170px;
+  resize: vertical;
+  padding: 12px 12px 28px;
+  line-height: 1.6;
+}
+
+.tasting-edit-review small {
+  position: absolute;
+  right: 10px;
+  bottom: 8px;
+  color: #999087;
+  font-size: 10px;
+}
+
+.tasting-edit-lock-note {
+  margin: -8px 0 0;
+  padding: 9px 11px;
+  border-radius: 8px;
+  background: #f8f5f1;
+  color: #81776d;
+  font-size: 11px;
+}
+
+.tasting-edit-modal > footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 14px 22px;
+  border-top: 1px solid #eee9e3;
+}
+
+.tasting-edit-modal > footer button {
+  padding: 9px 16px;
+  border-radius: 9px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.tasting-edit-modal > footer button.cancel { border: 1px solid #d4ccc2; background: #fff; color: #625a52; }
+.tasting-edit-modal > footer button.save { border: 1px solid #d6483e; background: #d6483e; color: #fff; }
+.tasting-edit-modal > footer button:disabled { cursor: not-allowed; opacity: 0.55; }
 
 .tasting-modal-backdrop.photo {
   background: rgba(0, 0, 0, 0.88);
@@ -559,4 +839,7 @@
   .tasting-filters { overflow-x: auto; }
   .tasting-filters button { flex: 0 0 auto; }
   .tasting-pagination { flex-wrap: wrap; }
+  .tasting-edit-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .tasting-edit-flavors { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .tasting-edit-photos { grid-template-columns: 1fr; }
 }
