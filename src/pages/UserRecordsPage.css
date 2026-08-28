@@ -79,10 +79,13 @@
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 18px;
-  align-items: start;
+  align-items: stretch;
 }
 
 .tasting-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
   overflow: hidden;
   border: 1px solid #e4dfd8;
   border-radius: 16px;
@@ -341,7 +344,9 @@
 .tasting-revisit.yes { color: #d6483e; }
 
 .tasting-review {
-  min-height: 38px;
+  box-sizing: border-box;
+  height: 112px;
+  min-height: 112px;
   max-height: 112px;
   margin: 0;
   padding: 3px 15px 10px;
@@ -359,6 +364,7 @@
 .tasting-card-footer {
   justify-content: space-between;
   gap: 10px;
+  margin-top: auto;
   padding: 11px 15px 14px;
   border-top: 1px solid #f0ece7;
 }
