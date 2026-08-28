@@ -113,11 +113,15 @@ function NoteMediaGrid({ note, onOpenPhoto }) {
 function TastingCard({ note, onHide, onUnhide, onOpenComments, onOpenPhoto }) {
   const visibility = getVisibility(note);
   const satisfaction = Math.max(0, Math.min(Number(note.satisfaction) || 0, 5));
+  const photoCount = (Array.isArray(note.photoUrls) ? note.photoUrls : [note.photoUrl])
+    .filter(Boolean)
+    .slice(0, 3)
+    .length;
   const visitMeta = [note.visitDate, note.companion && `${note.companion} 방문`].filter(Boolean).join(' · ');
   const waitingMeta = [note.timeSlot, note.waiting].filter(Boolean).join(' · ');
 
   return (
-    <article className={`tasting-card ${note.isAdminHidden ? 'is-hidden' : ''}`}>
+    <article className={`tasting-card photo-count-${photoCount} ${note.isAdminHidden ? 'is-hidden' : ''}`}>
       <header className="tasting-card-header">
         <div className="tasting-avatar">
           {note.userProfilePhotoUrl

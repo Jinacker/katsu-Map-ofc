@@ -361,6 +361,13 @@
   color: #aaa39b;
 }
 
+/* 사진 한 장 카드는 미디어 영역이 짧으므로 같은 줄의 남는 높이를 후기 영역에 먼저 쓴다. */
+.tasting-card.photo-count-1 .tasting-review {
+  flex: 1 1 112px;
+  height: auto;
+  max-height: none;
+}
+
 .tasting-card-footer {
   justify-content: space-between;
   gap: 10px;
