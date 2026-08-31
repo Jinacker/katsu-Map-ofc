@@ -28,7 +28,7 @@ const EMPTY_FORM_DATA = {
   featureTagIds: [],
 };
 const EMPTY_MENUS = { priceRate: '', names: '' };
-const MAX_FEATURE_TAGS = 5;
+const MAX_FEATURE_TAGS = 7;
 const PIN_OFFSET_METERS = 8;
 const MIN_PIN_DISTANCE_METERS = 6;
 const DAY_OPTIONS = [
