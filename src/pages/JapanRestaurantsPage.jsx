@@ -24,16 +24,12 @@ const EMPTY_FORM = {
   isKatsuHunterPick: '', googleMapsUrl: '', tabelogUrl: '', websiteUrl: '',
   imageUrl1: '', imageUrl2: '', imageUrl3: '', aiReviewSummary: '',
   katsuHunterDescription: '', ownerComment: '', reporterComment: '', priceDisplay: '',
-  googleRating: '', googleReviewCount: '', tabelogRating: '', tabelogReviewCount: '',
+  googleRating: '', tabelogRating: '', isCompleted: false,
   featureTagIds: [],
 };
 
 const optionalNumber = (value) => (value === '' || value == null ? undefined : Number(value));
 const optionalText = (value) => value?.trim() || undefined;
-const ratingText = (rating, reviewCount) => {
-  if (rating == null && reviewCount == null) return '';
-  return `${rating ?? ''}${reviewCount == null ? '' : ` (${reviewCount}개)`}`;
-};
 const KOREAN_DAY_KEYS = {
   월요일: 'mon', 화요일: 'tue', 수요일: 'wed', 목요일: 'thu',
   금요일: 'fri', 토요일: 'sat', 일요일: 'sun',
@@ -78,6 +74,7 @@ export default function JapanRestaurantsPage() {
   const [query, setQuery] = useState('');
   const [region, setRegion] = useState('전체');
   const [pickFilter, setPickFilter] = useState('전체');
+  const [completionFilter, setCompletionFilter] = useState('전체');
   const [modalOpen, setModalOpen] = useState(false);
   const [detailRestaurant, setDetailRestaurant] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -121,8 +118,22 @@ export default function JapanRestaurantsPage() {
       || (pickFilter === '픽' && restaurant.isKatsuHunterPick === true)
       || (pickFilter === '논픽' && restaurant.isKatsuHunterPick === false)
       || (pickFilter === '미선택' && restaurant.isKatsuHunterPick == null);
-    return matchesQuery && matchesRegion && matchesPick;
-  }), [restaurants, query, region, pickFilter]);
+    const matchesCompletion = completionFilter === '전체'
+      || (completionFilter === '작성 완료' && restaurant.isCompleted === true)
+      || (completionFilter === '미완료' && restaurant.isCompleted !== true);
+    return matchesQuery && matchesRegion && matchesPick && matchesCompletion;
+  }), [restaurants, query, region, pickFilter, completionFilter]);
+
+  const availableRegions = useMemo(() => {
+    const existing = new Set(restaurants.map((restaurant) => restaurant.region).filter(Boolean));
+    const ordered = PREFECTURES.filter((item) => item !== '전체' && existing.has(item));
+    const extras = [...existing].filter((item) => !PREFECTURES.includes(item)).sort();
+    return ['전체', ...ordered, ...extras];
+  }, [restaurants]);
+
+  useEffect(() => {
+    if (!availableRegions.includes(region)) setRegion('전체');
+  }, [availableRegions, region]);
 
   const resetModal = () => {
     setEditingId(null);
@@ -158,8 +169,7 @@ export default function JapanRestaurantsPage() {
         katsuHunterDescription: detail.katsuHunterDescription || '',
         ownerComment: detail.ownerComment || '', reporterComment: detail.reporterComment || '',
         priceDisplay: detail.priceDisplay || '', googleRating: detail.googleRating ?? '',
-        googleReviewCount: detail.googleReviewCount ?? '', tabelogRating: detail.tabelogRating ?? '',
-        tabelogReviewCount: detail.tabelogReviewCount ?? '',
+        tabelogRating: detail.tabelogRating ?? '', isCompleted: detail.isCompleted === true,
         featureTagIds: detail.featureTags?.map((tag) => tag.id) || [],
       });
       setHours({ ...EMPTY_HOURS, ...(detail.hours || {}) });
@@ -262,9 +272,8 @@ export default function JapanRestaurantsPage() {
       katsuHunterDescription: clearableText(form.katsuHunterDescription),
       ownerComment: clearableText(form.ownerComment), reporterComment: clearableText(form.reporterComment),
       priceDisplay: clearableText(form.priceDisplay), googleRating: clearableNumber(form.googleRating),
-      googleReviewCount: clearableNumber(form.googleReviewCount),
       tabelogRating: clearableNumber(form.tabelogRating),
-      tabelogReviewCount: clearableNumber(form.tabelogReviewCount),
+      isCompleted: form.isCompleted,
       featureTagIds: form.featureTagIds, hours, menus,
     };
   };
@@ -343,10 +352,13 @@ export default function JapanRestaurantsPage() {
       <div className="jp-toolbar">
         <input placeholder="가게명·주소·지역 검색" value={query} onChange={(e) => setQuery(e.target.value)} />
         <select value={region} onChange={(e) => setRegion(e.target.value)}>
-          {PREFECTURES.map((item) => <option key={item}>{item}</option>)}
+          {availableRegions.map((item) => <option key={item}>{item}</option>)}
         </select>
         <select value={pickFilter} onChange={(e) => setPickFilter(e.target.value)}>
           {['전체', '미선택', '픽', '논픽'].map((item) => <option key={item}>{item}</option>)}
+        </select>
+        <select value={completionFilter} onChange={(e) => setCompletionFilter(e.target.value)}>
+          {['전체', '작성 완료', '미완료'].map((item) => <option key={item}>{item}</option>)}
         </select>
         <span>{filtered.length}곳</span>
       </div>
@@ -354,12 +366,13 @@ export default function JapanRestaurantsPage() {
       {loading ? <div className="jp-empty">불러오는 중...</div> : (
         <div className="jp-table-wrap">
           <table className="jp-table">
-            <thead><tr><th>가게</th><th>지역</th><th>평점</th><th>가격대</th><th>등급</th><th>링크</th><th>관리</th></tr></thead>
+            <thead><tr><th>가게</th><th>지역</th><th>작성 상태</th><th>평점</th><th>가격대</th><th>등급</th><th>링크</th><th>관리</th></tr></thead>
             <tbody>
               {filtered.map((restaurant) => (
                 <tr key={restaurant.id} className="jp-clickable" onClick={() => openDetail(restaurant)}>
                   <td><div className="jp-store-cell">{restaurant.imageUrl1 ? <img src={restaurant.imageUrl1} alt="" /> : <span className="jp-cover-empty">NO IMAGE</span>}<div><strong>{restaurant.name}</strong><small>{restaurant.addr}</small></div></div></td>
                   <td>{restaurant.area}</td>
+                  <td><span className={`jp-completion-badge${restaurant.isCompleted ? ' completed' : ''}`}>{restaurant.isCompleted ? '작성 완료' : '미완료'}</span></td>
                   <td><span>G {restaurant.googleRating ?? '-'}</span><span>T {restaurant.tabelogRating ?? '-'}</span></td>
                   <td>{restaurant.priceDisplay || '-'}</td>
                   <td>{restaurant.isKatsuHunterPick == null ? '미선택' : restaurant.isKatsuHunterPick ? '픽' : '논픽'}</td>
@@ -394,9 +407,10 @@ export default function JapanRestaurantsPage() {
               <div><dt>도도부현</dt><dd>{detailRestaurant.region}</dd></div>
               <div><dt>세부지역</dt><dd>{detailRestaurant.area}</dd></div>
               <div><dt>등급</dt><dd>{detailRestaurant.isKatsuHunterPick == null ? '미선택' : detailRestaurant.isKatsuHunterPick ? '카츠헌터픽' : '논카츠헌터픽'}</dd></div>
+              <div><dt>작성 상태</dt><dd>{detailRestaurant.isCompleted ? '작성 완료' : '미완료'}</dd></div>
               <div><dt>가격대</dt><dd>{detailRestaurant.priceDisplay || ''}</dd></div>
-              <div><dt>Google 평점</dt><dd>{ratingText(detailRestaurant.googleRating, detailRestaurant.googleReviewCount)}</dd></div>
-              <div><dt>타베로그 평점</dt><dd>{ratingText(detailRestaurant.tabelogRating, detailRestaurant.tabelogReviewCount)}</dd></div>
+              <div><dt>Google 평점</dt><dd>{detailRestaurant.googleRating ?? ''}</dd></div>
+              <div><dt>타베로그 평점</dt><dd>{detailRestaurant.tabelogRating ?? ''}</dd></div>
             </dl></section>
             <section><h3>외부 링크</h3><dl className="jp-detail-copy">
               <div><dt>Google Maps</dt><dd>{detailRestaurant.googleMapsUrl && <a href={detailRestaurant.googleMapsUrl} target="_blank" rel="noreferrer">바로가기</a>}</dd></div>
@@ -423,9 +437,9 @@ export default function JapanRestaurantsPage() {
               <label>도도부현 *<select value={form.region} onChange={(e) => setField('region', e.target.value)}>{PREFECTURES.filter((item) => item !== '전체').map((item) => <option key={item}>{item}</option>)}</select></label>
               <label>세부지역 *<input placeholder="도쿄 신주쿠" value={form.area} onChange={(e) => setField('area', e.target.value)} required /></label>
             </div><label>일본 주소 *<input value={form.addr} onChange={(e) => setField('addr', e.target.value)} required /></label>
-            <div className="jp-grid three"><label>위도 *<input type="number" step="any" value={form.lat} onChange={(e) => setField('lat', e.target.value)} required /></label><label>경도 *<input type="number" step="any" value={form.lng} onChange={(e) => setField('lng', e.target.value)} required /></label><label>등급<select value={form.isKatsuHunterPick} onChange={(e) => setField('isKatsuHunterPick', e.target.value)}><option value="">미선택</option><option value="true">카츠헌터픽</option><option value="false">논카츠헌터픽</option></select></label></div></section>
+            <div className="jp-grid three"><label>위도 *<input type="number" step="any" value={form.lat} onChange={(e) => setField('lat', e.target.value)} required /></label><label>경도 *<input type="number" step="any" value={form.lng} onChange={(e) => setField('lng', e.target.value)} required /></label><label>등급<select value={form.isKatsuHunterPick} onChange={(e) => setField('isKatsuHunterPick', e.target.value)}><option value="">미선택</option><option value="true">카츠헌터픽</option><option value="false">논카츠헌터픽</option></select></label></div><label className="jp-completion-check"><input type="checkbox" checked={form.isCompleted} onChange={(e) => setField('isCompleted', e.target.checked)} /><span>필수 정보를 모두 작성했습니다.</span></label></section>
 
-            <section><h3>외부 정보</h3><label>Google Maps URL *<input value={form.googleMapsUrl} onChange={(e) => setField('googleMapsUrl', e.target.value)} required /></label><div className="jp-grid two"><label>타베로그 URL<input value={form.tabelogUrl} onChange={(e) => setField('tabelogUrl', e.target.value)} /></label><label>가게 공식 사이트<input value={form.websiteUrl} onChange={(e) => setField('websiteUrl', e.target.value)} /></label></div><div className="jp-grid four"><label>Google 평점<input type="number" min="0" max="5" step="0.1" value={form.googleRating} onChange={(e) => setField('googleRating', e.target.value)} /></label><label>Google 리뷰 수<input type="number" min="0" value={form.googleReviewCount} onChange={(e) => setField('googleReviewCount', e.target.value)} /></label><label>타베로그 평점<input type="number" min="0" max="5" step="0.01" value={form.tabelogRating} onChange={(e) => setField('tabelogRating', e.target.value)} /></label><label>타베로그 리뷰 수<input type="number" min="0" value={form.tabelogReviewCount} onChange={(e) => setField('tabelogReviewCount', e.target.value)} /></label></div><label>가격대<input placeholder="2,000~3,000엔" value={form.priceDisplay} onChange={(e) => setField('priceDisplay', e.target.value)} /></label></section>
+            <section><h3>외부 정보</h3><label>Google Maps URL *<input value={form.googleMapsUrl} onChange={(e) => setField('googleMapsUrl', e.target.value)} required /></label><div className="jp-grid two"><label>타베로그 URL<input value={form.tabelogUrl} onChange={(e) => setField('tabelogUrl', e.target.value)} /></label><label>가게 공식 사이트<input value={form.websiteUrl} onChange={(e) => setField('websiteUrl', e.target.value)} /></label></div><div className="jp-grid two"><label>Google 평점<input type="number" min="0" max="5" step="0.1" value={form.googleRating} onChange={(e) => setField('googleRating', e.target.value)} /></label><label>타베로그 평점<input type="number" min="0" max="5" step="0.01" value={form.tabelogRating} onChange={(e) => setField('tabelogRating', e.target.value)} /></label></div><label>가격대<input placeholder="2,000~3,000엔" value={form.priceDisplay} onChange={(e) => setField('priceDisplay', e.target.value)} /></label></section>
 
             <section><h3>사진 (최대 3장)</h3><div className="jp-images">{['imageUrl1', 'imageUrl2', 'imageUrl3'].map((key, index) => <div className="jp-image" key={key}>{form[key] ? <img src={form[key]} alt={`가게 ${index + 1}`} /> : <span>사진 {index + 1}</span>}<input type="file" accept="image/*" onChange={(e) => handleImage(e.target.files?.[0], key)} />{form[key] && <button type="button" onClick={() => setField(key, '')}>비우기</button>}{uploading === key && <small>업로드 중...</small>}</div>)}</div></section>
 
