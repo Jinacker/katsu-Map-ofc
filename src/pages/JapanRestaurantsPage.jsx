@@ -30,6 +30,46 @@ const EMPTY_FORM = {
 
 const optionalNumber = (value) => (value === '' || value == null ? undefined : Number(value));
 const optionalText = (value) => value?.trim() || undefined;
+const ratingText = (rating, reviewCount) => {
+  if (rating == null && reviewCount == null) return '';
+  return `${rating ?? ''}${reviewCount == null ? '' : ` (${reviewCount}개)`}`;
+};
+const KOREAN_DAY_KEYS = {
+  월요일: 'mon', 화요일: 'tue', 수요일: 'wed', 목요일: 'thu',
+  금요일: 'fri', 토요일: 'sat', 일요일: 'sun',
+};
+
+const parsePastedHours = (rawText) => {
+  const parsed = {};
+  let currentDay = null;
+
+  const append = (value) => {
+    if (!currentDay) return;
+    const cleaned = value
+      .replace(/\\~/g, '~')
+      .replace(/^[-*•]\s*/, '')
+      .replace(/^\|+|\|+$/g, '')
+      .trim();
+    if (!cleaned || /^[|:\-\s]+$/.test(cleaned)) return;
+    if (!/(\d{1,2}(?::\d{2}|시)|휴무|24시간|영업)/.test(cleaned)) return;
+    parsed[currentDay] = [...(parsed[currentDay] || []), cleaned];
+  };
+
+  rawText.split(/\r?\n/).forEach((rawLine) => {
+    const line = rawLine.replace(/\*\*/g, '').trim();
+    const dayMatch = line.match(/(월요일|화요일|수요일|목요일|금요일|토요일|일요일)/);
+    if (dayMatch) {
+      currentDay = KOREAN_DAY_KEYS[dayMatch[1]];
+      append(line.slice((dayMatch.index || 0) + dayMatch[1].length));
+      return;
+    }
+    append(line);
+  });
+
+  return Object.fromEntries(
+    Object.entries(parsed).map(([key, values]) => [key, values.join(' / ')]),
+  );
+};
 
 export default function JapanRestaurantsPage() {
   const [restaurants, setRestaurants] = useState([]);
@@ -44,6 +84,8 @@ export default function JapanRestaurantsPage() {
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [hours, setHours] = useState(EMPTY_HOURS);
+  const [hoursPasteText, setHoursPasteText] = useState('');
+  const [hoursParseMessage, setHoursParseMessage] = useState('');
   const [menuText, setMenuText] = useState('');
   const [contributors, setContributors] = useState([]);
   const [userQuery, setUserQuery] = useState('');
@@ -86,6 +128,8 @@ export default function JapanRestaurantsPage() {
     setEditingId(null);
     setForm(EMPTY_FORM);
     setHours(EMPTY_HOURS);
+    setHoursPasteText('');
+    setHoursParseMessage('');
     setMenuText('');
     setContributors([]);
     setUserQuery('');
@@ -171,6 +215,24 @@ export default function JapanRestaurantsPage() {
     } finally {
       setUploading(null);
     }
+  };
+
+  const applyPastedHours = (text) => {
+    const parsed = parsePastedHours(text);
+    const parsedCount = Object.keys(parsed).length;
+    if (parsedCount === 0) {
+      setHoursParseMessage('요일을 찾지 못했습니다. 월요일~일요일 표기가 있는지 확인해주세요.');
+      return;
+    }
+    setHours((prev) => ({ ...prev, ...parsed }));
+    setHoursParseMessage(`${parsedCount}개 요일을 영업시간 입력칸에 반영했습니다.`);
+  };
+
+  const handleHoursPaste = (event) => {
+    event.preventDefault();
+    const text = event.clipboardData.getData('text');
+    setHoursPasteText(text);
+    applyPastedHours(text);
   };
 
   const buildPayload = () => {
@@ -318,13 +380,35 @@ export default function JapanRestaurantsPage() {
       {detailRestaurant && (
         <div className="jp-modal-backdrop" onMouseDown={(e) => e.target === e.currentTarget && setDetailRestaurant(null)}>
           <div className="jp-modal jp-detail-modal">
-            <div className="jp-modal-head"><div><h2>{detailRestaurant.name}</h2><small>{detailRestaurant.area} · {detailRestaurant.priceDisplay || '가격대 미입력'}</small></div><button type="button" onClick={() => setDetailRestaurant(null)}>×</button></div>
-            <div className="jp-detail-gallery">{[detailRestaurant.imageUrl1, detailRestaurant.imageUrl2, detailRestaurant.imageUrl3].filter(Boolean).length ? [detailRestaurant.imageUrl1, detailRestaurant.imageUrl2, detailRestaurant.imageUrl3].filter(Boolean).map((url, index) => <img key={url} src={url} alt={`${detailRestaurant.name} ${index + 1}`} />) : <div className="jp-detail-no-image">등록된 사진이 없습니다.</div>}</div>
-            <section><h3>기본 정보</h3><dl className="jp-detail-grid"><div><dt>주소</dt><dd>{detailRestaurant.addr}</dd></div><div><dt>좌표</dt><dd>{detailRestaurant.lat}, {detailRestaurant.lng}</dd></div><div><dt>등급</dt><dd>{detailRestaurant.isKatsuHunterPick == null ? '미선택' : detailRestaurant.isKatsuHunterPick ? '카츠헌터픽' : '논카츠헌터픽'}</dd></div><div><dt>평점</dt><dd>Google {detailRestaurant.googleRating ?? '-'} ({detailRestaurant.googleReviewCount ?? '-'}개) · 타베로그 {detailRestaurant.tabelogRating ?? '-'} ({detailRestaurant.tabelogReviewCount ?? '-'}개)</dd></div></dl><div className="jp-detail-links"><a href={detailRestaurant.googleMapsUrl} target="_blank" rel="noreferrer">Google Maps 바로가기</a>{detailRestaurant.tabelogUrl && <a href={detailRestaurant.tabelogUrl} target="_blank" rel="noreferrer">타베로그 바로가기</a>}{detailRestaurant.websiteUrl && <a href={detailRestaurant.websiteUrl} target="_blank" rel="noreferrer">공식 사이트</a>}</div></section>
-            {detailRestaurant.hours && <section><h3>영업시간</h3><div className="jp-detail-hours">{DAYS.map(([key, label]) => <div key={key}><b>{label}</b><span>{detailRestaurant.hours[key] || '-'}</span></div>)}</div>{detailRestaurant.hours.note && <p>{detailRestaurant.hours.note}</p>}</section>}
-            {detailRestaurant.featureTags?.length > 0 && <section><h3>특징 태그</h3><div className="jp-tags">{detailRestaurant.featureTags.map((tag) => <span className="jp-detail-tag" key={tag.id}>{tag.name}</span>)}</div></section>}
-            {detailRestaurant.aiReviewSummary && <section><h3>AI 리뷰 종합 분석</h3><p className="jp-preline">{detailRestaurant.aiReviewSummary}</p></section>}
-            {(detailRestaurant.katsuHunterDescription || detailRestaurant.ownerComment || detailRestaurant.reporterComment) && <section><h3>운영 문구</h3><dl className="jp-detail-copy"><div><dt>카츠헌터 설명</dt><dd>{detailRestaurant.katsuHunterDescription || '-'}</dd></div><div><dt>사장님 한마디</dt><dd>{detailRestaurant.ownerComment || '-'}</dd></div><div><dt>제보자 한마디</dt><dd>{detailRestaurant.reporterComment || '-'}</dd></div></dl></section>}
+            <div className="jp-modal-head"><div><h2>{detailRestaurant.name}</h2><small>{[detailRestaurant.area, detailRestaurant.priceDisplay].filter(Boolean).join(' · ')}</small></div><button type="button" onClick={() => setDetailRestaurant(null)}>×</button></div>
+            <div className="jp-detail-gallery">
+              {[detailRestaurant.imageUrl1, detailRestaurant.imageUrl2, detailRestaurant.imageUrl3].map((url, index) => (
+                <div className={`jp-detail-photo-slot${url ? '' : ' is-empty'}`} key={`photo-${index + 1}`}>
+                  {url && <img src={url} alt={`${detailRestaurant.name} ${index + 1}`} />}
+                </div>
+              ))}
+            </div>
+            <section><h3>기본 정보</h3><dl className="jp-detail-grid">
+              <div><dt>주소</dt><dd>{detailRestaurant.addr}</dd></div>
+              <div><dt>좌표</dt><dd>{detailRestaurant.lat}, {detailRestaurant.lng}</dd></div>
+              <div><dt>도도부현</dt><dd>{detailRestaurant.region}</dd></div>
+              <div><dt>세부지역</dt><dd>{detailRestaurant.area}</dd></div>
+              <div><dt>등급</dt><dd>{detailRestaurant.isKatsuHunterPick == null ? '미선택' : detailRestaurant.isKatsuHunterPick ? '카츠헌터픽' : '논카츠헌터픽'}</dd></div>
+              <div><dt>가격대</dt><dd>{detailRestaurant.priceDisplay || ''}</dd></div>
+              <div><dt>Google 평점</dt><dd>{ratingText(detailRestaurant.googleRating, detailRestaurant.googleReviewCount)}</dd></div>
+              <div><dt>타베로그 평점</dt><dd>{ratingText(detailRestaurant.tabelogRating, detailRestaurant.tabelogReviewCount)}</dd></div>
+            </dl></section>
+            <section><h3>외부 링크</h3><dl className="jp-detail-copy">
+              <div><dt>Google Maps</dt><dd>{detailRestaurant.googleMapsUrl && <a href={detailRestaurant.googleMapsUrl} target="_blank" rel="noreferrer">바로가기</a>}</dd></div>
+              <div><dt>타베로그</dt><dd>{detailRestaurant.tabelogUrl && <a href={detailRestaurant.tabelogUrl} target="_blank" rel="noreferrer">바로가기</a>}</dd></div>
+              <div><dt>공식 사이트</dt><dd>{detailRestaurant.websiteUrl && <a href={detailRestaurant.websiteUrl} target="_blank" rel="noreferrer">바로가기</a>}</dd></div>
+            </dl></section>
+            <section><h3>영업시간</h3><div className="jp-detail-hours">{DAYS.map(([key, label]) => <div key={key}><b>{label}</b><span>{detailRestaurant.hours?.[key] || ''}</span></div>)}</div><dl className="jp-detail-copy jp-detail-hours-extra"><div><dt>브레이크 타임</dt><dd>{detailRestaurant.hours?.breakTime || ''}</dd></div><div><dt>참고사항</dt><dd>{detailRestaurant.hours?.note || ''}</dd></div></dl></section>
+            <section><h3>특징 태그</h3><div className="jp-tags jp-detail-tags">{(detailRestaurant.featureTags || []).map((tag) => <span className="jp-detail-tag" key={tag.id}>{tag.name}</span>)}</div></section>
+            <section><h3>AI 리뷰 종합 분석</h3><p className="jp-preline jp-detail-blank-area">{detailRestaurant.aiReviewSummary || ''}</p></section>
+            <section><h3>운영 문구</h3><dl className="jp-detail-copy"><div><dt>카츠헌터 설명</dt><dd>{detailRestaurant.katsuHunterDescription || ''}</dd></div><div><dt>사장님 한마디</dt><dd>{detailRestaurant.ownerComment || ''}</dd></div><div><dt>제보자 한마디</dt><dd>{detailRestaurant.reporterComment || ''}</dd></div></dl></section>
+            <section><h3>대표 메뉴</h3><div className="jp-detail-list">{(detailRestaurant.menus || []).map((menu) => <div key={menu.id}>{menu.name}{menu.priceRate ? ` · ${menu.priceRate}` : ''}</div>)}</div></section>
+            <section><h3>제보 기여자</h3><div className="jp-detail-list">{(detailRestaurant.contributors || []).map((item) => <div key={item.userId}>{item.user?.nickname || item.user?.uuid || ''}</div>)}</div></section>
             <footer className="jp-modal-actions"><button type="button" onClick={() => setDetailRestaurant(null)}>닫기</button><button type="button" className="jp-primary" onClick={() => { const target = detailRestaurant; setDetailRestaurant(null); openEdit(target); }}>수정</button></footer>
           </div>
         </div>
@@ -347,7 +431,7 @@ export default function JapanRestaurantsPage() {
 
             <section><h3>리뷰 분석·운영 문구</h3><label>AI 리뷰 종합 분석 (최대 6줄)<textarea rows="7" value={form.aiReviewSummary} onChange={(e) => setField('aiReviewSummary', e.target.value)} /></label><label>카츠헌터 설명<textarea rows="3" value={form.katsuHunterDescription} onChange={(e) => setField('katsuHunterDescription', e.target.value)} /></label><div className="jp-grid two"><label>사장님 한마디<textarea rows="3" value={form.ownerComment} onChange={(e) => setField('ownerComment', e.target.value)} /></label><label>제보자 한마디<textarea rows="3" value={form.reporterComment} onChange={(e) => setField('reporterComment', e.target.value)} /></label></div></section>
 
-            <section><h3>영업시간</h3><div className="jp-hours">{DAYS.map(([key, label]) => <label key={key}><span>{label}</span><input placeholder="11:00 - 20:00 / 휴무" value={hours[key]} onChange={(e) => setHours((prev) => ({ ...prev, [key]: e.target.value }))} /></label>)}</div><div className="jp-grid two"><label>브레이크 타임<input value={hours.breakTime} onChange={(e) => setHours((prev) => ({ ...prev, breakTime: e.target.value }))} /></label><label>영업시간 참고사항<input value={hours.note} onChange={(e) => setHours((prev) => ({ ...prev, note: e.target.value }))} /></label></div></section>
+            <section><h3>영업시간</h3><div className="jp-hours-import"><label>요일별 영업시간 붙여넣기<textarea rows="6" placeholder="월요일부터 일요일까지 복사한 내용을 붙여넣으면 자동으로 파싱됩니다." value={hoursPasteText} onPaste={handleHoursPaste} onChange={(e) => { setHoursPasteText(e.target.value); setHoursParseMessage(''); }} /></label><div><button type="button" onClick={() => applyPastedHours(hoursPasteText)}>붙여넣은 내용 반영</button>{hoursParseMessage && <small>{hoursParseMessage}</small>}</div></div><div className="jp-hours">{DAYS.map(([key, label]) => <label key={key}><span>{label}</span><input placeholder="11:00 - 20:00 / 휴무" value={hours[key]} onChange={(e) => setHours((prev) => ({ ...prev, [key]: e.target.value }))} /></label>)}</div><div className="jp-grid two"><label>브레이크 타임<input value={hours.breakTime} onChange={(e) => setHours((prev) => ({ ...prev, breakTime: e.target.value }))} /></label><label>영업시간 참고사항<input value={hours.note} onChange={(e) => setHours((prev) => ({ ...prev, note: e.target.value }))} /></label></div></section>
 
             <section><h3>특징 태그 ({form.featureTagIds.length}/7)</h3><div className="jp-tags">{featureTags.map((tag) => <button type="button" key={tag.id} disabled={!tag.isActive && !form.featureTagIds.includes(tag.id)} className={form.featureTagIds.includes(tag.id) ? 'selected' : ''} onClick={() => toggleTag(tag.id)}>{tag.name}</button>)}</div></section>
 
