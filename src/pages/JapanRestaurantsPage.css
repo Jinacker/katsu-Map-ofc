@@ -4,7 +4,9 @@
 .jp-header p { margin: 0; color: #766f69; }
 .jp-primary { border: 0 !important; background: #c83232 !important; color: #fff !important; font-weight: 700; }
 .jp-toolbar { justify-content: flex-start; margin: 24px 0 16px; padding: 16px; border: 1px solid #eadfda; border-radius: 14px; background: #fff; }
-.jp-toolbar input { flex: 1; max-width: 460px; }
+.jp-toolbar input { flex: 1; min-width: 240px; max-width: none; }
+.jp-toolbar select { width: 104px; flex: 0 0 104px; }
+.jp-toolbar span { flex: 0 0 auto; white-space: nowrap; }
 .jp-page input, .jp-page select, .jp-page textarea { width: 100%; box-sizing: border-box; border: 1px solid #ddd2cc; border-radius: 8px; padding: 10px 12px; background: #fff; font: inherit; }
 .jp-page button { border: 1px solid #d6cbc5; border-radius: 8px; padding: 9px 13px; background: #fff; cursor: pointer; }
 .jp-page button:disabled { opacity: .45; cursor: not-allowed; }
@@ -74,6 +76,8 @@
 .jp-tags { display: flex; flex-wrap: wrap; gap: 8px; }
 .jp-tags button { padding: 7px 10px; border-radius: 999px; }
 .jp-tags button.selected { border: 2px solid #c83232; color: #c83232; background: transparent; }
+.jp-tag-groups { display: grid; gap: 16px; }
+.jp-tag-group h4 { margin: 0 0 8px; color: #635b56; font-size: 13px; }
 .jp-contributor, .jp-user-search { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
 .jp-contributor span, .jp-user-search input { flex: 1; }
 .jp-user-result { margin: 4px 6px 0 0; }

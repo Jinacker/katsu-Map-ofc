@@ -131,6 +131,15 @@ export default function JapanRestaurantsPage() {
     return ['전체', ...ordered, ...extras];
   }, [restaurants]);
 
+  const featureTagGroups = useMemo(() => {
+    const groups = new Map();
+    featureTags.forEach((tag) => {
+      const category = tag.category?.trim() || '미분류';
+      groups.set(category, [...(groups.get(category) || []), tag]);
+    });
+    return [...groups.entries()];
+  }, [featureTags]);
+
   useEffect(() => {
     if (!availableRegions.includes(region)) setRegion('전체');
   }, [availableRegions, region]);
@@ -437,7 +446,7 @@ export default function JapanRestaurantsPage() {
               <label>도도부현 *<select value={form.region} onChange={(e) => setField('region', e.target.value)}>{PREFECTURES.filter((item) => item !== '전체').map((item) => <option key={item}>{item}</option>)}</select></label>
               <label>세부지역 *<input placeholder="도쿄 신주쿠" value={form.area} onChange={(e) => setField('area', e.target.value)} required /></label>
             </div><label>일본 주소 *<input value={form.addr} onChange={(e) => setField('addr', e.target.value)} required /></label>
-            <div className="jp-grid three"><label>위도 *<input type="number" step="any" value={form.lat} onChange={(e) => setField('lat', e.target.value)} required /></label><label>경도 *<input type="number" step="any" value={form.lng} onChange={(e) => setField('lng', e.target.value)} required /></label><label>등급<select value={form.isKatsuHunterPick} onChange={(e) => setField('isKatsuHunterPick', e.target.value)}><option value="">미선택</option><option value="true">카츠헌터픽</option><option value="false">논카츠헌터픽</option></select></label></div><label className="jp-completion-check"><input type="checkbox" checked={form.isCompleted} onChange={(e) => setField('isCompleted', e.target.checked)} /><span>필수 정보를 모두 작성했습니다.</span></label></section>
+            <div className="jp-grid three"><label>위도 *<input type="number" step="any" value={form.lat} onChange={(e) => setField('lat', e.target.value)} required /></label><label>경도 *<input type="number" step="any" value={form.lng} onChange={(e) => setField('lng', e.target.value)} required /></label><label>등급<select value={form.isKatsuHunterPick} onChange={(e) => setField('isKatsuHunterPick', e.target.value)}><option value="">미선택</option><option value="true">카츠헌터픽</option><option value="false">논카츠헌터픽</option></select></label></div></section>
 
             <section><h3>외부 정보</h3><label>Google Maps URL *<input value={form.googleMapsUrl} onChange={(e) => setField('googleMapsUrl', e.target.value)} required /></label><div className="jp-grid two"><label>타베로그 URL<input value={form.tabelogUrl} onChange={(e) => setField('tabelogUrl', e.target.value)} /></label><label>가게 공식 사이트<input value={form.websiteUrl} onChange={(e) => setField('websiteUrl', e.target.value)} /></label></div><div className="jp-grid two"><label>Google 평점<input type="number" min="0" max="5" step="0.1" value={form.googleRating} onChange={(e) => setField('googleRating', e.target.value)} /></label><label>타베로그 평점<input type="number" min="0" max="5" step="0.01" value={form.tabelogRating} onChange={(e) => setField('tabelogRating', e.target.value)} /></label></div><label>가격대<input placeholder="2,000~3,000엔" value={form.priceDisplay} onChange={(e) => setField('priceDisplay', e.target.value)} /></label></section>
 
@@ -447,11 +456,11 @@ export default function JapanRestaurantsPage() {
 
             <section><h3>영업시간</h3><div className="jp-hours-import"><label>요일별 영업시간 붙여넣기<textarea rows="6" placeholder="월요일부터 일요일까지 복사한 내용을 붙여넣으면 자동으로 파싱됩니다." value={hoursPasteText} onPaste={handleHoursPaste} onChange={(e) => { setHoursPasteText(e.target.value); setHoursParseMessage(''); }} /></label><div><button type="button" onClick={() => applyPastedHours(hoursPasteText)}>붙여넣은 내용 반영</button>{hoursParseMessage && <small>{hoursParseMessage}</small>}</div></div><div className="jp-hours">{DAYS.map(([key, label]) => <label key={key}><span>{label}</span><input placeholder="11:00 - 20:00 / 휴무" value={hours[key]} onChange={(e) => setHours((prev) => ({ ...prev, [key]: e.target.value }))} /></label>)}</div><div className="jp-grid two"><label>브레이크 타임<input value={hours.breakTime} onChange={(e) => setHours((prev) => ({ ...prev, breakTime: e.target.value }))} /></label><label>영업시간 참고사항<input value={hours.note} onChange={(e) => setHours((prev) => ({ ...prev, note: e.target.value }))} /></label></div></section>
 
-            <section><h3>특징 태그 ({form.featureTagIds.length}/7)</h3><div className="jp-tags">{featureTags.map((tag) => <button type="button" key={tag.id} disabled={!tag.isActive && !form.featureTagIds.includes(tag.id)} className={form.featureTagIds.includes(tag.id) ? 'selected' : ''} onClick={() => toggleTag(tag.id)}>{tag.name}</button>)}</div></section>
+            <section><h3>특징 태그 ({form.featureTagIds.length}/7)</h3><div className="jp-tag-groups">{featureTagGroups.map(([category, tags]) => <div className="jp-tag-group" key={category}><h4>{category}</h4><div className="jp-tags">{tags.map((tag) => <button type="button" key={tag.id} disabled={!tag.isActive && !form.featureTagIds.includes(tag.id)} className={form.featureTagIds.includes(tag.id) ? 'selected' : ''} onClick={() => toggleTag(tag.id)}>{tag.name}</button>)}</div></div>)}</div></section>
 
             <section><h3>대표 메뉴</h3><label>한 줄에 하나씩 `메뉴명 | 가격` 형식<textarea rows="4" value={menuText} onChange={(e) => setMenuText(e.target.value)} /></label></section>
 
-            <section><h3>제보 기여자</h3>{contributors.map((item) => <div className="jp-contributor" key={item.userId}><span>{item.user?.nickname || `사용자 ${item.userId}`}</span><button type="button" onClick={() => removeContributor(item.userId)}>제거</button></div>)}<div className="jp-user-search"><input placeholder={editingId ? '닉네임/UUID 검색' : '가게 저장 후 추가 가능'} value={userQuery} disabled={!editingId} onChange={(e) => setUserQuery(e.target.value)} /><button type="button" disabled={!editingId} onClick={searchUsers}>검색</button></div>{userResults.map((user) => <button className="jp-user-result" type="button" key={user.id} onClick={() => addContributor(user.id)}>{user.nickname || '닉네임 없음'} · {user.uuid}</button>)}</section>
+            <section><h3>제보 기여자</h3>{contributors.map((item) => <div className="jp-contributor" key={item.userId}><span>{item.user?.nickname || `사용자 ${item.userId}`}</span><button type="button" onClick={() => removeContributor(item.userId)}>제거</button></div>)}<div className="jp-user-search"><input placeholder={editingId ? '닉네임/UUID 검색' : '가게 저장 후 추가 가능'} value={userQuery} disabled={!editingId} onChange={(e) => setUserQuery(e.target.value)} /><button type="button" disabled={!editingId} onClick={searchUsers}>검색</button></div>{userResults.map((user) => <button className="jp-user-result" type="button" key={user.id} onClick={() => addContributor(user.id)}>{user.nickname || '닉네임 없음'} · {user.uuid}</button>)}<label className="jp-completion-check"><input type="checkbox" checked={form.isCompleted} onChange={(e) => setField('isCompleted', e.target.checked)} /><span>가게 정보를 모두 작성했습니다.</span></label></section>
 
             <footer className="jp-modal-actions"><button type="button" onClick={() => setModalOpen(false)}>취소</button><button className="jp-primary" disabled={saving || uploading} type="submit">{saving ? '저장 중...' : '저장'}</button></footer>
           </form>
