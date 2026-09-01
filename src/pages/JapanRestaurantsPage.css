@@ -1,0 +1,66 @@
+.jp-page { padding: 32px; color: #2d2926; }
+.jp-header, .jp-toolbar, .jp-modal-head, .jp-modal-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.jp-header h1 { margin: 0 0 8px; font-size: 28px; }
+.jp-header p { margin: 0; color: #766f69; }
+.jp-primary { border: 0 !important; background: #c83232 !important; color: #fff !important; font-weight: 700; }
+.jp-toolbar { justify-content: flex-start; margin: 24px 0 16px; padding: 16px; border: 1px solid #eadfda; border-radius: 14px; background: #fff; }
+.jp-toolbar input { flex: 1; max-width: 460px; }
+.jp-page input, .jp-page select, .jp-page textarea { width: 100%; box-sizing: border-box; border: 1px solid #ddd2cc; border-radius: 8px; padding: 10px 12px; background: #fff; font: inherit; }
+.jp-page button { border: 1px solid #d6cbc5; border-radius: 8px; padding: 9px 13px; background: #fff; cursor: pointer; }
+.jp-page button:disabled { opacity: .45; cursor: not-allowed; }
+.jp-table-wrap { overflow: auto; border: 1px solid #eadfda; border-radius: 14px; background: #fff; }
+.jp-table { width: 100%; border-collapse: collapse; min-width: 980px; }
+.jp-table th, .jp-table td { padding: 14px; border-bottom: 1px solid #f0e8e4; text-align: left; vertical-align: middle; }
+.jp-table th { background: #faf6f4; color: #746a64; font-size: 13px; }
+.jp-clickable { cursor: pointer; transition: background .15s ease; }
+.jp-clickable:hover { background: #fff8f6; }
+.jp-store-cell { display: flex; align-items: center; gap: 12px; min-width: 300px; }
+.jp-store-cell > img, .jp-cover-empty { width: 58px; height: 58px; flex: 0 0 58px; border-radius: 9px; object-fit: cover; }
+.jp-cover-empty { display: grid; place-items: center; background: #f1ebe8; color: #a09690; font-size: 9px; font-weight: 700; }
+.jp-table td small, .jp-table td span { display: block; margin-top: 4px; color: #7e756f; }
+.jp-table .danger { margin-left: 6px; color: #bb2929; border-color: #e7bcbc; }
+.jp-links a { display: inline-block; margin-right: 9px; color: #b12a2a; }
+.jp-empty { padding: 48px; text-align: center; color: #827873; }
+.jp-modal-backdrop { position: fixed; inset: 0; z-index: 1000; display: flex; justify-content: center; align-items: flex-start; padding: 28px; overflow: auto; background: rgba(30, 22, 19, .54); }
+.jp-modal { width: min(1040px, 100%); border-radius: 18px; background: #fff; padding: 24px; box-shadow: 0 24px 70px rgba(0,0,0,.25); }
+.jp-detail-loading { position: fixed; right: 24px; bottom: 24px; z-index: 1100; padding: 12px 16px; border-radius: 10px; background: #2d2926; color: #fff; }
+.jp-detail-modal { width: min(900px, 100%); }
+.jp-detail-gallery { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 18px; }
+.jp-detail-gallery img { width: 100%; height: 230px; border-radius: 12px; object-fit: cover; }
+.jp-detail-no-image { grid-column: 1 / -1; display: grid; place-items: center; min-height: 170px; border-radius: 12px; background: #f7f2ef; color: #948983; }
+.jp-detail-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px 24px; margin: 0; }
+.jp-detail-grid div, .jp-detail-copy div { min-width: 0; }
+.jp-detail-grid dt, .jp-detail-copy dt { margin-bottom: 4px; color: #8a7e77; font-size: 12px; font-weight: 700; }
+.jp-detail-grid dd, .jp-detail-copy dd { margin: 0; line-height: 1.55; overflow-wrap: anywhere; }
+.jp-detail-links { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+.jp-detail-links a { color: #bd2e2e; font-weight: 700; }
+.jp-detail-hours { display: grid; grid-template-columns: repeat(2, 1fr); gap: 7px 18px; }
+.jp-detail-hours div { display: grid; grid-template-columns: 28px 1fr; }
+.jp-detail-tag { display: inline-block; padding: 7px 10px; border: 2px solid #c83232; border-radius: 999px; color: #c83232 !important; }
+.jp-preline { white-space: pre-line; line-height: 1.7; }
+.jp-detail-copy { display: grid; gap: 14px; margin: 0; }
+.jp-modal-head { position: sticky; top: -28px; z-index: 2; margin: -24px -24px 18px; padding: 18px 24px; border-bottom: 1px solid #eee3de; border-radius: 18px 18px 0 0; background: #fff; }
+.jp-modal-head h2, .jp-modal section h3 { margin: 0; }
+.jp-modal section { margin: 0 0 18px; padding: 18px; border: 1px solid #eee4df; border-radius: 12px; }
+.jp-modal section h3 { margin-bottom: 14px; font-size: 16px; }
+.jp-modal label { display: block; color: #635b56; font-size: 13px; font-weight: 700; }
+.jp-modal label > input, .jp-modal label > select, .jp-modal label > textarea { margin-top: 7px; }
+.jp-grid { display: grid; gap: 12px; margin-bottom: 12px; }
+.jp-grid.two { grid-template-columns: repeat(2, 1fr); }
+.jp-grid.three { grid-template-columns: repeat(3, 1fr); }
+.jp-grid.four { grid-template-columns: repeat(4, 1fr); }
+.jp-images { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.jp-image { position: relative; min-height: 145px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; overflow: hidden; border: 1px dashed #d8c8c0; border-radius: 10px; background: #fbf8f6; }
+.jp-image img { width: 100%; height: 145px; object-fit: cover; }
+.jp-image input { width: calc(100% - 16px); font-size: 12px; }
+.jp-hours { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px 12px; margin-bottom: 12px; }
+.jp-hours label { display: grid; grid-template-columns: 28px 1fr; align-items: center; }
+.jp-hours label input { margin-top: 0; }
+.jp-tags { display: flex; flex-wrap: wrap; gap: 8px; }
+.jp-tags button { padding: 7px 10px; border-radius: 999px; }
+.jp-tags button.selected { border: 2px solid #c83232; color: #c83232; background: transparent; }
+.jp-contributor, .jp-user-search { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.jp-contributor span, .jp-user-search input { flex: 1; }
+.jp-user-result { margin: 4px 6px 0 0; }
+.jp-modal-actions { position: sticky; bottom: -28px; margin: 0 -24px -24px; padding: 16px 24px; border-top: 1px solid #eee3de; border-radius: 0 0 18px 18px; background: #fff; justify-content: flex-end; }
+@media (max-width: 760px) { .jp-page { padding: 18px; } .jp-header { align-items: flex-start; flex-direction: column; } .jp-toolbar { flex-wrap: wrap; } .jp-grid.two, .jp-grid.three, .jp-grid.four, .jp-images, .jp-hours, .jp-detail-gallery, .jp-detail-grid, .jp-detail-hours { grid-template-columns: 1fr; } .jp-modal-backdrop { padding: 0; } .jp-modal { min-height: 100vh; border-radius: 0; } }

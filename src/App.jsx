@@ -5,6 +5,7 @@ import DashboardPage from './pages/DashboardPage';
 import MessagesPage from './pages/MessagesPage';
 import NoticesPage from './pages/NoticesPage';
 import RestaurantsPage from './pages/RestaurantsPage';
+import JapanRestaurantsPage from './pages/JapanRestaurantsPage';
 import UsersPage from './pages/UsersPage';
 import HunterContentPage from './pages/HunterContentPage';
 import UserRecordsPage from './pages/UserRecordsPage';
@@ -60,6 +61,16 @@ function App() {
             <ProtectedRoute>
               <AdminLayout>
                 <RestaurantsPage />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/japan-restaurants"
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <JapanRestaurantsPage />
               </AdminLayout>
             </ProtectedRoute>
           }
