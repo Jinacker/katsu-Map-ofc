@@ -195,6 +195,7 @@ export default async function handler(req, res) {
   const ref = Array.isArray(req.query.ref) ? req.query.ref[0] : req.query.ref;
   const type = Array.isArray(req.query.type) ? req.query.type[0] : req.query.type;
   const isCommunityShare = type === 'community';
+  const isProfileShare = type === 'profile';
 
   if (typeof ref !== 'string' || !/^[a-z0-9]+$/i.test(ref)) {
     res.status(404).send('Not found');
@@ -267,6 +268,38 @@ export default async function handler(req, res) {
         shareUrl,
         imageUrl: null,
       }));
+    }
+    return;
+  }
+
+  if (isProfileShare) {
+    const userId = Number.parseInt(ref, 10);
+    if (!Number.isInteger(userId) || userId <= 0) { res.status(404).send('Not found'); return; }
+    const apiBaseUrl = normalizeApiBaseUrl();
+    const shareUrl = `${SHARE_ORIGIN}/u/${encodeURIComponent(ref)}`;
+    try {
+      const [profilePayload, contentPayload] = await Promise.all([
+        fetchJson(`${apiBaseUrl}/api/v1/user-shares/${userId}`),
+        fetchJson(`${apiBaseUrl}/api/v1/hunter-content`).catch(() => null),
+      ]);
+      const profile = unwrapApiData(profilePayload);
+      const content = unwrapApiData(contentPayload) || {};
+      const isPublic = profile?.isProfilePublic === true;
+      const nickname = isPublic ? (profile?.nickname || '돈가스 지도 유저') : '비공개 프로필';
+      setHtmlHeaders(res);
+      res.status(200).send(renderHtml({
+        ref,
+        deepLinkType: 'profile',
+        heading: nickname,
+        eyebrow: isPublic ? `기록 ${profile?.recordCount ?? 0}개 · 즐겨찾기 ${profile?.favoriteCount ?? 0}개` : '',
+        title: `${nickname} | 돈가스 지도`,
+        description: isPublic ? `${nickname}님의 돈가스 프로필을 확인해보세요.` : '공유가 비공개로 설정된 프로필입니다.',
+        ctaText: content.profileShareCtaText || '앱에서 프로필 보기',
+        shareUrl,
+        imageUrl: isPublic ? pickImageUrl(profile?.profilePhotoUrl) : null,
+      }));
+    } catch {
+      res.status(404).send('Not found');
     }
     return;
   }

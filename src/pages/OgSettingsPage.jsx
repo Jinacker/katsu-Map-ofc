@@ -3,6 +3,7 @@ import api from '../api/axios';
 
 const DEFAULT_RESTAURANT_SHARE_CTA_TEXT = '돈가스 지도에서 이 가게 보기';
 const DEFAULT_FEED_SHARE_CTA_TEXT = '돈가스 피드 보기';
+const DEFAULT_PROFILE_SHARE_CTA_TEXT = '앱에서 프로필 보기';
 
 export default function OgSettingsPage() {
   const [loading, setLoading] = useState(true);
@@ -11,6 +12,7 @@ export default function OgSettingsPage() {
   const [form, setForm] = useState({
     shareCtaText: DEFAULT_RESTAURANT_SHARE_CTA_TEXT,
     feedShareCtaText: DEFAULT_FEED_SHARE_CTA_TEXT,
+    profileShareCtaText: DEFAULT_PROFILE_SHARE_CTA_TEXT,
   });
 
   useEffect(() => {
@@ -24,6 +26,7 @@ export default function OgSettingsPage() {
       setForm({
         shareCtaText: data.shareCtaText ?? DEFAULT_RESTAURANT_SHARE_CTA_TEXT,
         feedShareCtaText: data.feedShareCtaText ?? DEFAULT_FEED_SHARE_CTA_TEXT,
+        profileShareCtaText: data.profileShareCtaText ?? DEFAULT_PROFILE_SHARE_CTA_TEXT,
       });
     } catch (e) {
       setMsg('불러오기 실패: ' + (e.response?.data?.message ?? e.message));
@@ -94,6 +97,16 @@ export default function OgSettingsPage() {
           />
         </Field>
         <VariableList variables={['{restaurantName}', '{name}', '{area}', '{nickname}', '{menuName}', '{review}', '{stars}', '{url}']} />
+      </Section>
+      <Section title="유저 프로필 공유 OG">
+        <Field label="열기 버튼 문구">
+          <input
+            style={s.input}
+            value={form.profileShareCtaText}
+            onChange={e => updateField('profileShareCtaText', e.target.value)}
+            placeholder={DEFAULT_PROFILE_SHARE_CTA_TEXT}
+          />
+        </Field>
       </Section>
     </div>
   );
