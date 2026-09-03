@@ -29,6 +29,7 @@ const EMPTY_FORM_DATA = {
 };
 const EMPTY_MENUS = { priceRate: '', names: '' };
 const MAX_FEATURE_TAGS = 7;
+const FEATURE_TAG_CATEGORY_ORDER = ['MEAT', 'COOKING', 'TASTE', 'INFO', 'SAUCE', 'MENU', 'STYLE'];
 const PIN_OFFSET_METERS = 8;
 const MIN_PIN_DISTANCE_METERS = 6;
 const DAY_OPTIONS = [
@@ -242,6 +243,7 @@ const RestaurantsPage = () => {
   // 가게 특징 태그 — 마스터 목록은 한 번 받아두고, 가게별 선택은 formData.featureTagIds가 들고 있다
   const [featureTags, setFeatureTags] = useState([]);
   const [featureTagQuery, setFeatureTagQuery] = useState('');
+  const [featureTagExpanded, setFeatureTagExpanded] = useState(false);
   const [showFeatureTagModal, setShowFeatureTagModal] = useState(false);
   const [newFeatureTagName, setNewFeatureTagName] = useState('');
   const [newFeatureTagCategory, setNewFeatureTagCategory] = useState('');
@@ -313,6 +315,8 @@ const RestaurantsPage = () => {
     setContributors([]);
     setUserSearchQuery('');
     setUserSearchResults([]);
+    setFeatureTagQuery('');
+    setFeatureTagExpanded(false);
     setBulkParseText('');
     setBulkParseMessage('');
     setBulkParsePartialSuccess(false);
@@ -429,8 +433,20 @@ const RestaurantsPage = () => {
         tag.name.toLowerCase().includes(query) ||
         (tag.category || '').toLowerCase().includes(query)
       );
-    })
-    .slice(0, 12);
+    });
+
+  const featureTagCandidateGroups = [...featureTagCandidates.reduce((groups, tag) => {
+    const category = tag.category?.trim() || '미분류';
+    if (!groups.has(category)) groups.set(category, []);
+    groups.get(category).push(tag);
+    return groups;
+  }, new Map()).entries()].sort(([left], [right]) => {
+    const leftIndex = FEATURE_TAG_CATEGORY_ORDER.indexOf(left.toUpperCase());
+    const rightIndex = FEATURE_TAG_CATEGORY_ORDER.indexOf(right.toUpperCase());
+    const leftRank = leftIndex === -1 ? FEATURE_TAG_CATEGORY_ORDER.length : leftIndex;
+    const rightRank = rightIndex === -1 ? FEATURE_TAG_CATEGORY_ORDER.length : rightIndex;
+    return leftRank - rightRank || left.localeCompare(right, 'ko');
+  });
 
   const handleCreateFeatureTag = async () => {
     const name = newFeatureTagName.trim();
@@ -2447,32 +2463,53 @@ const RestaurantsPage = () => {
                         type="text"
                         className="feature-tag-search-input"
                         value={featureTagQuery}
-                        onChange={(e) => setFeatureTagQuery(e.target.value)}
+                        onChange={(e) => {
+                          setFeatureTagQuery(e.target.value);
+                          if (e.target.value.trim()) setFeatureTagExpanded(true);
+                        }}
                         placeholder="태그 검색 (예: 저온조리)"
                       />
-                      <div className="feature-tag-candidates">
-                        {featureTagCandidates.length === 0 ? (
-                          <span className="feature-tag-empty">
-                            {featureTags.filter((t) => t.isActive).length === 0
-                              ? '등록된 태그가 없습니다. [태그 관리]에서 먼저 추가하세요.'
-                              : '조건에 맞는 태그가 없습니다.'}
-                          </span>
-                        ) : (
-                          featureTagCandidates.map((tag) => (
-                            <button
-                              key={tag.id}
-                              type="button"
-                              className="feature-tag-candidate"
-                              onClick={() => handleAddFeatureTag(tag.id)}
-                            >
-                              {tag.name}
-                              {tag.category ? (
-                                <span className="feature-tag-category">{tag.category}</span>
-                              ) : null}
-                            </button>
-                          ))
-                        )}
-                      </div>
+                      <button
+                        type="button"
+                        className="feature-tag-expand-button"
+                        onClick={() => setFeatureTagExpanded((current) => !current)}
+                        aria-expanded={featureTagExpanded}
+                      >
+                        <span>{featureTagExpanded ? '태그 목록 접기' : '태그 목록 펼치기'}</span>
+                        <span>{featureTagExpanded ? '▲' : '▼'}</span>
+                      </button>
+                      {featureTagExpanded && (
+                        <div className="feature-tag-candidates">
+                          {featureTagCandidateGroups.length === 0 ? (
+                            <span className="feature-tag-empty">
+                              {featureTags.filter((t) => t.isActive).length === 0
+                                ? '등록된 태그가 없습니다. [태그 관리]에서 먼저 추가하세요.'
+                                : '조건에 맞는 태그가 없습니다.'}
+                            </span>
+                          ) : (
+                            featureTagCandidateGroups.map(([category, tags]) => (
+                              <div className="feature-tag-candidate-group" key={category}>
+                                <div className="feature-tag-candidate-group-title">
+                                  <span>{category}</span>
+                                  <span>{tags.length}</span>
+                                </div>
+                                <div className="feature-tag-candidate-list">
+                                  {tags.map((tag) => (
+                                    <button
+                                      key={tag.id}
+                                      type="button"
+                                      className="feature-tag-candidate"
+                                      onClick={() => handleAddFeatureTag(tag.id)}
+                                    >
+                                      {tag.name}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      )}
                     </>
                   ) : (
                     <span className="feature-tag-empty">
