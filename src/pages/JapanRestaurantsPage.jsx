@@ -89,6 +89,7 @@ export default function JapanRestaurantsPage() {
   const [userResults, setUserResults] = useState([]);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(null);
+  const [draggingImage, setDraggingImage] = useState(null);
 
   const load = async () => {
     setLoading(true);
@@ -154,6 +155,7 @@ export default function JapanRestaurantsPage() {
     setContributors([]);
     setUserQuery('');
     setUserResults([]);
+    setDraggingImage(null);
   };
 
   const openCreate = () => {
@@ -234,6 +236,28 @@ export default function JapanRestaurantsPage() {
     } finally {
       setUploading(null);
     }
+  };
+
+  const handleImageUpload = async (event, key) => {
+    const file = event.target.files?.[0];
+    if (file) await handleImage(file, key);
+    event.target.value = '';
+  };
+
+  const handleImagePaste = async (event, key) => {
+    const imageItem = [...(event.clipboardData?.items || [])]
+      .find((item) => item.type.startsWith('image/'));
+    if (!imageItem) return;
+    event.preventDefault();
+    const file = imageItem.getAsFile();
+    if (file) await handleImage(file, key);
+  };
+
+  const handleImageDrop = async (event, key) => {
+    event.preventDefault();
+    setDraggingImage(null);
+    const file = event.dataTransfer.files?.[0];
+    if (file) await handleImage(file, key);
   };
 
   const applyPastedHours = (text) => {
@@ -450,7 +474,7 @@ export default function JapanRestaurantsPage() {
 
             <section><h3>외부 정보</h3><label>Google Maps URL *<input value={form.googleMapsUrl} onChange={(e) => setField('googleMapsUrl', e.target.value)} required /></label><div className="jp-grid two"><label>타베로그 URL<input value={form.tabelogUrl} onChange={(e) => setField('tabelogUrl', e.target.value)} /></label><label>가게 공식 사이트<input value={form.websiteUrl} onChange={(e) => setField('websiteUrl', e.target.value)} /></label></div><div className="jp-grid two"><label>Google 평점<input type="number" min="0" max="5" step="0.1" value={form.googleRating} onChange={(e) => setField('googleRating', e.target.value)} /></label><label>타베로그 평점<input type="number" min="0" max="5" step="0.01" value={form.tabelogRating} onChange={(e) => setField('tabelogRating', e.target.value)} /></label></div><label>가격대<input placeholder="2,000~3,000엔" value={form.priceDisplay} onChange={(e) => setField('priceDisplay', e.target.value)} /></label></section>
 
-            <section><h3>사진 (최대 3장)</h3><div className="jp-images">{['imageUrl1', 'imageUrl2', 'imageUrl3'].map((key, index) => <div className="jp-image" key={key}>{form[key] ? <img src={form[key]} alt={`가게 ${index + 1}`} /> : <span>사진 {index + 1}</span>}<input type="file" accept="image/*" onChange={(e) => handleImage(e.target.files?.[0], key)} />{form[key] && <button type="button" onClick={() => setField(key, '')}>비우기</button>}{uploading === key && <small>업로드 중...</small>}</div>)}</div></section>
+            <section><h3>사진 (최대 3장)</h3><div className="jp-images">{['imageUrl1', 'imageUrl2', 'imageUrl3'].map((key, index) => <div className={`jp-image ${draggingImage === key ? 'drag-over' : ''}`} key={key} onDragOver={(event) => { event.preventDefault(); setDraggingImage(key); }} onDragLeave={() => setDraggingImage(null)} onDrop={(event) => handleImageDrop(event, key)}>{form[key] ? <img src={form[key]} alt={`가게 ${index + 1}`} /> : <span>사진 {index + 1}</span>}<input type="url" value={form[key]} onChange={(event) => setField(key, event.target.value)} onPaste={(event) => handleImagePaste(event, key)} placeholder="이미지 URL 붙여넣기" /><label className="jp-image-upload">{uploading === key ? '업로드 중...' : '파일 선택'}<input type="file" accept="image/*" onChange={(event) => handleImageUpload(event, key)} disabled={uploading === key} /></label><small>이미지 붙여넣기 또는 파일을 끌어놓을 수 있습니다.</small>{form[key] && <button type="button" onClick={() => setField(key, '')}>비우기</button>}</div>)}</div></section>
 
             <section><h3>리뷰 분석·운영 문구</h3><label>AI 리뷰 종합 분석 (최대 6줄)<textarea rows="7" value={form.aiReviewSummary} onChange={(e) => setField('aiReviewSummary', e.target.value)} /></label><label>카츠헌터 설명<textarea rows="3" value={form.katsuHunterDescription} onChange={(e) => setField('katsuHunterDescription', e.target.value)} /></label><div className="jp-grid two"><label>사장님 한마디<textarea rows="3" value={form.ownerComment} onChange={(e) => setField('ownerComment', e.target.value)} /></label><label>제보자 한마디<textarea rows="3" value={form.reporterComment} onChange={(e) => setField('reporterComment', e.target.value)} /></label></div></section>
 

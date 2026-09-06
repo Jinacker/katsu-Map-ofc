@@ -64,8 +64,12 @@
 .jp-grid.four { grid-template-columns: repeat(4, 1fr); }
 .jp-images { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
 .jp-image { position: relative; min-height: 145px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; overflow: hidden; border: 1px dashed #d8c8c0; border-radius: 10px; background: #fbf8f6; }
+.jp-image.drag-over { border-color: #c83232; background: #fff2ee; }
 .jp-image img { width: 100%; height: 145px; object-fit: cover; }
-.jp-image input { width: calc(100% - 16px); font-size: 12px; }
+.jp-image > input { width: calc(100% - 16px); font-size: 12px; }
+.jp-image-upload { display: inline-flex !important; width: auto !important; padding: 8px 12px; border: 1px solid #d6cbc5; border-radius: 8px; background: #fff; color: #635b56; cursor: pointer; font-size: 12px !important; }
+.jp-image-upload input { display: none; }
+.jp-image small { width: calc(100% - 16px); color: #8a7e77; font-size: 11px; font-weight: 400; text-align: center; }
 .jp-hours { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px 12px; margin-bottom: 12px; }
 .jp-hours label { display: grid; grid-template-columns: 28px 1fr; align-items: center; }
 .jp-hours label input { margin-top: 0; }
