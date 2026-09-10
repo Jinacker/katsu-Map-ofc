@@ -561,7 +561,7 @@ export default function EncyclopediaPostsPage() {
               className="markdown-input"
               value={form.bodyMarkdown}
               onChange={(e) => handleChange('bodyMarkdown', e.target.value)}
-              placeholder="# 제목&#10;&#10;본문을 마크다운으로 작성하세요."
+              placeholder="# 제목&#10;&#10;본문을 마크다운으로 작성하세요.&#10;&#10;https://... 링크 하나만 입력하면 앱에서 해당 링크로 바로 이동하는 게시글이 됩니다."
               required
             />
           </label>
