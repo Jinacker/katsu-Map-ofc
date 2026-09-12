@@ -17,6 +17,10 @@ const METRICS = [
   ['COMMENT_COUNT', '커뮤니티 댓글 수'],
   ['DISTINCT_AREAS', '서로 다른 지역 수'],
   ['MAX_RECORDS_IN_AREA', '한 지역 최대 기록 수'],
+  ['DISTINCT_RESTAURANT_COUNT', '서로 다른 식당 기록 수'],
+  ['DISTINCT_SEOUL_RESTAURANT_COUNT', '서울 서로 다른 식당 기록 수'],
+  ['DISTINCT_JEONNAM_GWANGJU_RESTAURANT_COUNT', '전남·광주 서로 다른 식당 기록 수'],
+  ['VALID_COMMUNICATION_COUNT', '유효 소통 수'],
   ['RECORD_COUNT_IN_REGION:SEOUL', '서울 지역 기록 수'],
   ['RECORD_COUNT_IN_REGION:BUSAN', '부산 지역 기록 수'],
   ['RECORD_COUNT_IN_REGION:DAEGU', '대구 지역 기록 수'],
@@ -411,20 +415,20 @@ export default function BadgesPage() {
                 <section className="badge-level-editor">
                   {editingBadge && (
                     <p className="badge-definition-warning">
-                      현재 획득 이력 {editingBadge._count?.userBadges ?? 0}명 · 생성 후에는 지표 변경, 기존 레벨 삭제, 기준값 상향이 제한됩니다.
+                      현재 획득 이력 {editingBadge._count?.userBadges ?? 0}명 · 생성 후에는 지표 변경과 기존 레벨 삭제가 제한됩니다. 기준값을 바꾸면 보유자의 레벨도 다시 계산됩니다.
                     </p>
                   )}
                   <label>자동 계산 지표<select value={form.metricKey} onChange={(event) => setForm({ ...form, metricKey: event.target.value })}>{METRICS.map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label>
-                  <div className="badge-level-editor-header"><h3>레벨 조건</h3><button type="button" onClick={addLevel}>레벨 추가</button></div>
+                  <div className="badge-level-editor-header"><h3>레벨 조건</h3><button type="button" onClick={addLevel} disabled={form.levels.length >= 7}>레벨 추가</button></div>
                   {form.levels.map((level, index) => (
                     <div className="badge-level-row" key={`${level.level}-${index}`}>
-                      <label>레벨<input type="number" min="1" value={level.level} onChange={(event) => updateLevel(index, 'level', event.target.value)} required /></label>
+                      <label>레벨<input type="number" min="1" max="7" value={level.level} onChange={(event) => updateLevel(index, 'level', event.target.value)} required /></label>
                       <label>기준값<input type="number" min="1" value={level.threshold} onChange={(event) => updateLevel(index, 'threshold', event.target.value)} required /></label>
                       <label>전용 이미지 URL<input value={level.imageUrl} onChange={(event) => updateLevel(index, 'imageUrl', event.target.value)} placeholder="비우면 대표 이미지" /></label>
                       <button type="button" className="badge-remove-level" disabled={form.levels.length === 1} onClick={() => setForm({ ...form, levels: form.levels.filter((_, itemIndex) => itemIndex !== index) })}>삭제</button>
                     </div>
                   ))}
-                  <p>이미 달성한 사용자의 최고 레벨은 조건을 높여도 내려가지 않습니다.</p>
+                  <p>퀘스트는 Lv.7이 최고입니다. 기준값을 변경하면 현재 최고 활동값을 기준으로 레벨이 다시 계산됩니다.</p>
                 </section>
               )}
 
