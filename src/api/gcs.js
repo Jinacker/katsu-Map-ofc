@@ -6,9 +6,9 @@ const BUCKET = import.meta.env.VITE_GCS_BUCKET;
 const MAX_WIDTH = 1920;
 const MAX_HEIGHT = 1920;
 const JPEG_QUALITY = 0.85;
+const BADGE_MAX_SIZE = 512;
 
-// 이미지 압축 함수
-async function compressImage(file) {
+async function resizeImage(file, { maxWidth, maxHeight, outputType, quality }) {
   return new Promise((resolve, reject) => {
     const img = new Image();
     const url = URL.createObjectURL(file);
@@ -19,8 +19,8 @@ async function compressImage(file) {
       let { width, height } = img;
 
       // 긴 변 기준 리사이징
-      if (width > MAX_WIDTH || height > MAX_HEIGHT) {
-        const ratio = Math.min(MAX_WIDTH / width, MAX_HEIGHT / height);
+      if (width > maxWidth || height > maxHeight) {
+        const ratio = Math.min(maxWidth / width, maxHeight / height);
         width = Math.round(width * ratio);
         height = Math.round(height * ratio);
       }
@@ -35,18 +35,18 @@ async function compressImage(file) {
       canvas.toBlob(
         (blob) => {
           if (blob) {
-            // 원본 파일명에서 확장자 제거 후 .jpg 붙이기
+            const extension = outputType === 'image/webp' ? 'webp' : outputType === 'image/png' ? 'png' : 'jpg';
             const baseName = file.name.replace(/\.[^/.]+$/, '');
-            const compressedFile = new File([blob], `${baseName}.jpg`, {
-              type: 'image/jpeg',
+            const compressedFile = new File([blob], `${baseName}.${extension}`, {
+              type: outputType,
             });
             resolve(compressedFile);
           } else {
             reject(new Error('이미지 압축 실패'));
           }
         },
-        'image/jpeg',
-        JPEG_QUALITY
+        outputType,
+        quality
       );
     };
 
@@ -56,6 +56,27 @@ async function compressImage(file) {
     };
 
     img.src = url;
+  });
+}
+
+// 일반 사진은 기존처럼 JPEG로 압축한다.
+async function compressImage(file) {
+  return resizeImage(file, {
+    maxWidth: MAX_WIDTH,
+    maxHeight: MAX_HEIGHT,
+    outputType: 'image/jpeg',
+    quality: JPEG_QUALITY,
+  });
+}
+
+// 뱃지는 투명 프레임을 유지해야 하므로 PNG/WebP 알파 채널을 보존한다.
+async function optimizeBadgeImage(file) {
+  const outputType = file.type === 'image/webp' ? 'image/webp' : 'image/png';
+  return resizeImage(file, {
+    maxWidth: BADGE_MAX_SIZE,
+    maxHeight: BADGE_MAX_SIZE,
+    outputType,
+    quality: outputType === 'image/webp' ? 0.92 : undefined,
   });
 }
 const CLIENT_EMAIL = import.meta.env.VITE_GCS_CLIENT_EMAIL;
@@ -108,14 +129,16 @@ async function getAccessToken() {
 }
 
 // 이미지 업로드
-export async function uploadImageToGCS(file, folder = 'restaurants') {
-  // 이미지 압축 (모든 이미지를 JPEG로 변환)
-  const compressedFile = await compressImage(file);
+export async function uploadImageToGCS(file, folder = 'restaurants', options = {}) {
+  const preserveTransparency = options.preserveTransparency === true;
+  const compressedFile = preserveTransparency
+    ? await optimizeBadgeImage(file)
+    : await compressImage(file);
 
   const token = await getAccessToken();
 
-  // 파일명: timestamp + 랜덤 + .jpg (압축 후 항상 JPEG)
-  const fileName = `${folder}/${Date.now()}_${Math.random().toString(36).substring(2, 8)}.jpg`;
+  const extension = compressedFile.type === 'image/webp' ? 'webp' : compressedFile.type === 'image/png' ? 'png' : 'jpg';
+  const fileName = `${folder}/${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${extension}`;
 
   const uploadUrl = `https://storage.googleapis.com/upload/storage/v1/b/${BUCKET}/o?uploadType=media&name=${encodeURIComponent(fileName)}`;
 

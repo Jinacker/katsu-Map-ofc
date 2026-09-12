@@ -139,7 +139,7 @@ export default function BadgesPage() {
 
     try {
       setUploadingImage(true);
-      const imageUrl = await uploadImageToGCS(file, 'badges');
+      const imageUrl = await uploadImageToGCS(file, 'badges', { preserveTransparency: true });
       setForm((current) => ({ ...current, imageUrl }));
     } catch (error) {
       console.error(error);
@@ -397,7 +397,7 @@ export default function BadgesPage() {
                   )}
                   <div>
                     <strong>{uploadingImage ? '이미지 업로드 중...' : '이미지를 붙여넣거나 끌어놓으세요'}</strong>
-                    <span>Ctrl/⌘+V 또는 파일 선택 · 업로드 후 URL이 자동 입력됩니다.</span>
+                    <span>투명 PNG 또는 WebP 권장 · 512×512px 정사각형으로 올리면 선명하게 표시됩니다.</span>
                   </div>
                   <label className={`badge-image-file-button ${uploadingImage ? 'disabled' : ''}`}>
                     {uploadingImage ? '업로드 중' : '파일 선택'}
