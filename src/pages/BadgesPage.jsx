@@ -14,6 +14,7 @@ import './BadgesPage.css';
 const METRICS = [
   ['APP_VISIT_DAYS', '앱 방문일수'],
   ['RECORD_COUNT', '기록 수'],
+  ['COMMENT_COUNT', '커뮤니티 댓글 수'],
   ['DISTINCT_AREAS', '서로 다른 지역 수'],
   ['MAX_RECORDS_IN_AREA', '한 지역 최대 기록 수'],
   ['RECORD_COUNT_IN_REGION:SEOUL', '서울 지역 기록 수'],
