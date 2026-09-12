@@ -35,6 +35,7 @@ const METRICS = [
   ['RECORD_COUNT_IN_REGION:CHUNGNAM', '충청남도 지역 기록 수'],
   ['RECORD_COUNT_IN_REGION:JEONBUK', '전북 지역 기록 수'],
   ['RECORD_COUNT_IN_REGION:JEONNAM', '전남 지역 기록 수'],
+  ['RECORD_COUNT_IN_REGION:JEONNAM_GWANGJU', '전남·광주 지역 기록 수'],
   ['RECORD_COUNT_IN_REGION:GYEONGBUK', '경북 지역 기록 수'],
   ['RECORD_COUNT_IN_REGION:GYEONGNAM', '경남 지역 기록 수'],
   ['RECORD_COUNT_IN_REGION:JEJU', '제주 지역 기록 수'],
@@ -49,7 +50,9 @@ const emptyForm = (type) => ({
   imageUrl: '',
   displayOrder: 0,
   isActive: true,
-  levels: type === 'QUEST' ? [{ level: 1, threshold: 1, imageUrl: '' }] : [],
+  levels: type === 'QUEST'
+    ? [1, 5, 15, 30, 60, 100, 200].map((threshold, index) => ({ level: index + 1, threshold, imageUrl: '' }))
+    : [],
 });
 
 const unwrap = (response) => response?.data?.data ?? response?.data;
