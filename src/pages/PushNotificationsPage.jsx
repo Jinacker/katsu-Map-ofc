@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import apiClient from '../api/axios';
 import AdminTemplateModal from '../components/AdminTemplateModal';
 import AdminTemplatePicker from '../components/AdminTemplatePicker';
+import { buildPushPayload, describePushDestinations, LEGACY_PUSH_OPTIONS } from '../utils/pushNavigation';
+import PushDestinationPicker from '../components/PushDestinationPicker';
 
 const CONFIRM_STEPS = [
   '정말 전송하시겠습니까?',
@@ -23,6 +25,27 @@ export default function PushNotificationsPage() {
   const [pollingId, setPollingId] = useState(null); // 폴링 대상 dispatchId
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [templateRefreshKey, setTemplateRefreshKey] = useState(0);
+  const [destinationCatalog, setDestinationCatalog] = useState(null);
+  const [destinationError, setDestinationError] = useState(false);
+  const [navigationTarget, setNavigationTarget] = useState('');
+  const [navigationTargetId, setNavigationTargetId] = useState('');
+  const [legacyType, setLegacyType] = useState('');
+  const [legacyNoteId, setLegacyNoteId] = useState('');
+  const [pendingPayload, setPendingPayload] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    apiClient.get('/api/v1/admin/push/destinations').then((response) => {
+      const catalog = response.data?.data;
+      if (catalog?.version !== 1 || !Array.isArray(catalog.destinations)) throw new Error('Invalid destination catalog');
+      if (!cancelled) setDestinationCatalog(catalog);
+    }).catch(() => { if (!cancelled) setDestinationError(true); });
+    return () => { cancelled = true; };
+  }, []);
+
+  const selectedDestination = destinationCatalog?.destinations?.find((item) => item.target === navigationTarget);
+  const selectedLegacy = LEGACY_PUSH_OPTIONS.find((item) => item.type === legacyType);
+  const destinationPreview = describePushDestinations(pendingPayload, destinationCatalog);
 
   // 발송 진행 상황 폴링 (1.5초 간격, 완료 시 중단, 최대 3분)
   useEffect(() => {
@@ -100,7 +123,17 @@ export default function PushNotificationsPage() {
       alert('수신할 유저를 선택해주세요.');
       return;
     }
-    setConfirmStep(1);
+    try {
+      setPendingPayload(buildPushPayload({
+        title, body,
+        userIds: targetMode === 'specific' ? selectedUsers.map((user) => user.id) : undefined,
+        target: navigationTarget, targetId: navigationTargetId,
+        legacyType, legacyNoteId,
+      }, destinationCatalog));
+      setConfirmStep(1);
+    } catch (error) {
+      alert(error.message);
+    }
   };
 
   const handleConfirmNext = async () => {
@@ -111,12 +144,7 @@ export default function PushNotificationsPage() {
     // 최종 전송
     setIsSending(true);
     try {
-      const payload = {
-        title,
-        body,
-        ...(targetMode === 'specific' ? { userIds: selectedUsers.map(u => u.id) } : {}),
-      };
-      const res = await apiClient.post('/api/v1/admin/push/send', payload);
+      const res = await apiClient.post('/api/v1/admin/push/send', pendingPayload);
       const data = res.data?.data ?? {};
       const sent = data.sent ?? 0;
       if (data.dispatchId) {
@@ -131,13 +159,17 @@ export default function PushNotificationsPage() {
       setBody('');
       setSelectedUsers([]);
       setUserSearch('');
+      setNavigationTarget('');
+      setNavigationTargetId('');
+      setLegacyType('');
+      setLegacyNoteId('');
     } catch (err) {
       setResult({
         success: false,
         message:
           err?.response?.status === 409
             ? '이미 진행 중인 발송이 있습니다. 잠시 후 다시 시도해주세요.'
-            : null,
+            : err?.response?.status === 400 ? '이동 목적지와 ID를 확인해주세요.' : null,
       });
     } finally {
       setIsSending(false);
@@ -242,6 +274,35 @@ export default function PushNotificationsPage() {
           </div>
         </div>
 
+        <div style={styles.formGroup}>
+          <label style={styles.label}>업데이트한 앱의 이동 목적지</label>
+          <select style={styles.input} value={navigationTarget} disabled={!destinationCatalog} onChange={(event) => {
+            setNavigationTarget(event.target.value);
+            setNavigationTargetId('');
+          }}>
+            <option value="">기존 알림 동작 사용</option>
+            {destinationCatalog?.destinations?.map((destination) => (
+              <option key={destination.target} value={destination.target}>{destination.label}</option>
+            ))}
+          </select>
+          {destinationError && <p style={{ fontSize: 13, color: '#777' }}>목적지 목록을 불러오지 못했어요. 기본 발송은 가능합니다.</p>}
+          {selectedDestination?.idKey && <PushDestinationPicker key={navigationTarget} idKey={selectedDestination.idKey}
+            value={navigationTargetId} onChange={setNavigationTargetId} />}
+        </div>
+
+        <div style={styles.formGroup}>
+          <label style={styles.label}>구버전 앱의 기존 알림 동작</label>
+          <select style={styles.input} value={legacyType} onChange={(event) => {
+            setLegacyType(event.target.value);
+            setLegacyNoteId('');
+          }}>
+            {LEGACY_PUSH_OPTIONS.map((option) => <option key={option.type} value={option.type}>{option.label}</option>)}
+          </select>
+          {selectedLegacy?.needsNoteId && <input style={{ ...styles.input, marginTop: 8 }} inputMode="numeric"
+            placeholder="구버전용 게시글 ID" value={legacyNoteId} onChange={(event) => setLegacyNoteId(event.target.value)} />}
+          <p style={{ fontSize: 13, color: '#777' }}>알림 내용에 맞는 기존 동작을 선택하세요. 업데이트하지 않은 앱에는 새 목적지가 적용되지 않습니다.</p>
+        </div>
+
         {targetMode === 'specific' && (
           <div style={styles.formGroup}>
             <div style={styles.searchRow}>
@@ -300,6 +361,7 @@ export default function PushNotificationsPage() {
                 ? `최종 확인: ${recipientCount}에게 발송합니다.`
                 : CONFIRM_STEPS[confirmStep - 1]}
             </p>
+            <p style={{ fontSize: 13 }}>구버전: {destinationPreview.legacy}<br />업데이트한 앱: {destinationPreview.updated}</p>
             <div style={styles.modalButtons}>
               <button style={styles.cancelBtn} onClick={() => setConfirmStep(0)}>취소</button>
               <button
