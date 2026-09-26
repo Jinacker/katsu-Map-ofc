@@ -221,6 +221,9 @@ const RestaurantsPage = () => {
   const observerRef = useRef(null);
   const loadMoreRef = useRef(null);
   const [selectedRestaurant, setSelectedRestaurant] = useState(null);
+  const [restaurantActiveSavingId, setRestaurantActiveSavingId] = useState(null);
+  const [showInactiveRestaurantsModal, setShowInactiveRestaurantsModal] = useState(false);
+  const [inactiveRestaurantQuery, setInactiveRestaurantQuery] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingRestaurant, setEditingRestaurant] = useState(null);
@@ -996,6 +999,44 @@ const RestaurantsPage = () => {
     }
   };
 
+  const updateRestaurantActive = async (restaurant, nextIsActive) => {
+    if (!restaurant || restaurantActiveSavingId !== null) return;
+    const actionLabel = nextIsActive ? '활성화' : '비활성화';
+    const warning = nextIsActive
+      ? `"${restaurant.name}" 가게를 다시 공개 목록에 노출하시겠습니까?`
+      : `"${restaurant.name}" 가게를 비활성화하시겠습니까?\n\n지도·검색·오늘 많이 본 가게·추천 목록에서는 숨겨지고, 기존 기록과 즐겨찾기는 유지됩니다.`;
+    if (!window.confirm(warning)) return;
+
+    setRestaurantActiveSavingId(restaurant.id);
+    try {
+      const response = await apiClient.patch(
+        `/api/v1/admin/restaurants/${restaurant.id}/active`,
+        { isActive: nextIsActive },
+      );
+      const updated = response.data?.data ?? { ...restaurant, isActive: nextIsActive };
+      setSelectedRestaurant((current) => (
+        current?.id === restaurant.id
+          ? { ...current, ...updated, isActive: nextIsActive }
+          : current
+      ));
+      setRestaurants((current) => current.map((restaurant) => (
+        restaurant.id === updated.id
+          ? { ...restaurant, isActive: nextIsActive }
+          : restaurant
+      )));
+      alert(`가게가 ${actionLabel}되었습니다.`);
+    } catch (error) {
+      alert(`가게 ${actionLabel}에 실패했습니다.\n${error.response?.data?.message || error.message}`);
+    } finally {
+      setRestaurantActiveSavingId(null);
+    }
+  };
+
+  const handleRestaurantActiveToggle = () => {
+    if (!selectedRestaurant) return;
+    updateRestaurantActive(selectedRestaurant, selectedRestaurant.isActive === false);
+  };
+
   // 모달 닫힐 때 지도 인스턴스 초기화 (DOM이 제거되므로)
   useEffect(() => {
     if (!showAddModal && !showEditModal) {
@@ -1340,6 +1381,16 @@ const RestaurantsPage = () => {
   const totalFilteredCount = filteredRestaurants.length;
   const displayedRestaurants = filteredRestaurants.slice(0, displayCount);
   const hasMore = displayCount < totalFilteredCount;
+  const inactiveRestaurants = restaurants
+    .filter((restaurant) => restaurant.isActive === false)
+    .sort((a, b) => b.id - a.id);
+  const normalizedInactiveQuery = inactiveRestaurantQuery.trim().toLowerCase();
+  const filteredInactiveRestaurants = inactiveRestaurants.filter((restaurant) => {
+    if (!normalizedInactiveQuery) return true;
+    return [restaurant.id, restaurant.name, restaurant.area, restaurant.addr]
+      .filter((value) => value !== null && value !== undefined)
+      .some((value) => String(value).toLowerCase().includes(normalizedInactiveQuery));
+  });
 
   // 신규 등록 시 공백·대소문자를 정규화한 동일 가게 목록 (자동저장 draft 제외)
   const duplicateNameRestaurants = showAddModal
@@ -1398,6 +1449,15 @@ const RestaurantsPage = () => {
         <div className="page-header-actions">
           <button className="feature-tag-manage-btn" onClick={() => setShowFeatureTagModal(true)}>
             태그 관리
+          </button>
+          <button
+            className="inactive-restaurants-manage-btn"
+            onClick={() => {
+              setInactiveRestaurantQuery('');
+              setShowInactiveRestaurantsModal(true);
+            }}
+          >
+            비활성 가게 {inactiveRestaurants.length > 0 && `(${inactiveRestaurants.length})`}
           </button>
           <button className="add-btn" onClick={handleAddClick}>
             + 새 식당 등록
@@ -1466,13 +1526,14 @@ const RestaurantsPage = () => {
               <th>카테고리</th>
               <th>추천등급</th>
               <th>카츠헌터</th>
+              <th>노출 상태</th>
               <th>주소</th>
             </tr>
           </thead>
           <tbody>
             {displayedRestaurants.length === 0 ? (
               <tr>
-                <td colSpan="8" className="empty-cell">
+                <td colSpan="9" className="empty-cell">
                   검색 결과가 없습니다
                 </td>
               </tr>
@@ -1481,7 +1542,7 @@ const RestaurantsPage = () => {
                 <tr
                   key={restaurant.id}
                   onClick={() => handleViewClick(restaurant)}
-                  className="restaurant-row"
+                  className={`restaurant-row ${restaurant.isActive === false ? 'inactive' : ''}`}
                 >
                   <td>{restaurant.id}</td>
                   <td>
@@ -1504,6 +1565,11 @@ const RestaurantsPage = () => {
                   <td>
                     <span className={`pick-badge ${restaurant.isKatsuHunterPick ? 'active' : ''}`}>
                       {restaurant.isKatsuHunterPick ? 'PICK' : '-'}
+                    </span>
+                  </td>
+                  <td>
+                    <span className={`restaurant-status-badge ${restaurant.isActive === false ? 'inactive' : 'active'}`}>
+                      {restaurant.isActive === false ? '비활성' : '활성'}
                     </span>
                   </td>
                   <td className="address-cell">{restaurant.addr}</td>
@@ -1567,6 +1633,12 @@ const RestaurantsPage = () => {
                 <div className="detail-item">
                   <span className="detail-label">ID</span>
                   <span className="detail-value">{selectedRestaurant.id}</span>
+                </div>
+                <div className="detail-item">
+                  <span className="detail-label">공개 노출</span>
+                  <span className={`restaurant-status-badge ${selectedRestaurant.isActive === false ? 'inactive' : 'active'}`}>
+                    {selectedRestaurant.isActive === false ? '비활성' : '활성'}
+                  </span>
                 </div>
 
                 <div className="detail-item">
@@ -1734,6 +1806,15 @@ const RestaurantsPage = () => {
 
               <div className="modal-actions">
                 <button
+                  className={`active-toggle-btn ${selectedRestaurant.isActive === false ? 'activate' : 'deactivate'}`}
+                  onClick={handleRestaurantActiveToggle}
+                  disabled={restaurantActiveSavingId !== null}
+                >
+                  {restaurantActiveSavingId === selectedRestaurant.id
+                    ? '변경 중...'
+                    : selectedRestaurant.isActive === false ? '가게 활성화' : '가게 비활성화'}
+                </button>
+                <button
                   className="edit-btn"
                   onClick={() => handleEditClick(selectedRestaurant)}
                 >
@@ -1746,6 +1827,84 @@ const RestaurantsPage = () => {
                   삭제
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 공개 탐색에서 제외된 가게만 빠르게 확인하고 복구하는 관리 모달 */}
+      {showInactiveRestaurantsModal && (
+        <div className="modal-overlay" onClick={() => setShowInactiveRestaurantsModal(false)}>
+          <div className="modal-content inactive-restaurants-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div>
+                <h2>비활성 가게 관리</h2>
+                <div className="inactive-restaurants-modal-subtitle">
+                  지도·검색·추천에서 숨긴 가게 {inactiveRestaurants.length}곳입니다. 기록과 즐겨찾기는 유지됩니다.
+                </div>
+              </div>
+              <button
+                className="modal-close"
+                onClick={() => setShowInactiveRestaurantsModal(false)}
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="inactive-restaurants-search">
+              <input
+                type="search"
+                value={inactiveRestaurantQuery}
+                onChange={(e) => setInactiveRestaurantQuery(e.target.value)}
+                placeholder="가게명, ID, 지역, 주소로 검색"
+                autoFocus
+              />
+              <span>{filteredInactiveRestaurants.length}곳</span>
+            </div>
+
+            <div className="inactive-restaurants-list">
+              {filteredInactiveRestaurants.length === 0 ? (
+                <div className="inactive-restaurants-empty">
+                  {inactiveRestaurants.length === 0
+                    ? '현재 비활성 가게가 없습니다.'
+                    : '검색 조건에 맞는 비활성 가게가 없습니다.'}
+                </div>
+              ) : (
+                filteredInactiveRestaurants.map((restaurant) => (
+                  <div className="inactive-restaurant-item" key={restaurant.id}>
+                    <div className="inactive-restaurant-main">
+                      <div className="inactive-restaurant-name-row">
+                        <span className="inactive-restaurant-id">#{restaurant.id}</span>
+                        <strong>{restaurant.name}</strong>
+                        <span className="restaurant-status-badge inactive">비활성</span>
+                      </div>
+                      <div className="inactive-restaurant-meta">
+                        {[restaurant.area, restaurant.category, restaurant.addr]
+                          .filter(Boolean)
+                          .join(' · ') || '지역·주소 정보 없음'}
+                      </div>
+                    </div>
+                    <div className="inactive-restaurant-actions">
+                      <button
+                        className="inactive-restaurant-detail-btn"
+                        onClick={() => {
+                          setShowInactiveRestaurantsModal(false);
+                          handleViewClick(restaurant);
+                        }}
+                      >
+                        상세 보기
+                      </button>
+                      <button
+                        className="inactive-restaurant-activate-btn"
+                        onClick={() => updateRestaurantActive(restaurant, true)}
+                        disabled={restaurantActiveSavingId !== null}
+                      >
+                        {restaurantActiveSavingId === restaurant.id ? '활성화 중...' : '활성화'}
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>
