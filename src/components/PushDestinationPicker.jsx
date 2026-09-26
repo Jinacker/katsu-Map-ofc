@@ -8,7 +8,10 @@ export default function PushDestinationPicker({ idKey, value, onChange }) {
   const [items, setItems] = useState([]);
   const [selected, setSelected] = useState(null);
   const [status, setStatus] = useState('idle');
+  const [encyclopediaPosts, setEncyclopediaPosts] = useState([]);
+  const [encyclopediaStatus, setEncyclopediaStatus] = useState('idle');
   const searchable = idKey === 'userId' || idKey === 'restaurantId';
+  const isEncyclopediaPost = idKey === 'postId';
 
   useEffect(() => {
     if (selected) return;
@@ -36,6 +39,21 @@ export default function PushDestinationPicker({ idKey, value, onChange }) {
     };
   }, [idKey, query, selected]);
 
+  useEffect(() => {
+    if (!isEncyclopediaPost) return undefined;
+    let cancelled = false;
+    setEncyclopediaStatus('loading');
+    apiClient.get('/api/v1/admin/encyclopedia-posts').then((response) => {
+      if (cancelled) return;
+      const posts = Array.isArray(response.data?.data) ? response.data.data : [];
+      setEncyclopediaPosts(posts.filter((post) => post.status === 'published'));
+      setEncyclopediaStatus('done');
+    }).catch(() => {
+      if (!cancelled) setEncyclopediaStatus('error');
+    });
+    return () => { cancelled = true; };
+  }, [isEncyclopediaPost]);
+
   return (
     <div style={{ marginTop: 8 }}>
       {searchable && <>
@@ -57,13 +75,34 @@ export default function PushDestinationPicker({ idKey, value, onChange }) {
         }}>{describePushDestinationItem(idKey, item)}</button>)}
         {selected && String(selected.id) === String(value) && <p style={hintStyle}>선택: {describePushDestinationItem(idKey, selected)}</p>}
       </>}
-      <input style={{ ...inputStyle, marginTop: searchable ? 8 : 0 }} inputMode="numeric"
+      {isEncyclopediaPost && <>
+        {encyclopediaStatus === 'loading' && <p style={hintStyle}>백과 글 목록을 불러오는 중...</p>}
+        {encyclopediaStatus === 'error' && <p style={hintStyle}>백과 글 목록을 불러오지 못했어요. 잠시 후 다시 시도해주세요.</p>}
+        {encyclopediaStatus === 'done' && (
+          encyclopediaPosts.length > 0 ? (
+            <select
+              style={inputStyle}
+              aria-label="백과 글 선택"
+              value={value}
+              onChange={(event) => onChange(event.target.value)}
+            >
+              <option value="">백과 글을 선택하세요</option>
+              {encyclopediaPosts.map((post) => (
+                <option key={post.id} value={post.id}>
+                  {`${post.emoji ? `${post.emoji} ` : ''}${post.title} · ${post.category} · #${post.id}`}
+                </option>
+              ))}
+            </select>
+          ) : <p style={hintStyle}>발행된 백과 글이 없습니다.</p>
+        )}
+      </>}
+      {!isEncyclopediaPost && <input style={{ ...inputStyle, marginTop: searchable ? 8 : 0 }} inputMode="numeric"
         aria-label={`${PUSH_ID_LABELS[idKey] || '상세 ID'} 직접 입력`} placeholder={`${PUSH_ID_LABELS[idKey] || '상세 ID'} 직접 입력`}
         value={value} onChange={(event) => {
           setSelected(null);
           setQuery('');
           onChange(event.target.value);
-        }} />
+        }} />}
     </div>
   );
 }
