@@ -6,7 +6,8 @@ import handler, { article, renderArticleMarkdown, renderEncyclopediaHtml } from 
 test('공개 백과 페이지는 제공한 제목·요약·썸네일과 열 가지 품종을 로그인 없이 표시한다', () => {
   const html = renderEncyclopediaHtml();
 
-  assert.ok(html.includes(`<h1 id="article-title">🥩 ${article.title}</h1>`));
+  assert.ok(html.includes(`<h1 id="article-title">${article.title}</h1>`));
+  assert.ok(html.includes('<h2>🥩 원육 품종 가이드</h2>'));
   assert.ok(html.includes(`<p class="summary">${article.summary}</p>`));
   assert.equal((html.match(/<h1\b/g) || []).length, 1);
   assert.equal((html.match(/<p class="summary">/g) || []).length, 1);
