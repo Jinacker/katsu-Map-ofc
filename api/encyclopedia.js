@@ -1,4 +1,6 @@
 const PAGE_URL = 'https://katsu-map-ofc.vercel.app/encyclopedia/9';
+// 앱의 assets/logo/app_icon.png를 64px로 축소해 포함한다. 외부 아이콘 요청 없이 표시한다.
+const APP_ICON_URL = 'data:image/png;base64,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';
 
 export const article = {
   title: '원육 품종별 특징',
@@ -142,16 +144,12 @@ export function renderEncyclopediaHtml() {
     * { box-sizing: border-box; }
     body { margin: 0; overflow-wrap: anywhere; }
     .page-header { padding: calc(18px + env(safe-area-inset-top)) 20px 18px; border-bottom: 1px solid #E7E1D6; }
-    .header-inner { max-width: 640px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-    .brand { font-size: 15px; font-weight: 750; }
-    .header-label { font-size: 12px; color: #6b6b62; }
+    .header-inner { max-width: 640px; margin: 0 auto; text-align: center; }
     main { max-width: 680px; margin: 0 auto; padding: 24px 20px calc(164px + env(safe-area-inset-bottom)); }
     .thumbnail { display: block; width: 100%; height: auto; border-radius: 14px; background: #F7F3EC; }
-    .article-header { margin: 24px 0 28px; }
-    .category { margin: 0 0 10px; font-size: 12px; color: #6b6b62; }
-    h1 { margin: 0 0 10px; font-size: 25px; line-height: 1.35; letter-spacing: -0.6px; }
+    h1 { margin: 0 0 8px; font-size: 22px; line-height: 1.35; letter-spacing: -0.6px; }
     .summary { margin: 0; color: #6b6b62; font-size: 14px; line-height: 1.7; }
-    .markdown { font-size: 14px; line-height: 1.75; }
+    .markdown { margin-top: 24px; font-size: 14px; line-height: 1.75; }
     .markdown h2 { font-size: 20px; line-height: 1.4; margin: 18px 0 8px; }
     .markdown h3 { font-size: 17px; line-height: 1.45; margin: 16px 0 6px; }
     .markdown h4 { font-size: 15px; line-height: 1.5; margin: 12px 0 12px; }
@@ -161,31 +159,30 @@ export function renderEncyclopediaHtml() {
     .app-bar { position: fixed; z-index: 10; inset: auto 0 0; padding: 14px 20px calc(14px + env(safe-area-inset-bottom)); background: #FDFBF6; border-top: 1px solid #E7E1D6; }
     .app-bar-inner { max-width: 640px; margin: 0 auto; }
     .app-bar p { margin: 0 0 10px; color: #6b6b62; font-size: 12px; line-height: 1.6; text-align: center; }
-    .app-button { display: flex; align-items: center; justify-content: center; min-height: 48px; padding: 12px 16px; background: #d6483e; color: #fff; border-radius: 12px; font-size: 14px; font-weight: 700; text-decoration: none; text-align: center; }
+    .app-button { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 12px 16px; background: #d6483e; color: #fff; border-radius: 12px; font-size: 14px; font-weight: 700; text-decoration: none; text-align: center; }
+    .app-icon { width: 28px; height: 28px; flex-shrink: 0; border-radius: 6px; }
     .app-button:hover { background: #bd3c33; }
     .app-button:focus-visible { outline: 3px solid #21221c; outline-offset: 3px; }
-    @media (min-width: 680px) { main { padding-top: 32px; } h1 { font-size: 28px; } .markdown { font-size: 15px; } }
+    @media (min-width: 680px) { main { padding-top: 32px; } h1 { font-size: 25px; } .markdown { font-size: 15px; } }
   </style>
 </head>
 <body>
   <header class="page-header">
-    <div class="header-inner"><span class="brand">돈가스 지도</span><span class="header-label">돈가스 백과</span></div>
+    <div class="header-inner">
+      <h1 id="article-title">🥩 ${title}</h1>
+      <p class="summary">${summary}</p>
+    </div>
   </header>
   <main>
     <article aria-labelledby="article-title">
       <img class="thumbnail" src="${thumbnailUrl}" alt="${title}" fetchpriority="high" />
-      <header class="article-header">
-        <p class="category">🥩 부위와 고기</p>
-        <h1 id="article-title">${title}</h1>
-        <p class="summary">${summary}</p>
-      </header>
       <div class="markdown">${renderArticleMarkdown(article.bodyMarkdown)}</div>
     </article>
   </main>
   <footer class="app-bar" aria-label="돈가스 지도 앱 안내">
     <div class="app-bar-inner">
-      <p>더 많은 돈가스 이야기는 돈가스 지도에서 만나보세요.</p>
-      <a class="app-button" href="/open">돈가스 지도 열기 · 다운로드</a>
+      <p>더 많은 돈가스 이야기를 돈가스 지도에서 만나보세요.</p>
+      <a class="app-button" href="/open"><img class="app-icon" src="${APP_ICON_URL}" alt="" width="28" height="28" />지금 돈가스 지도 다운로드 하기</a>
     </div>
   </footer>
 </body>

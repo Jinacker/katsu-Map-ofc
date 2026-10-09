@@ -6,8 +6,11 @@ import handler, { article, renderArticleMarkdown, renderEncyclopediaHtml } from 
 test('공개 백과 페이지는 제공한 제목·요약·썸네일과 열 가지 품종을 로그인 없이 표시한다', () => {
   const html = renderEncyclopediaHtml();
 
-  assert.ok(html.includes(`<h1 id="article-title">${article.title}</h1>`));
+  assert.ok(html.includes(`<h1 id="article-title">🥩 ${article.title}</h1>`));
   assert.ok(html.includes(`<p class="summary">${article.summary}</p>`));
+  assert.equal((html.match(/<h1\b/g) || []).length, 1);
+  assert.equal((html.match(/<p class="summary">/g) || []).length, 1);
+  assert.doesNotMatch(html, /class="article-header"|🥩 부위와 고기/);
   assert.ok(html.includes(`src="${article.thumbnailUrl}"`));
   for (const breed of ['YLD', 'YBD', '버크셔', '듀록', '난축맛돈', '우리흑돈', '조선흑돈', '탐라흑돈', '산청초월흑돈', '제주 토종돼지']) {
     assert.ok(html.includes(`<h3>${breed}</h3>`), breed);
