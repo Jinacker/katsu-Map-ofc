@@ -1,6 +1,7 @@
 {
   "rewrites": [
     { "source": "/open", "destination": "/api/open" },
+    { "source": "/encyclopedia/9", "destination": "/api/encyclopedia" },
     { "source": "/r/:ref", "destination": "/api/share?ref=:ref" },
     { "source": "/c/:ref", "destination": "/api/share?type=community&ref=:ref" },
     { "source": "/u/:ref", "destination": "/api/share?type=profile&ref=:ref" },
