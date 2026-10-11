@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import apiClient from '../api/axios';
 import AdminTemplateModal from '../components/AdminTemplateModal';
 import AdminTemplatePicker from '../components/AdminTemplatePicker';
+import RestaurantsPage from './RestaurantsPage';
 import './MessagesPage.css';
 
 const MessagesPage = () => {
@@ -14,6 +15,7 @@ const MessagesPage = () => {
   const [sortOrder, setSortOrder] = useState('newest');
   const [unrepliedOnly, setUnrepliedOnly] = useState(false);
   const [showTemplateModal, setShowTemplateModal] = useState(false);
+  const [showRestaurantEditor, setShowRestaurantEditor] = useState(false);
   const [templateRefreshKey, setTemplateRefreshKey] = useState(0);
 
   useEffect(() => {
@@ -106,6 +108,13 @@ const MessagesPage = () => {
             onClick={() => setShowTemplateModal(true)}
           >
             문의 템플릿
+          </button>
+          <button
+            type="button"
+            className="template-manage-btn"
+            onClick={() => setShowRestaurantEditor(true)}
+          >
+            가게 수정/등록
           </button>
           <div className="stat-badge">
             <span className="stat-label">전체</span>
@@ -275,6 +284,10 @@ const MessagesPage = () => {
           </div>
         )}
       </div>
+
+      {showRestaurantEditor && (
+        <RestaurantsPage editorOnly onClose={() => setShowRestaurantEditor(false)} />
+      )}
 
       <AdminTemplateModal
         open={showTemplateModal}

@@ -485,6 +485,119 @@
 }
 
 /* Restaurant Form Modal */
+.restaurant-quick-modal {
+  max-width: 640px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.restaurant-quick-body {
+  padding: var(--space-lg);
+}
+
+.restaurant-quick-body label {
+  display: block;
+  margin-bottom: var(--space-xs);
+  color: var(--color-text-primary);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.restaurant-quick-body input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+}
+
+.restaurant-quick-hint {
+  margin: 10px 0;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.restaurant-quick-results {
+  max-height: 45vh;
+  overflow-y: auto;
+  margin-bottom: var(--space-md);
+}
+
+.restaurant-quick-result {
+  display: block;
+  width: 100%;
+  padding: 14px;
+  margin-bottom: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  text-align: left;
+  cursor: pointer;
+}
+
+.restaurant-quick-result:hover {
+  border-color: var(--color-accent-primary);
+  background: var(--color-surface-hover);
+}
+
+.restaurant-quick-result-name {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.restaurant-quick-id,
+.restaurant-quick-address {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.restaurant-quick-address {
+  display: block;
+  margin-top: 6px;
+  overflow-wrap: anywhere;
+}
+
+.restaurant-quick-edit-label {
+  display: block;
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--color-accent-secondary);
+}
+
+.restaurant-quick-add,
+.restaurant-quick-retry {
+  padding: 12px 16px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--color-accent-primary);
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.restaurant-quick-add {
+  width: 100%;
+}
+
+.restaurant-quick-add:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.restaurant-quick-error {
+  margin: 10px 0;
+  color: var(--color-error);
+  font-size: 13px;
+}
+
 .restaurant-form-modal {
   max-width: 700px;
   max-height: 90vh;

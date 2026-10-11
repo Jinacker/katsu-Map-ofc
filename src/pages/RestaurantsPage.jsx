@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import apiClient from '../api/axios';
 import { uploadImageToGCS } from '../api/gcs';
+import { searchRestaurants } from '../utils/restaurantQuickSearch';
 import './RestaurantsPage.css';
 
 const EMPTY_HOURS = { mon: '', tue: '', wed: '', thu: '', fri: '', sat: '', sun: '', breakTime: '' };
@@ -205,13 +206,14 @@ const parseBusinessHoursText = (rawText) => {
   return parsed;
 };
 
-const RestaurantsPage = () => {
+const RestaurantsPage = ({ editorOnly = false, onClose } = {}) => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   // 미등록 제보 기록에서 넘어온 경우: 등록 성공 시 해당 기록을 자동 연결(승인)한다
   const pendingNoteIdRef = useRef(null);
   const [restaurants, setRestaurants] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [restaurantLoadError, setRestaurantLoadError] = useState('');
   const [displayCount, setDisplayCount] = useState(20);
   const [totalCount, setTotalCount] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
@@ -296,12 +298,14 @@ const RestaurantsPage = () => {
   const fetchRestaurants = async () => {
     try {
       setLoading(true);
+      setRestaurantLoadError('');
       const response = await apiClient.get('/api/v1/admin/restaurants');
       setRestaurants(response.data.data);
       setTotalCount(response.data.data.length);
     } catch (err) {
       console.error(err);
-      alert('맛집 목록을 불러오는데 실패했습니다.');
+      setRestaurantLoadError('가게 목록을 불러오지 못했습니다. 다시 시도해주세요.');
+      if (!editorOnly) alert('맛집 목록을 불러오는데 실패했습니다.');
     } finally {
       setLoading(false);
     }
@@ -342,6 +346,7 @@ const RestaurantsPage = () => {
 
   // 미등록 가게 페이지에서 [가게 등록＋승인]으로 진입한 경우 — 제보 내용을 프리필해 등록 폼을 연다
   useEffect(() => {
+    if (editorOnly) return;
     const pendingNoteId = Number(searchParams.get('pendingNoteId'));
     if (!pendingNoteId) return;
     pendingNoteIdRef.current = pendingNoteId;
@@ -377,7 +382,7 @@ const RestaurantsPage = () => {
 
     setShowAddModal(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams]);
+  }, [searchParams, editorOnly]);
 
   // ── 가게 특징 태그 ──────────────────────────────────────────────
   // 마스터 태그는 어드민이 [태그 관리]에서만 만들고, 가게 폼에서는 고르기만 한다.
@@ -1397,6 +1402,7 @@ const RestaurantsPage = () => {
     ? findDuplicateRestaurants(formData.name, restaurants, autoSaveRestaurantIdRef.current)
     : [];
   const duplicateNameCount = duplicateNameRestaurants.length;
+  const quickSearchResults = editorOnly ? searchRestaurants(restaurants, searchTerm) : [];
 
   // 무한 스크롤 로직
   const loadMore = useCallback(() => {
@@ -1406,6 +1412,7 @@ const RestaurantsPage = () => {
   }, [hasMore]);
 
   useEffect(() => {
+    if (editorOnly) return undefined;
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting && hasMore) {
@@ -1426,9 +1433,9 @@ const RestaurantsPage = () => {
         observerRef.current.disconnect();
       }
     };
-  }, [hasMore, loadMore]);
+  }, [hasMore, loadMore, editorOnly]);
 
-  if (loading) {
+  if (loading && !editorOnly) {
     return (
       <div className="restaurants-page">
         <div className="loading-state">
@@ -1441,6 +1448,82 @@ const RestaurantsPage = () => {
 
   return (
     <div className="restaurants-page">
+      {editorOnly && !showAddModal && !showEditModal && (
+        <div className="modal-overlay" onClick={() => onClose?.()}>
+          <div
+            className="modal-content restaurant-quick-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="restaurant-quick-title"
+            onClick={(event) => event.stopPropagation()}
+            onKeyDown={(event) => {
+              if (event.key === 'Escape') onClose?.();
+            }}
+          >
+            <div className="modal-header">
+              <h2 id="restaurant-quick-title">가게 수정/등록</h2>
+              <button type="button" className="modal-close" aria-label="가게 검색 닫기" onClick={() => onClose?.()}>×</button>
+            </div>
+            <div className="restaurant-quick-body">
+              <label htmlFor="restaurant-quick-query">기존 가게 검색</label>
+              <input
+                id="restaurant-quick-query"
+                type="search"
+                autoFocus
+                placeholder="가게 이름·주소·지역 또는 ID 검색"
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+              />
+              <p className="restaurant-quick-hint">수정할 가게를 선택하거나 새 가게를 등록하세요.</p>
+              <div className="restaurant-quick-results" aria-live="polite">
+                {loading ? (
+                  <p className="restaurant-quick-hint">가게 목록을 불러오는 중...</p>
+                ) : restaurantLoadError ? (
+                  <div>
+                    <p className="restaurant-quick-error" role="alert">{restaurantLoadError}</p>
+                    <button type="button" className="restaurant-quick-retry" onClick={fetchRestaurants}>다시 불러오기</button>
+                  </div>
+                ) : !searchTerm.trim() ? (
+                  <p className="restaurant-quick-hint">가게 이름이나 주소를 입력해주세요.</p>
+                ) : quickSearchResults.length === 0 ? (
+                  <p className="restaurant-quick-hint">검색 결과가 없습니다. 아래 버튼으로 새 가게를 등록할 수 있어요.</p>
+                ) : (
+                  <>
+                    {quickSearchResults.slice(0, 20).map((restaurant) => (
+                      <button
+                        type="button"
+                        key={restaurant.id}
+                        className="restaurant-quick-result"
+                        onClick={() => handleEditClick(restaurant)}
+                      >
+                        <span className="restaurant-quick-result-name">
+                          {restaurant.name} <span className="restaurant-quick-id">#{restaurant.id}</span>
+                          {restaurant.isActive === false && <span className="restaurant-status-badge inactive">비활성</span>}
+                        </span>
+                        <span className="restaurant-quick-address">{restaurant.addr || restaurant.area || '주소 없음'}</span>
+                        <span className="restaurant-quick-edit-label">수정하기 →</span>
+                      </button>
+                    ))}
+                    {quickSearchResults.length > 20 && (
+                      <p className="restaurant-quick-hint">총 {quickSearchResults.length}개 중 20개 표시. 가게 이름이나 주소를 더 자세히 입력해주세요.</p>
+                    )}
+                  </>
+                )}
+              </div>
+              <button
+                type="button"
+                className="restaurant-quick-add"
+                disabled={loading || Boolean(restaurantLoadError)}
+                onClick={handleAddClick}
+              >
+                + 새 가게 등록
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {!editorOnly && <>
       <div className="page-header">
         <div>
           <h1 className="page-title">맛집 관리</h1>
@@ -1594,6 +1677,8 @@ const RestaurantsPage = () => {
           </div>
         )}
       </div>
+
+      </>}
 
       {/* Detail Modal */}
       {selectedRestaurant && (
