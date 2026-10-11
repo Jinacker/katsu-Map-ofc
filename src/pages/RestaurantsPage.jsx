@@ -235,6 +235,8 @@ const RestaurantsPage = ({ editorOnly = false, onClose } = {}) => {
   const [menusData, setMenusData] = useState(EMPTY_MENUS);
   const [autoSaveStatus, setAutoSaveStatus] = useState('idle');
   const [autoSaveError, setAutoSaveError] = useState('');
+  const [manualSaving, setManualSaving] = useState(false);
+  const manualSaveInFlightRef = useRef(false);
   const formDataRef = useRef(formData);
   const hoursDataRef = useRef(hoursData);
   const menusDataRef = useRef(menusData);
@@ -775,6 +777,7 @@ const RestaurantsPage = ({ editorOnly = false, onClose } = {}) => {
   });
 
   const queueAutoSave = ({ allowDuplicateName = false } = {}) => {
+    if (editorOnly) return Promise.resolve();
     const snapshot = getCurrentFormSnapshot();
     const serializedSnapshot = JSON.stringify(snapshot);
     if (serializedSnapshot === lastSavedSnapshotRef.current) {
@@ -860,6 +863,7 @@ const RestaurantsPage = ({ editorOnly = false, onClose } = {}) => {
 
   const handleAddSubmit = async (e) => {
     e.preventDefault();
+    if (editorOnly && manualSaveInFlightRef.current) return;
 
     const duplicateRestaurantsForSubmit = findDuplicateRestaurants(
       formDataRef.current.name,
@@ -880,6 +884,10 @@ const RestaurantsPage = ({ editorOnly = false, onClose } = {}) => {
       if (!proceed) return;
     }
 
+    if (editorOnly) {
+      manualSaveInFlightRef.current = true;
+      setManualSaving(true);
+    }
     try {
       await queueAutoSave({ allowDuplicateName: true });
       const payload = createRestaurantPayload();
@@ -942,11 +950,21 @@ const RestaurantsPage = ({ editorOnly = false, onClose } = {}) => {
     } catch (err) {
       console.error(err);
       alert('식당 등록에 실패했습니다.');
+    } finally {
+      if (editorOnly) {
+        manualSaveInFlightRef.current = false;
+        setManualSaving(false);
+      }
     }
   };
 
   const handleEditSubmit = async (e) => {
     e.preventDefault();
+    if (editorOnly && manualSaveInFlightRef.current) return;
+    if (editorOnly) {
+      manualSaveInFlightRef.current = true;
+      setManualSaving(true);
+    }
     try {
       await queueAutoSave();
       const payload = createRestaurantPayload();
@@ -961,10 +979,16 @@ const RestaurantsPage = ({ editorOnly = false, onClose } = {}) => {
       console.error(err);
       const errorMsg = err.response?.data?.message || err.message || '알 수 없는 오류';
       alert(`식당 수정에 실패했습니다.\n${errorMsg}`);
+    } finally {
+      if (editorOnly) {
+        manualSaveInFlightRef.current = false;
+        setManualSaving(false);
+      }
     }
   };
 
   const closeRestaurantForm = async () => {
+    if (editorOnly && manualSaveInFlightRef.current) return;
     if (bulkParseInFlightRef.current) {
       alert('몽땅 파싱이 끝난 뒤 창을 닫아주세요.');
       return;
@@ -2174,17 +2198,20 @@ const RestaurantsPage = ({ editorOnly = false, onClose } = {}) => {
             <div className="modal-header">
               <div>
                 <h2>{showAddModal ? '새 식당 등록' : '식당 정보 수정'}</h2>
-                <div className={`autosave-status ${autoSaveStatus}`}>
+                {editorOnly ? (
+                  <div className="autosave-status">등록/수정 버튼을 눌러야 저장됩니다.</div>
+                ) : <div className={`autosave-status ${autoSaveStatus}`}>
                   {autoSaveStatus === 'saving' && '자동 저장 중...'}
                   {autoSaveStatus === 'saved' && '✓ 자동 저장됨'}
                   {autoSaveStatus === 'error' && `자동 저장 실패: ${autoSaveError}`}
                   {autoSaveStatus === 'duplicate' && '중복 이름 확인 전까지 자동 저장하지 않습니다'}
                   {autoSaveStatus === 'idle' && '입력칸을 벗어나면 자동 저장됩니다'}
-                </div>
+                </div>}
               </div>
               <button
                 onClick={closeRestaurantForm}
                 className="modal-close"
+                disabled={editorOnly && manualSaving}
               >
                 ×
               </button>
@@ -2192,7 +2219,7 @@ const RestaurantsPage = ({ editorOnly = false, onClose } = {}) => {
 
             <form
               onSubmit={showAddModal ? handleAddSubmit : handleEditSubmit}
-              onBlurCapture={handleAutoSaveBlur}
+              onBlurCapture={editorOnly ? undefined : handleAutoSaveBlur}
               className="restaurant-form"
             >
               <div className="form-grid">
@@ -2812,11 +2839,11 @@ const RestaurantsPage = ({ editorOnly = false, onClose } = {}) => {
               </div>
 
               <div className="form-actions">
-                <button type="button" className="cancel-btn" onClick={closeRestaurantForm}>
+                <button type="button" className="cancel-btn" onClick={closeRestaurantForm} disabled={editorOnly && manualSaving}>
                   취소
                 </button>
-                <button type="submit" className="submit-btn">
-                  {showAddModal && duplicateNameCount > 0 ? '중복 확인 후 등록' : (showAddModal ? '등록' : '수정')}
+                <button type="submit" className="submit-btn" disabled={editorOnly && manualSaving}>
+                  {editorOnly && manualSaving ? '저장 중...' : (showAddModal && duplicateNameCount > 0 ? '중복 확인 후 등록' : (showAddModal ? '등록' : '수정'))}
                 </button>
               </div>
             </form>
