@@ -1,3 +1,4 @@
+import { logAdminError, logAdminWarning } from '../utils/safeLogger';
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import apiClient from '../api/axios';
@@ -310,7 +311,7 @@ const RestaurantsPage = ({ editorOnly = false, onClose } = {}) => {
       setRestaurants(response.data.data);
       setTotalCount(response.data.data.length);
     } catch (err) {
-      console.error(err);
+      logAdminError(err, '가게 요청 실패');
       setRestaurantLoadError('가게 목록을 불러오지 못했습니다. 다시 시도해주세요.');
       if (!editorOnly) alert('맛집 목록을 불러오는데 실패했습니다.');
     } finally {
@@ -401,7 +402,7 @@ const RestaurantsPage = ({ editorOnly = false, onClose } = {}) => {
       const res = await apiClient.get('/api/v1/admin/feature-tags');
       setFeatureTags(res.data?.data || []);
     } catch (err) {
-      console.error(err);
+      logAdminError(err, '가게 요청 실패');
     }
   }, []);
 
@@ -736,7 +737,7 @@ const RestaurantsPage = ({ editorOnly = false, onClose } = {}) => {
         return updated;
       });
     } catch (err) {
-      console.error(err);
+      logAdminError(err, '가게 요청 실패');
       alert(`이미지 업로드 실패: ${err.message}`);
     } finally {
       setUploading((prev) => ({ ...prev, [fieldName]: false }));
@@ -854,7 +855,7 @@ const RestaurantsPage = ({ editorOnly = false, onClose } = {}) => {
         setAutoSaveStatus('saved');
       })
       .catch((err) => {
-        console.error('식당 자동 저장 실패:', err);
+        logAdminError(err, '식당 자동 저장 실패');
         setAutoSaveStatus('error');
         setAutoSaveError(err.response?.data?.message || err.message || '자동 저장에 실패했습니다.');
         throw err;
@@ -960,14 +961,14 @@ const RestaurantsPage = ({ editorOnly = false, onClose } = {}) => {
           navigate('/pending-places');
           return;
         } catch (linkErr) {
-          console.error(linkErr);
+          logAdminError(linkErr, '가게 요청 실패');
           alert(`식당은 등록됐지만 기록 연결에 실패했습니다. 미등록 가게 페이지에서 [기존 가게에 연결]로 다시 시도하세요.\n${linkErr.response?.data?.message || linkErr.message}`);
           pendingNoteIdRef.current = null;
         }
       }
 
       if (contributorSaveError) {
-        console.error(contributorSaveError);
+        logAdminError(contributorSaveError, '가게 요청 실패');
         alert(`식당은 등록되었지만 제보자 등록에 실패했습니다.\n${contributorSaveError.response?.data?.message || contributorSaveError.message}`);
       } else {
         alert('식당이 등록되었습니다.');
@@ -977,7 +978,7 @@ const RestaurantsPage = ({ editorOnly = false, onClose } = {}) => {
       resetFormData();
       fetchRestaurants();
     } catch (err) {
-      console.error(err);
+      logAdminError(err, '가게 요청 실패');
       alert('식당 등록에 실패했습니다.');
     } finally {
       if (editorOnly) {
@@ -1006,7 +1007,7 @@ const RestaurantsPage = ({ editorOnly = false, onClose } = {}) => {
       resetFormData();
       fetchRestaurants();
     } catch (err) {
-      console.error(err);
+      logAdminError(err, '가게 요청 실패');
       const errorMsg = err.response?.data?.message || err.message || '알 수 없는 오류';
       alert(`식당 수정에 실패했습니다.\n${errorMsg}`);
     } finally {
@@ -1054,7 +1055,7 @@ const RestaurantsPage = ({ editorOnly = false, onClose } = {}) => {
       setSelectedRestaurant(null);
       fetchRestaurants();
     } catch (err) {
-      console.error(err);
+      logAdminError(err, '가게 요청 실패');
       alert('식당 삭제에 실패했습니다.');
     }
   };
@@ -1350,7 +1351,7 @@ const RestaurantsPage = ({ editorOnly = false, onClose } = {}) => {
             geoErrorMessage = '좌표 자동 채우기 실패: 카카오맵 검색 결과가 없습니다.';
           }
         } catch (geoError) {
-          console.warn('몽땅 파싱 후 좌표 자동 채우기 실패:', geoError);
+          logAdminWarning(geoError, '몽땅 파싱 후 좌표 자동 채우기 실패');
           geoErrorMessage = `좌표 자동 채우기 실패: ${geoError.message}`;
         }
       }
@@ -1388,7 +1389,7 @@ const RestaurantsPage = ({ editorOnly = false, onClose } = {}) => {
       setBulkParseMessage(geoErrorMessage);
       setBulkParsePartialSuccess(Boolean(geoErrorMessage));
     } catch (err) {
-      console.error('몽땅 파싱 실패:', err);
+      logAdminError(err, '몽땅 파싱 실패');
       const message = err.response?.data?.message || err.message || '파싱에 실패했습니다.';
       setBulkParseMessage(`파싱 실패: ${message}`);
       setBulkParsePartialSuccess(false);

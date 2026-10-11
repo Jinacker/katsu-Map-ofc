@@ -1,3 +1,4 @@
+import { logAdminError } from '../utils/safeLogger';
 import React, { useEffect, useState } from 'react';
 import apiClient from '../api/axios';
 import './NoticesPage.css';
@@ -25,7 +26,7 @@ const NoticesPage = () => {
       const response = await apiClient.get('/api/v1/notices/all');
       setNotices(response.data.data.items);
     } catch (err) {
-      console.error(err);
+      logAdminError(err, '공지 요청 실패');
       alert('공지사항 목록을 불러오는데 실패했습니다.');
     } finally {
       setLoading(false);
@@ -76,7 +77,7 @@ const NoticesPage = () => {
       setShowModal(false);
       fetchNotices();
     } catch (err) {
-      console.error(err);
+      logAdminError(err, '공지 요청 실패');
       alert('작업에 실패했습니다.');
     }
   };
@@ -89,7 +90,7 @@ const NoticesPage = () => {
       alert('공지사항이 삭제되었습니다.');
       fetchNotices();
     } catch (err) {
-      console.error(err);
+      logAdminError(err, '공지 요청 실패');
       alert('삭제에 실패했습니다.');
     }
   };

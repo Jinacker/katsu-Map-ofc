@@ -1,3 +1,4 @@
+import { logAdminError } from '../utils/safeLogger';
 import React, { useEffect, useState } from 'react';
 import apiClient from '../api/axios';
 import AdminTemplateModal from '../components/AdminTemplateModal';
@@ -29,7 +30,7 @@ const MessagesPage = () => {
       setMessages(response.data.data);
     } catch (err) {
       setError('메시지 목록을 불러오는데 실패했습니다.');
-      console.error(err);
+      logAdminError(err, '문의 요청 실패');
     } finally {
       setLoading(false);
     }
@@ -52,7 +53,7 @@ const MessagesPage = () => {
       fetchMessages();
     } catch (err) {
       alert(isEditingReply ? '답장 수정에 실패했습니다.' : '답장 전송에 실패했습니다.');
-      console.error(err);
+      logAdminError(err, '문의 요청 실패');
     }
   };
 
@@ -68,7 +69,7 @@ const MessagesPage = () => {
       }
     } catch (err) {
       alert('메시지 삭제에 실패했습니다.');
-      console.error(err);
+      logAdminError(err, '문의 요청 실패');
     }
   };
 

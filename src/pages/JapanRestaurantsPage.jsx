@@ -1,3 +1,4 @@
+import { logAdminError } from '../utils/safeLogger';
 import React, { useEffect, useMemo, useState } from 'react';
 import apiClient from '../api/axios';
 import { uploadImageToGCS } from '../api/gcs';
@@ -101,7 +102,7 @@ export default function JapanRestaurantsPage() {
       setRestaurants(restaurantRes.data?.data || []);
       setFeatureTags(tagRes.data?.data || []);
     } catch (error) {
-      console.error(error);
+      logAdminError(error, '일본 가게 요청 실패');
       alert('일본 맛집 목록을 불러오지 못했습니다.');
     } finally {
       setLoading(false);

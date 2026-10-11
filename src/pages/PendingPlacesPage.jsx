@@ -1,3 +1,4 @@
+import { logAdminError } from '../utils/safeLogger';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import apiClient from '../api/axios';
@@ -37,7 +38,7 @@ export default function PendingPlacesPage() {
       setNotes(d.data ?? []);
       setTotal(d.total ?? 0);
     } catch (e) {
-      console.error(e);
+      logAdminError(e, '미등록 가게 요청 실패');
       setError('미등록 가게 기록을 불러오지 못했습니다.');
     } finally {
       setLoading(false);
@@ -56,7 +57,7 @@ export default function PendingPlacesPage() {
         const res = await apiClient.get('/api/v1/admin/restaurants');
         setRestaurants(unwrap(res) ?? []);
       } catch (e) {
-        console.error(e);
+        logAdminError(e, '미등록 가게 요청 실패');
         alert('가게 목록을 불러오지 못했습니다.');
       }
     }
@@ -83,7 +84,7 @@ export default function PendingPlacesPage() {
       setLinkTargetId(null);
       await load();
     } catch (e) {
-      console.error(e);
+      logAdminError(e, '미등록 가게 요청 실패');
       alert(`연결에 실패했습니다: ${e.response?.data?.message || e.message}`);
     } finally {
       setLinking(false);
@@ -116,7 +117,7 @@ export default function PendingPlacesPage() {
       if (linkTargetId === note.id) setLinkTargetId(null);
       await load();
     } catch (e) {
-      console.error(e);
+      logAdminError(e, '미등록 가게 요청 실패');
       alert(`반려 처리에 실패했습니다: ${e.response?.data?.message || e.message}`);
     } finally {
       setRejectingId(null);

@@ -1,3 +1,4 @@
+import { logAdminError } from '../utils/safeLogger';
 import React, { useCallback, useEffect, useState } from 'react';
 import apiClient from '../api/axios';
 import './AnalyticsPage.css';
@@ -113,7 +114,7 @@ function AnalyticsPage() {
       setSearches(unwrap(searchesRes)?.items ?? []);
       setRegions(unwrap(regionsRes)?.items ?? []);
     } catch (err) {
-      console.error('Failed to load analytics:', err);
+      logAdminError(err, 'Failed to load analytics');
       setError('집계 기록을 불러오지 못했습니다.');
     } finally {
       setLoading(false);

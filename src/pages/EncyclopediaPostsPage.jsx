@@ -1,3 +1,4 @@
+import { logAdminError } from '../utils/safeLogger';
 import React, { useEffect, useMemo, useState } from 'react';
 import apiClient from '../api/axios';
 import { uploadImageToGCS } from '../api/gcs';
@@ -236,7 +237,7 @@ export default function EncyclopediaPostsPage() {
       const data = unwrap(response);
       setPosts(Array.isArray(data) ? data : []);
     } catch (error) {
-      console.error(error);
+      logAdminError(error, '백과 요청 실패');
       setMessage('백과사전 글 목록을 불러오지 못했습니다.');
     } finally {
       setLoading(false);
@@ -293,7 +294,7 @@ export default function EncyclopediaPostsPage() {
       await fetchPosts();
       setMessage(doneMessage);
     } catch (error) {
-      console.error(error);
+      logAdminError(error, '백과 요청 실패');
       setMessage(error.response?.data?.message || '저장에 실패했습니다.');
     } finally {
       setSaving(false);
@@ -316,7 +317,7 @@ export default function EncyclopediaPostsPage() {
       handleChange('thumbnailUrl', url);
       setMessage('이미지 업로드 완료');
     } catch (error) {
-      console.error(error);
+      logAdminError(error, '백과 요청 실패');
       setMessage(error.response?.data?.message || error.message || '이미지 업로드에 실패했습니다.');
     } finally {
       setUploading(false);
@@ -345,7 +346,7 @@ export default function EncyclopediaPostsPage() {
       setBodyImageUrl(url);
       setMessage('본문 이미지 URL 생성 완료');
     } catch (error) {
-      console.error(error);
+      logAdminError(error, '백과 요청 실패');
       setMessage(error.response?.data?.message || error.message || '이미지 업로드에 실패했습니다.');
     } finally {
       setBodyImageUploading(false);
@@ -409,7 +410,7 @@ export default function EncyclopediaPostsPage() {
       await fetchPosts();
       setMessage('발행 완료');
     } catch (error) {
-      console.error(error);
+      logAdminError(error, '백과 요청 실패');
       setMessage('발행에 실패했습니다.');
     }
   };
@@ -420,7 +421,7 @@ export default function EncyclopediaPostsPage() {
       await fetchPosts();
       setMessage('발행 해제 완료');
     } catch (error) {
-      console.error(error);
+      logAdminError(error, '백과 요청 실패');
       setMessage('발행 해제에 실패했습니다.');
     }
   };
@@ -433,7 +434,7 @@ export default function EncyclopediaPostsPage() {
       await fetchPosts();
       setMessage('삭제 완료');
     } catch (error) {
-      console.error(error);
+      logAdminError(error, '백과 요청 실패');
       setMessage('삭제에 실패했습니다.');
     }
   };
@@ -463,7 +464,7 @@ export default function EncyclopediaPostsPage() {
       await fetchPosts();
       setMessage('노출 순서 변경 완료');
     } catch (error) {
-      console.error(error);
+      logAdminError(error, '백과 요청 실패');
       setMessage('노출 순서 변경에 실패했습니다.');
       await fetchPosts();
     }

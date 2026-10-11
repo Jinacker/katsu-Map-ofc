@@ -1,3 +1,4 @@
+import { logAdminError } from '../utils/safeLogger';
 import React, { useEffect, useState } from 'react';
 import apiClient from '../api/axios';
 import UserProfileModal from '../components/UserProfileModal';
@@ -25,7 +26,7 @@ const UsersPage = () => {
       });
       setUsers(response.data.data);
     } catch (err) {
-      console.error(err);
+      logAdminError(err, '사용자 요청 실패');
       alert('유저 목록을 불러오는데 실패했습니다.');
     } finally {
       setLoading(false);

@@ -1,3 +1,4 @@
+import { logAdminError } from '../utils/safeLogger';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   awardAdminBadge,
@@ -100,7 +101,7 @@ export default function BadgesPage() {
       const response = await getAdminBadges();
       setBadges(unwrap(response) || []);
     } catch (error) {
-      console.error(error);
+      logAdminError(error, '뱃지 요청 실패');
       alert(errorMessage(error, '뱃지 목록을 불러오지 못했습니다.'));
     } finally {
       setLoading(false);
@@ -149,7 +150,7 @@ export default function BadgesPage() {
       const imageUrl = await uploadImageToGCS(file, 'badges', { preserveTransparency: true });
       setForm((current) => ({ ...current, imageUrl }));
     } catch (error) {
-      console.error(error);
+      logAdminError(error, '뱃지 요청 실패');
       alert(errorMessage(error, '이미지를 업로드하지 못했습니다.'));
     } finally {
       setUploadingImage(false);

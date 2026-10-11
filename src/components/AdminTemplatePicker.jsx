@@ -1,3 +1,4 @@
+import { logAdminError } from '../utils/safeLogger';
 import React, { useEffect, useState } from 'react';
 import apiClient from '../api/axios';
 import './AdminTemplateManager.css';
@@ -17,7 +18,7 @@ export default function AdminTemplatePicker({ type, onSelect, refreshKey = 0 }) 
       .then((response) => {
         if (!cancelled) setTemplates(response.data?.data || []);
       })
-      .catch((err) => console.error('템플릿 목록 조회 실패:', err));
+      .catch((err) => logAdminError(err, '템플릿 목록 조회 실패'));
 
     return () => {
       cancelled = true;

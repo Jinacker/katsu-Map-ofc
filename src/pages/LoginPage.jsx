@@ -1,3 +1,4 @@
+import { logAdminError } from '../utils/safeLogger';
 import React, { useState } from 'react';
 import apiClient from '../api/axios';
 import './LoginPage.css';
@@ -24,7 +25,7 @@ const LoginPage = () => {
       window.location.href = '/';
     } catch (err) {
       setError('로그인에 실패했습니다. 아이디와 비밀번호를 확인해주세요.');
-      console.error(err);
+      logAdminError(err, '로그인 실패');
     } finally {
       setLoading(false);
     }

@@ -1,3 +1,4 @@
+import { logAdminError } from '../utils/safeLogger';
 import React, { useEffect, useMemo, useState } from 'react';
 import apiClient from '../api/axios';
 import './AdminTemplateManager.css';
@@ -30,7 +31,7 @@ export default function AdminTemplateManager({
       const response = await apiClient.get(`/api/v1/admin/templates?type=${type}`);
       setTemplates(response.data?.data || []);
     } catch (err) {
-      console.error(err);
+      logAdminError(err, '템플릿 관리 실패');
       setError('템플릿을 불러오지 못했습니다.');
     }
   };

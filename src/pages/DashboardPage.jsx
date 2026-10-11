@@ -1,3 +1,4 @@
+import { logAdminError } from '../utils/safeLogger';
 import React, { useEffect, useState } from 'react';
 import apiClient from '../api/axios';
 import DailyUsersChart from '../components/DailyUsersChart';
@@ -72,7 +73,7 @@ const DashboardPage = () => {
       } catch (err) {
         if (cancelled) return;
         setError('대시보드 데이터를 불러오는데 실패했습니다.');
-        console.error('Dashboard data fetch error:', err);
+        logAdminError(err, 'Dashboard data fetch error');
         if (err.response?.status === 401) {
           clearAdminToken();
           window.location.href = '/login';
