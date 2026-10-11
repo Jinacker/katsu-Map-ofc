@@ -169,6 +169,16 @@ const AdminLayout = ({ children }) => {
       label: '테이스팅 피드'
     },
     {
+      path: '/launch-banner',
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <rect x="3" y="4" width="18" height="16" rx="2" />
+          <path d="m3 15 5-5 4 4 4-6 5 7" />
+        </svg>
+      ),
+      label: '앱 배너'
+    },
+    {
       path: '/push',
       icon: (
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

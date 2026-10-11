@@ -10,6 +10,7 @@ import UsersPage from './pages/UsersPage';
 import HunterContentPage from './pages/HunterContentPage';
 import UserRecordsPage from './pages/UserRecordsPage';
 import PushNotificationsPage from './pages/PushNotificationsPage';
+import LaunchBannerPage from './pages/LaunchBannerPage';
 import GradeVotesPage from './pages/GradeVotesPage';
 import RankingPage from './pages/RankingPage';
 import OgSettingsPage from './pages/OgSettingsPage';
@@ -25,6 +26,7 @@ function App() {
   return (
     <Router>
       <Routes>
+        <Route path="/launch-banner" element={<ProtectedRoute><AdminLayout><LaunchBannerPage /></AdminLayout></ProtectedRoute>} />
         <Route path="/login" element={<LoginPage />} />
         <Route
           path="/"
