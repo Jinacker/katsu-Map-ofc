@@ -1589,6 +1589,20 @@
 }
 .feature-tag-create-btn:disabled { opacity: 0.5; cursor: default; }
 
+.feature-tag-inline-create {
+  margin: 12px 0 0;
+  flex-wrap: wrap;
+}
+
+.feature-tag-inline-create .feature-tag-input {
+  min-width: 0;
+  flex: 1 1 160px;
+}
+
+.feature-tag-inline-create .feature-tag-input.category {
+  flex: 1 1 120px;
+}
+
 .feature-tag-table {
   margin: 0 var(--space-xl) var(--space-xl);
   border: 1px solid var(--color-border);
