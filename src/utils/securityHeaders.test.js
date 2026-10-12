@@ -8,7 +8,7 @@ const headersFor = (path) => Object.fromEntries(config.headers
   .flatMap((rule) => rule.headers.map(({ key, value }) => [key, value])));
 
 test('관리자·공개 QR·공유 페이지 모두 외부 iframe 삽입과 MIME 오해석을 차단한다', () => {
-  for (const path of ['/', '/login', '/restaurants', '/launch-banner', '/open', '/encyclopedia/9', '/r/abc', '/c/1', '/u/1', '/api/share']) {
+  for (const path of ['/', '/login', '/restaurants', '/launch-banner', '/open', '/encyclopedia/9', '/r/abc', '/c/1', '/u/1', '/e/9', '/api/share']) {
     const headers = headersFor(path);
     assert.equal(headers['X-Frame-Options'], 'DENY', path);
     assert.equal(headers['X-Content-Type-Options'], 'nosniff', path);
@@ -26,7 +26,7 @@ test('스크립트 CSP 보고는 관리자 화면에 적용하고 공개 페이�
     assert.match(headers['Content-Security-Policy-Report-Only'], /script-src 'self' https:\/\/dapi\.kakao\.com https:\/\/\*\.daumcdn\.net/, path);
     assert.match(headers['Content-Security-Policy-Report-Only'], /style-src 'self' 'unsafe-inline'/, path);
   }
-  for (const path of ['/open', '/open/', '/encyclopedia/9', '/encyclopedia/9/', '/r/abc', '/c/1', '/u/1', '/api', '/api/open', '/api/share', '/api/encyclopedia']) {
+  for (const path of ['/open', '/open/', '/encyclopedia/9', '/encyclopedia/9/', '/r/abc', '/c/1', '/u/1', '/e/9', '/e/9/', '/api', '/api/open', '/api/share', '/api/encyclopedia']) {
     const headers = headersFor(path);
     assert.equal(headers['Content-Security-Policy-Report-Only'], undefined, path);
     // 공유·앱 열기 페이지의 기존 인라인 스크립트 실행을 유지한다.

@@ -10,7 +10,7 @@
       ]
     },
     {
-      "source": "/((?!api(?:/|$)|open(?:/|$)|encyclopedia/9(?:/|$)|r/|c/|u/).*)",
+      "source": "/((?!api(?:/|$)|open(?:/|$)|encyclopedia/9(?:/|$)|r/|c/|u/|e/).*)",
       "headers": [
         {
           "key": "Content-Security-Policy-Report-Only",
@@ -25,6 +25,7 @@
     { "source": "/r/:ref", "destination": "/api/share?ref=:ref" },
     { "source": "/c/:ref", "destination": "/api/share?type=community&ref=:ref" },
     { "source": "/u/:ref", "destination": "/api/share?type=profile&ref=:ref" },
+    { "source": "/e/:ref", "destination": "/api/share?type=encyclopedia&ref=:ref" },
     { "source": "/(.*)", "destination": "/" }
   ]
 }

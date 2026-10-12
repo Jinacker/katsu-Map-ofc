@@ -29,7 +29,9 @@ async function fetchJson(url) {
   });
 
   if (!response.ok) {
-    throw new Error(`Request failed: ${response.status}`);
+    const error = new Error(`Request failed: ${response.status}`);
+    error.status = response.status;
+    throw error;
   }
 
   return response.json();
@@ -199,6 +201,39 @@ export default async function handler(req, res) {
 
   if (typeof ref !== 'string' || !/^[a-z0-9]+$/i.test(ref)) {
     res.status(404).send('Not found');
+    return;
+  }
+
+  if (type === 'encyclopedia') {
+    const postId = /^\d+$/.test(ref) ? Number(ref) : null;
+    if (!Number.isInteger(postId) || postId <= 0 || postId > 2147483647) {
+      res.status(404).send('Not found');
+      return;
+    }
+    setHtmlHeaders(res);
+    try {
+      const post = unwrapApiData(await fetchJson(`${normalizeApiBaseUrl()}/api/v1/encyclopedia/posts/${postId}`));
+      if (!post || post.id !== postId || post.status !== 'published') {
+        res.status(404).send('Not found');
+        return;
+      }
+      const title = post.title || '돈가스 백과';
+      res.status(200).send(renderHtml({
+        ref: String(postId),
+        deepLinkType: 'encyclopedia',
+        heading: title,
+        eyebrow: [post.emoji, post.category].filter(Boolean).join(' '),
+        title: `${title} | 돈가스 지도`,
+        description: post.summary || '돈가스 지도에서 돈가스 이야기를 만나보세요.',
+        ctaText: '앱에서 백과 글 보기',
+        shareUrl: `${SHARE_ORIGIN}/e/${postId}`,
+        imageUrl: pickImageUrl(post.thumbnailUrl),
+      }));
+    } catch (error) {
+      res.status(error.status === 404 ? 404 : 503).send(error.status === 404
+        ? 'Not found'
+        : '글을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.');
+    }
     return;
   }
 
