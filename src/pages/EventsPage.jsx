@@ -1,3 +1,4 @@
+import EventStampTourEditor from '../components/EventStampTourEditor';
 import React, { useEffect, useRef, useState } from 'react';
 import apiClient from '../api/axios';
 import { addEvent, updateEvent, sendEventAsset } from '../utils/eventForm';
@@ -88,6 +89,8 @@ export default function EventsPage() {
           <p>앱 딥링크: <code>katsumap://event/{selected.id}</code></p>
           <p>앱 배너의 이동 목적지에서 ‘이벤트’를 선택하고 이 이벤트를 지정하면 됩니다.</p>
         </div>
+        <EventStampTourEditor key={selected.id} event={selected} onChange={(stampTour) => patch({ stampTour })} locked={locked}
+          setBusy={(value) => { busy.current = value; setStatus(value ? 'uploading' : 'ready'); }} onMessage={setMessage} />
         <details><summary>추가 웹 설정</summary>
           <p style={{ color: '#666', fontSize: 13 }}>웹에 공개되는 JSON입니다. 비밀번호·키·사용자 개인정보를 넣지 마세요.</p>
           <textarea aria-label="추가 웹 설정" style={{ ...input, minHeight: 140, fontFamily: 'monospace' }} value={settings} onChange={(e) => {
