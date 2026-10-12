@@ -179,6 +179,11 @@ const AdminLayout = ({ children }) => {
       label: '앱 배너'
     },
     {
+      path: '/events',
+      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16v16H4zM12 4v16M4 10h16" /></svg>,
+      label: '이벤트'
+    },
+    {
       path: '/push',
       icon: (
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

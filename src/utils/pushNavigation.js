@@ -7,7 +7,7 @@ export const LEGACY_PUSH_OPTIONS = [
   { type: 'pendingPlaceApproved', label: '기존 가게 승인 알림 — 내 테이스팅', needsNoteId: true },
 ];
 
-export const PUSH_ID_LABELS = { userId: '사용자 ID', restaurantId: '식당 ID', noteId: '게시글 ID', postId: '백과 글 ID' };
+export const PUSH_ID_LABELS = { userId: '사용자 ID', restaurantId: '식당 ID', noteId: '게시글 ID', postId: '백과 글 ID', eventId: '이벤트 ID' };
 
 function parseId(value, label) {
   if (!/^\d+$/.test(String(value).trim())) throw new Error(`${label}를 입력해주세요.`);

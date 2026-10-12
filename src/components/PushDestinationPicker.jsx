@@ -12,6 +12,15 @@ export default function PushDestinationPicker({ idKey, value, onChange }) {
   const [encyclopediaStatus, setEncyclopediaStatus] = useState('idle');
   const searchable = idKey === 'userId' || idKey === 'restaurantId';
   const isEncyclopediaPost = idKey === 'postId';
+  const [events, setEvents] = useState([]);
+  useEffect(() => {
+    if (idKey !== 'eventId') return undefined;
+    let cancelled = false;
+    apiClient.get('/api/v1/admin/events').then((response) => {
+      if (!cancelled) setEvents(response.data?.data?.config?.events ?? []);
+    }).catch(() => { if (!cancelled) setEvents([]); });
+    return () => { cancelled = true; };
+  }, [idKey]);
 
   useEffect(() => {
     if (selected) return;
@@ -56,6 +65,10 @@ export default function PushDestinationPicker({ idKey, value, onChange }) {
 
   return (
     <div style={{ marginTop: 8 }}>
+      {idKey === 'eventId' && <select aria-label="이벤트 선택" style={inputStyle} value={value} onChange={(event) => onChange(event.target.value)}>
+        <option value="">이벤트를 선택하세요</option>
+        {events.map((event) => <option key={event.id} value={event.id}>#{event.id} {event.title} · {event.enabled ? '활성' : '비활성'}</option>)}
+      </select>}
       {searchable && <>
         <input style={inputStyle} aria-label={idKey === 'userId' ? '사용자 검색' : '식당 검색'}
           placeholder={idKey === 'userId' ? '닉네임 또는 사용자 ID 검색' : '식당 이름·주소 또는 ID 검색'}
