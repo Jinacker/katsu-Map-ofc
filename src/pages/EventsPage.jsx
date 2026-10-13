@@ -1,3 +1,4 @@
+import EventScheduleEditor from '../components/EventScheduleEditor';
 import EventStampTourEditor from '../components/EventStampTourEditor';
 import './EventsPage.css';
 import React, { useEffect, useRef, useState } from 'react';
@@ -101,6 +102,7 @@ export default function EventsPage() {
           </section>
           <EventStampTourEditor key={selected.id} event={selected} onChange={(stampTour) => patch({ stampTour })} locked={locked}
             setBusy={(value) => { busy.current = value; setStatus(value ? 'uploading' : 'ready'); }} onMessage={setMessage} />
+          <EventScheduleEditor key={`schedule-${selected.id}`} event={selected} onChange={patch} />
           <details className="events-card events-advanced"><summary>추가 웹 설정 <span>JSON</span></summary>
             <p className="events-help">웹에 공개되는 설정입니다. 비밀번호·키·사용자 개인정보를 넣지 마세요.</p>
             <textarea aria-label="추가 웹 설정" value={settings} onChange={(e) => {
