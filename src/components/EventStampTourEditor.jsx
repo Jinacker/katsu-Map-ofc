@@ -50,7 +50,7 @@ export default function EventStampTourEditor({ event, onChange, locked, setBusy,
     </label>
     {tour.enabled && <>
       <div className="events-rule-strip"><span><b>공개</b> 새 기록</span><span>사진 <b>1장+</b></span><span>후기 <b>30자+</b></span><span>가게별 <b>1회</b></span></div>
-      <p className="events-help">이벤트 활성 중 조건을 충족하면 자동 적립돼요. 적립 후 기록을 수정·삭제해도 유지됩니다.</p>
+      <p className="events-help">이벤트 활성 중 조건을 충족하면 자동 적립돼요. 나만보기·재공개 전환과 내용 수정은 적립을 유지해요. 기록 삭제·관리자 삭제 또는 숨김 시에는 해당 스탬프를 회수합니다.</p>
       <div className="events-subsection-heading"><h3>참여 가게</h3><span className="events-count">{tour.restaurants.length}곳</span></div>
       <label className="events-field events-search">가게 검색<input aria-label="참여 가게 검색" value={query} placeholder="가게 이름·주소 또는 ID로 검색" onChange={(e) => setQuery(e.target.value)} /></label>
       {searchStatus === 'loading' && <p className="events-help">검색 중...</p>}
