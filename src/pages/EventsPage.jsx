@@ -129,11 +129,14 @@ export default function EventsPage() {
         </aside>
       </fieldset> : <div className="events-empty">첫 이벤트를 만들어보세요. ‘새 이벤트’에서 시작할 수 있어요.</div>}
       <div className="events-savebar"><div><strong>{selected?.title || '이벤트 설정'}</strong><span>편집한 내용은 설정 저장을 눌러야 반영됩니다.</span></div>
+        <div className="events-save-actions">
+          {message.startsWith('저장했습니다.') && events === catalog.config.events && <span className="events-save-success" role="status">✓ 저장됐어요</span>}
         <button className="events-button events-button-primary" disabled={locked || !selected} onClick={() => {
           try { const value = JSON.parse(settings); if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error(); }
           catch { setMessage('추가 웹 설정은 유효한 JSON 객체여야 합니다.'); return; }
           save();
         }}>{status === 'saving' ? '저장 중...' : status === 'uploading' ? '이미지 업로드 중...' : '설정 저장'}</button>
+        </div>
       </div>
     </>}
   </main>;
