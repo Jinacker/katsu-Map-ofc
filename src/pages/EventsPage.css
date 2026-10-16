@@ -107,6 +107,7 @@
 .events-advanced summary { cursor: pointer; font-size: 13px; font-weight: 600; }
 .events-advanced summary span { font-size: 10px; font-weight: 400; padding: 3px 6px; color: #a08c74; border: 1px solid #e8dfd2; border-radius: 5px; margin-left: 8px; }
 .events-advanced .events-help { margin: 14px 0 10px; }
+.events-map-message { min-height: 62px; font-size: 13px; line-height: 1.6; resize: vertical; }
 .events-advanced textarea { min-height: 160px; font-family: monospace; font-size: 12px; resize: vertical; }
 .events-savebar { position: sticky; bottom: 14px; display: flex; align-items: center; justify-content: space-between; gap: 16px; background: #fffefcf5; border: 1px solid #e5d8c6; border-radius: 12px; padding: 15px 20px; margin-top: 24px; box-shadow: 0 6px 26px #51402a14; backdrop-filter: blur(12px); z-index: 5; }
 .events-savebar > div { display: grid; gap: 6px; min-width: 0; }

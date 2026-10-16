@@ -95,6 +95,10 @@ export default function EventsPage() {
                 <input type="file" aria-label="홈 버튼 이미지 업로드" accept="image/png,image/gif,image/svg+xml" onChange={upload} />
               </label>
             </div>
+            <label className="events-field">지도 말풍선 문구<span className="events-help">이벤트 지도 상단 마스코트 말풍선에 그대로 표시됩니다. 두 줄, 120자까지. 비워두면 기본 문구가 나와요.</span>
+              <textarea className="events-map-message" rows={2} maxLength={120} placeholder={`🎉 ${selected.title || '이벤트'} 진행 중!\n참여 가게를 돌며 스탬프를 모아보세요.`}
+                value={selected.mapMessage ?? ''} onChange={(e) => patch({ mapMessage: e.target.value.replace(/[\r\t]/g, '').split('\n').slice(0, 2).join('\n') })} />
+            </label>
             <label className="events-toggle"><input type="checkbox" checked={selected.enabled} onChange={(e) => patch({ enabled: e.target.checked })} />
               <span><strong>이벤트 활성화</strong><small>한 번에 하나만 운영해요. 기존 활성 이벤트는 자동으로 꺼집니다.</small></span>
               <span className={`events-badge ${selected.enabled ? 'is-active' : ''}`}>{selected.enabled ? '활성' : '비활성'}</span>
