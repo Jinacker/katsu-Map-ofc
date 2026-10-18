@@ -123,6 +123,7 @@
 .events-savebar > .events-save-actions { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 10px; flex-shrink: 0; }
 .events-savebar .events-save-success { color: #398254; font-size: 12px; font-weight: 600; white-space: nowrap; }
 
+.events-page .event-calendar-description { min-height: 72px; font-size: 13px; line-height: 1.7; resize: vertical; }
 .events-page .event-goods-row { display: grid; grid-template-columns: 24px 84px minmax(0, 1fr); gap: 12px; padding: 14px 0; border-bottom: 1px solid #e9e7e1; }
 .events-page .event-goods-order { display: grid; align-content: start; gap: 2px; }
 .events-page .event-goods-order button { padding: 2px; font-size: 11px !important; }

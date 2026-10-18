@@ -11,7 +11,8 @@ export default function EventScheduleEditor({ event, onChange }) {
         <label className="events-field">일정 제목<input aria-label="일정 제목" maxLength={80} value={item.title} onChange={(e) => update(item.id, { title: e.target.value })} /></label>
         <div className="event-view-fields"><label className="events-field">시작일<input type="date" aria-label="일정 시작일" value={item.startDate} onChange={(e) => update(item.id, { startDate: e.target.value })} /></label>
           <label className="events-field">종료일<input type="date" aria-label="일정 종료일" min={item.startDate} value={item.endDate} onChange={(e) => update(item.id, { endDate: e.target.value })} /></label></div>
-        <label className="events-field">설명<input maxLength={500} value={item.description || ''} onChange={(e) => update(item.id, { description: e.target.value })} /></label>
+        <label className="events-field">설명<span className="events-help">일정을 누르면 열리는 상세 창에 그대로 표시돼요. 줄바꿈을 쓸 수 있고 500자까지 입력합니다.</span>
+          <textarea className="event-calendar-description" rows={3} maxLength={500} aria-label="일정 설명" value={item.description || ''} onChange={(e) => update(item.id, { description: e.target.value })} /></label>
         <button type="button" className="events-button" onClick={() => onChange({ calendar: calendar.filter((row) => row.id !== item.id) })}>일정 삭제</button>
       </div>)}
       {!calendar.length && <p className="events-help">아직 등록된 일정이 없어요.</p>}
