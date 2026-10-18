@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { uploadImageToGCS } from '../api/gcs';
 
 const MAX_GOODS = 40;
-const emptyGoods = () => ({ id: crypto.randomUUID(), name: '', price: '', imageUrl: '', fit: 'cover' });
+const emptyGoods = () => ({ id: crypto.randomUUID(), name: '', price: '', imageUrl: '', fit: 'cover', linkUrl: '' });
 const moveItem = (items, index, direction) => {
   const target = index + direction;
   if (target < 0 || target >= items.length) return items;
@@ -50,6 +50,7 @@ export default function EventGiftshopEditor({ event, onChange, locked, setBusy, 
       <div className="event-goods-fields">
         <input aria-label="굿즈 이름" maxLength={80} placeholder="굿즈 이름 (예: 돈가스 NFC 키링)" value={item.name} onChange={(e) => update(item.id, { name: e.target.value })} />
         <input aria-label="굿즈 가격" maxLength={30} placeholder="가격 (예: 11,000원)" value={item.price ?? ''} onChange={(e) => update(item.id, { price: e.target.value.replace(/[\r\n\t]/g, '') })} />
+        <input type="url" aria-label="굿즈 스토어 링크" maxLength={2048} placeholder="스토어 링크 (선택, https://smartstore.naver.com/…)" value={item.linkUrl ?? ''} onChange={(e) => update(item.id, { linkUrl: e.target.value })} />
         <div className="event-goods-actions">
           <label>사진 표시<select aria-label="굿즈 사진 표시 방식" value={item.fit ?? 'cover'} onChange={(e) => update(item.id, { fit: e.target.value })}>
             <option value="cover">꽉 채우기</option><option value="contain">여백 유지</option>
@@ -65,5 +66,6 @@ export default function EventGiftshopEditor({ event, onChange, locked, setBusy, 
     {!items.length && <div className="events-store-empty">아직 등록된 굿즈가 없어요. ‘굿즈 추가’로 시작해보세요.</div>}
     <button type="button" className="events-button" disabled={items.length >= MAX_GOODS} onClick={() => patch({ items: [...items, emptyGoods()] })}>+ 굿즈 추가</button>
     <p className="events-help">JPG는 원본 비율로 압축하고, 투명 배경 PNG·WebP는 투명도를 유지해 512px로 저장해요. 이름이 비어 있으면 저장할 수 없습니다.</p>
+    <p className="events-help">스토어 링크는 https 주소만 입력하세요. 비워두면 구매 버튼이 표시되지 않습니다. 앱에서는 링크 공유·복사, 일반 브라우저에서는 스토어 바로가기를 제공합니다.</p>
   </section>;
 }
