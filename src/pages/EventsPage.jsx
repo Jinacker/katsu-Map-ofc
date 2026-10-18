@@ -1,5 +1,4 @@
 import EventGiftshopEditor from '../components/EventGiftshopEditor';
-import EventScheduleEditor from '../components/EventScheduleEditor';
 import EventStampTourEditor from '../components/EventStampTourEditor';
 import './EventsPage.css';
 import React, { useEffect, useRef, useState } from 'react';
@@ -107,7 +106,6 @@ export default function EventsPage() {
           </section>
           <EventStampTourEditor key={selected.id} event={selected} onChange={(stampTour) => patch({ stampTour })} locked={locked}
             setBusy={(value) => { busy.current = value; setStatus(value ? 'uploading' : 'ready'); }} onMessage={setMessage} />
-          <EventScheduleEditor key={`schedule-${selected.id}`} event={selected} onChange={patch} />
           <EventGiftshopEditor key={`giftshop-${selected.id}`} event={selected} onChange={patch} locked={locked}
             setBusy={(value) => { busy.current = value; setStatus(value ? 'uploading' : 'ready'); }} onMessage={setMessage} />
           <details className="events-card events-advanced"><summary>추가 웹 설정 <span>JSON</span></summary>
