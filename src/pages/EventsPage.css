@@ -122,3 +122,16 @@
 
 .events-savebar > .events-save-actions { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 10px; flex-shrink: 0; }
 .events-savebar .events-save-success { color: #398254; font-size: 12px; font-weight: 600; white-space: nowrap; }
+
+.events-page .event-goods-row { display: grid; grid-template-columns: 24px 84px minmax(0, 1fr); gap: 12px; padding: 14px 0; border-bottom: 1px solid #e9e7e1; }
+.events-page .event-goods-order { display: grid; align-content: start; gap: 2px; }
+.events-page .event-goods-order button { padding: 2px; font-size: 11px !important; }
+.events-page .event-goods-photo { width: 84px; height: 84px; border: 1px solid #e5dfd5; border-radius: 10px; display: grid; place-items: center; overflow: hidden; color: #a3998b; font-size: 11px; text-align: center; }
+.events-page .event-goods-photo img { width: 100%; height: 100%; }
+.events-page .event-goods-fields { display: grid; gap: 7px; min-width: 0; }
+.events-page .event-goods-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.events-page .event-goods-actions label { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; color: #8b7b67; }
+.events-page .event-goods-actions select { padding: 5px 8px; font-size: 12px; }
+.events-page .event-goods-upload { border: 1px solid #ded5c9; border-radius: 8px; padding: 5px 10px; cursor: pointer; }
+.events-page .event-goods-upload input { display: none; }
+.events-page .event-goods-delete { color: #b3675a; }
