@@ -66,6 +66,6 @@ export default function EventGiftshopEditor({ event, onChange, locked, setBusy, 
     {!items.length && <div className="events-store-empty">아직 등록된 굿즈가 없어요. ‘굿즈 추가’로 시작해보세요.</div>}
     <button type="button" className="events-button" disabled={items.length >= MAX_GOODS} onClick={() => patch({ items: [...items, emptyGoods()] })}>+ 굿즈 추가</button>
     <p className="events-help">JPG는 원본 비율로 압축하고, 투명 배경 PNG·WebP는 투명도를 유지해 512px로 저장해요. 이름이 비어 있으면 저장할 수 없습니다.</p>
-    <p className="events-help">스토어 링크는 https 주소만 입력하세요. 비워두면 구매 버튼이 표시되지 않습니다. 앱에서는 링크 공유·복사, 일반 브라우저에서는 스토어 바로가기를 제공합니다.</p>
+    <p className="events-help">스토어 링크는 https 주소만 입력하세요. 등록하면 굿즈 사진·상품명을 눌러 스토어로 이동합니다. 비워두면 구매 버튼 없이 사진 크게 보기를 제공합니다.</p>
   </section>;
 }
