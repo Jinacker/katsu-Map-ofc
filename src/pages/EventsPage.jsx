@@ -1,4 +1,5 @@
 import EventGiftshopEditor from '../components/EventGiftshopEditor';
+import EventLuckyDrawEditor from '../components/EventLuckyDrawEditor';
 import EventStampTourEditor from '../components/EventStampTourEditor';
 import './EventsPage.css';
 import React, { useEffect, useRef, useState } from 'react';
@@ -33,6 +34,12 @@ export default function EventsPage() {
   }, []);
 
   const patch = (value) => setEvents((current) => updateEvent(current, selectedId, value));
+  // 전용 입력 UI로 고친 값도 아래 JSON 편집창과 같은 publicData를 쓴다. 둘이 어긋나지 않게 함께 갱신한다.
+  const patchPublicData = (value) => {
+    const next = { ...(selected?.publicData ?? {}), ...value };
+    patch({ publicData: next });
+    setSettings(JSON.stringify(next, null, 2));
+  };
   const upload = async (event) => {
     const targetId = selectedId;
     const file = event.target.files?.[0];
@@ -108,6 +115,7 @@ export default function EventsPage() {
             setBusy={(value) => { busy.current = value; setStatus(value ? 'uploading' : 'ready'); }} onMessage={setMessage} />
           <EventGiftshopEditor key={`giftshop-${selected.id}`} event={selected} onChange={patch} locked={locked}
             setBusy={(value) => { busy.current = value; setStatus(value ? 'uploading' : 'ready'); }} onMessage={setMessage} />
+          <EventLuckyDrawEditor key={`lucky-${selected.id}`} event={selected} onChange={patchPublicData} locked={locked} />
           <details className="events-card events-advanced"><summary>추가 웹 설정 <span>JSON</span></summary>
             <p className="events-help">웹에 공개되는 설정입니다. 비밀번호·키·사용자 개인정보를 넣지 마세요.</p>
             <textarea aria-label="추가 웹 설정" value={settings} onChange={(e) => {

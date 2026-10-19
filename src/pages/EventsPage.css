@@ -136,3 +136,11 @@
 .events-page .event-goods-upload { border: 1px solid #ded5c9; border-radius: 8px; padding: 5px 10px; cursor: pointer; }
 .events-page .event-goods-upload input { display: none; }
 .events-page .event-goods-delete { color: #b3675a; }
+.events-page .event-reward-row { display: grid; grid-template-columns: 24px minmax(0, 1fr) 118px auto auto; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid #e9e7e1; }
+.events-page .event-reward-soldout { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; color: #8b7b67; white-space: nowrap; }
+.events-page .event-reward-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+@media (max-width: 720px) {
+  .events-page .event-reward-row { grid-template-columns: 24px minmax(0, 1fr); row-gap: 7px; }
+  .events-page .event-reward-row > .event-reward-stock { grid-column: 2; }
+  .events-page .event-reward-row > .event-reward-soldout, .events-page .event-reward-row > .event-goods-delete { grid-column: 2; justify-self: start; }
+}
