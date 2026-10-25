@@ -31,6 +31,7 @@ const EMPTY_FORM_DATA = {
 };
 const EMPTY_MENUS = { priceRate: '', names: '' };
 const MAX_FEATURE_TAGS = 7;
+const MAX_GEO_RESULTS = 3;
 const FEATURE_TAG_CATEGORY_ORDER = ['MEAT', 'COOKING', 'TASTE', 'INFO', 'SAUCE', 'MENU', 'STYLE'];
 const PIN_OFFSET_METERS = 8;
 const MIN_PIN_DISTANCE_METERS = 6;
@@ -338,6 +339,8 @@ const RestaurantsPage = ({ editorOnly = false, onClose } = {}) => {
     setBulkParseMessage('');
     setBulkParsePartialSuccess(false);
     setCoordinateCollisionNotice(null);
+    setGeoResults([]);
+    setShowGeoResults(false);
   };
 
   const handleAddClick = () => {
@@ -715,6 +718,11 @@ const RestaurantsPage = ({ editorOnly = false, onClose } = {}) => {
 
   const handleFormChange = (e) => {
     const { name, value, type, checked } = e.target;
+    if (name === 'name' || name === 'area') {
+      setGeoResults([]);
+      setShowGeoResults(false);
+      setBulkParseMessage('');
+    }
     setFormData((prev) => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value,
@@ -1225,7 +1233,7 @@ const RestaurantsPage = ({ editorOnly = false, onClose } = {}) => {
       );
     });
 
-    return placeResults.slice(0, 5).map(r => ({
+    return placeResults.slice(0, MAX_GEO_RESULTS).map(r => ({
       name: r.place_name,
       addr: r.road_address_name || r.address_name,
       lat: r.y,
@@ -1248,6 +1256,7 @@ const RestaurantsPage = ({ editorOnly = false, onClose } = {}) => {
     const keyword = [formData.name, formData.area].filter(Boolean).join(' ');
     if (!keyword.trim()) { alert('이름 또는 지역을 먼저 입력해주세요.'); return; }
     setGeoSearching(true);
+    setGeoResults([]);
     setShowGeoResults(false);
     try {
       const results = await searchKakaoPlaces(keyword);
@@ -1265,15 +1274,20 @@ const RestaurantsPage = ({ editorOnly = false, onClose } = {}) => {
   };
 
   const applyGeoResult = (result) => {
-    setFormData(prev => ({
-      ...prev,
+    const currentForm = formDataRef.current;
+    const nextFormData = {
+      ...currentForm,
       lat: result.lat,
       lng: result.lng,
-      addr: prev.addr || result.addr,
+      addr: currentForm.addr || result.addr,
       ...(result.placeUrl ? { placeUrl: result.placeUrl } : {}),
-    }));
+    };
+    formDataRef.current = nextFormData;
+    setFormData(nextFormData);
     setShowGeoResults(false);
     setGeoResults([]);
+    setBulkParseMessage('');
+    setBulkParsePartialSuccess(false);
   };
 
   const handleAddressGeoFill = async () => {
@@ -1319,6 +1333,8 @@ const RestaurantsPage = ({ editorOnly = false, onClose } = {}) => {
     setBulkParsing(true);
     setBulkParseMessage('AI가 식당 정보와 리뷰를 한 번에 정리하고 있습니다...');
     setBulkParsePartialSuccess(false);
+    setGeoResults([]);
+    setShowGeoResults(false);
 
     try {
       // 사용자가 버튼을 누른 경우에만 이 API를 한 번 호출한다.
@@ -1340,14 +1356,13 @@ const RestaurantsPage = ({ editorOnly = false, onClose } = {}) => {
         }
       }
 
-      let geoMatch = null;
+      let geoMatches = [];
       let geoErrorMessage = '';
       const keyword = [parsed.name, parsed.area].filter(Boolean).join(' ');
       if (keyword) {
         try {
-          const places = await searchKakaoPlaces(keyword);
-          geoMatch = places[0] || null;
-          if (!geoMatch) {
+          geoMatches = await searchKakaoPlaces(keyword);
+          if (geoMatches.length === 0) {
             geoErrorMessage = '좌표 자동 채우기 실패: 카카오맵 검색 결과가 없습니다.';
           }
         } catch (geoError) {
@@ -1356,16 +1371,18 @@ const RestaurantsPage = ({ editorOnly = false, onClose } = {}) => {
         }
       }
 
+      const hasGeoCandidates = geoMatches.length > 0;
       const currentForm = formDataRef.current;
       const nextFormData = {
         ...currentForm,
         name: parsed.name || currentForm.name,
         area: parsed.area || currentForm.area,
         category: parsed.category || currentForm.category,
-        addr: parsed.addr || geoMatch?.addr || currentForm.addr,
-        lat: parsed.lat ?? geoMatch?.lat ?? currentForm.lat,
-        lng: parsed.lng ?? geoMatch?.lng ?? currentForm.lng,
-        placeUrl: parsed.placeUrl || geoMatch?.placeUrl || currentForm.placeUrl,
+        addr: parsed.addr || currentForm.addr,
+        // 검색 후보가 있으면 직접 선택할 때까지 기존 좌표·링크를 유지한다.
+        lat: hasGeoCandidates ? currentForm.lat : (parsed.lat ?? currentForm.lat),
+        lng: hasGeoCandidates ? currentForm.lng : (parsed.lng ?? currentForm.lng),
+        placeUrl: hasGeoCandidates ? currentForm.placeUrl : (parsed.placeUrl || currentForm.placeUrl),
         description: parsed.description || currentForm.description,
       };
       const deterministicHours = parseBusinessHoursText(rawText);
@@ -1384,9 +1401,11 @@ const RestaurantsPage = ({ editorOnly = false, onClose } = {}) => {
       setFormData(nextFormData);
       setHoursData(nextHoursData);
       setMenusData(nextMenusData);
-      setGeoResults([]);
-      setShowGeoResults(false);
-      setBulkParseMessage(geoErrorMessage);
+      setGeoResults(geoMatches);
+      setShowGeoResults(hasGeoCandidates);
+      setBulkParseMessage(geoErrorMessage || (hasGeoCandidates
+        ? '아래 카카오맵 검색 결과에서 매장을 선택해주세요.'
+        : ''));
       setBulkParsePartialSuccess(Boolean(geoErrorMessage));
     } catch (err) {
       logAdminError(err, '몽땅 파싱 실패');
@@ -2286,7 +2305,7 @@ const RestaurantsPage = ({ editorOnly = false, onClose } = {}) => {
                       type="button"
                       className="bulk-parser-btn"
                       onClick={handleBulkParse}
-                      disabled={bulkParsing || !bulkParseText.trim()}
+                      disabled={bulkParsing || geoSearching || !bulkParseText.trim()}
                     >
                       {bulkParsing ? '파싱 중...' : '파싱해버리기'}
                     </button>
@@ -2344,18 +2363,22 @@ const RestaurantsPage = ({ editorOnly = false, onClose } = {}) => {
                     type="button"
                     className="geo-autofill-btn"
                     onClick={handleGeoAutoFill}
-                    disabled={geoSearching}
+                    disabled={geoSearching || bulkParsing}
                   >
                     {geoSearching ? '🔍 검색 중...' : '🔍 좌표 자동 채우기'}
                   </button>
                 </div>
 
                 <div className="form-group full-width">
-                  <span className="geo-hint">이름·지역으로 검색 후 선택하면 주소 / 위도·경도 / 카카오맵 URL 자동 입력</span>
+                  <span className="geo-hint">
+                    {showGeoResults && geoResults.length > 0
+                      ? `카카오맵 검색 결과 ${geoResults.length}개 · 상호와 주소를 확인한 뒤 매장을 선택해주세요.`
+                      : '이름·지역으로 검색 후 선택하면 위도·경도 / 카카오맵 URL 입력 · 비어 있는 주소도 채웁니다'}
+                  </span>
                   {showGeoResults && geoResults.length > 0 && (
                     <div className="geo-results">
                       {geoResults.map((r, i) => (
-                        <button key={i} type="button" className="geo-result-item" onClick={() => applyGeoResult(r)}>
+                        <button key={r.placeUrl || i} type="button" className="geo-result-item" onClick={() => applyGeoResult(r)} aria-label={`${r.name} 선택`}>
                           <span className="geo-result-name">{r.name}</span>
                           <span className="geo-result-address">{r.addr}</span>
                           <span className="geo-result-coords">{parseFloat(r.lat).toFixed(6)}, {parseFloat(r.lng).toFixed(6)}</span>
