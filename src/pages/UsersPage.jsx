@@ -1,5 +1,5 @@
 import { logAdminError } from '../utils/safeLogger';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import apiClient from '../api/axios';
 import UserProfileModal from '../components/UserProfileModal';
 import './UsersPage.css';
@@ -8,6 +8,7 @@ const UsersPage = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [appliedSearchTerm, setAppliedSearchTerm] = useState('');
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [minVisitDays, setMinVisitDays] = useState('');
   const [maxVisitDays, setMaxVisitDays] = useState('');
@@ -45,11 +46,11 @@ const UsersPage = () => {
     });
   };
 
-  const filteredUsers = users
+  const filteredUsers = useMemo(() => users
     .filter((user) => {
       const nickname = user.nickname || '';
-      return nickname.toLowerCase().includes(searchTerm.toLowerCase()) ||
-             user.id.toString().includes(searchTerm);
+      return nickname.toLowerCase().includes(appliedSearchTerm.toLowerCase()) ||
+             user.id.toString().includes(appliedSearchTerm);
     })
     .filter((user) => {
       const days = user.visitDays ?? 0;
@@ -63,7 +64,7 @@ const UsersPage = () => {
       if (!a.lastAccessedAt) return 1;
       if (!b.lastAccessedAt) return -1;
       return new Date(b.lastAccessedAt) - new Date(a.lastAccessedAt);
-    });
+    }), [users, appliedSearchTerm, minVisitDays, maxVisitDays]);
 
   if (loading) {
     return (
@@ -87,18 +88,31 @@ const UsersPage = () => {
 
       {/* Search */}
       <div className="filters-bar">
-        <div className="search-box">
+        <form
+          className="search-box"
+          role="search"
+          onSubmit={(e) => {
+            e.preventDefault();
+            setAppliedSearchTerm(searchTerm.trim());
+          }}
+        >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <circle cx="11" cy="11" r="8" />
             <path d="m21 21-4.35-4.35" />
           </svg>
           <input
             type="text"
-            placeholder="닉네임 또는 ID로 검색..."
+            placeholder="닉네임 또는 ID 입력 후 Enter"
+            aria-label="유저 검색"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && (e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229)) {
+                e.preventDefault();
+              }
+            }}
           />
-        </div>
+        </form>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
           <span style={{ fontSize: 13, color: '#666' }}>방문일수</span>
           <input
