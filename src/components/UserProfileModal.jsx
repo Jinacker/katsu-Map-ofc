@@ -52,8 +52,8 @@ export default function UserProfileModal({ userId, onClose }) {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div style={s.modal}>
-        <button onClick={onClose} style={s.closeBtn}>×</button>
+      <div style={s.modal} role="dialog" aria-modal="true" aria-label="유저 프로필">
+        <button onClick={onClose} style={s.closeBtn} aria-label="유저 프로필 닫기">×</button>
 
         {loading ? (
           <div style={s.center}>불러오는 중...</div>
@@ -134,6 +134,12 @@ export default function UserProfileModal({ userId, onClose }) {
                         {r.satisfaction > 0 && (
                           <span style={s.recordStars}>{SATISFACTION_LABELS[r.satisfaction]}</span>
                         )}
+                        {(r.eventBadges ?? []).map((badge) => (
+                          <span key={badge.eventId} style={s.stampTag} title={`${badge.title} 스탬프 수령`}>
+                            <img src={badge.stampImageUrl} alt="" style={s.stampImage} />
+                            스탬프
+                          </span>
+                        ))}
                         {r.isPrivate && <span style={s.privateTag}>비공개</span>}
                       </div>
                       <div style={s.recordMeta}>
@@ -216,6 +222,12 @@ const s = {
   recordTop: { display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
   recordName: { fontSize: 14, fontWeight: 600, color: '#111827' },
   recordStars: { fontSize: 11, color: '#d97706', letterSpacing: 1 },
+  stampTag: {
+    display: 'inline-flex', alignItems: 'center', gap: 3,
+    fontSize: 10, fontWeight: 700, color: '#9a3412', background: '#fff7ed',
+    padding: '1px 6px', borderRadius: 4,
+  },
+  stampImage: { width: 18, height: 18, objectFit: 'contain' },
   privateTag: {
     fontSize: 10, fontWeight: 700, color: '#6b7280', background: '#f3f4f6',
     padding: '1px 6px', borderRadius: 4,
