@@ -2,6 +2,35 @@
   width: 100%;
 }
 
+.users-page .users-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 16px 0;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+
+.users-page .users-page-range {
+  margin-right: auto;
+}
+
+.users-page .users-pagination button {
+  padding: 6px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  cursor: pointer;
+}
+
+.users-page .users-pagination button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
 .page-header {
   margin-bottom: var(--space-xl);
 }
