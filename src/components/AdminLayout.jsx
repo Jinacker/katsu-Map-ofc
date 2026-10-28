@@ -1,18 +1,29 @@
-import React, { useEffect, useState } from 'react';
+import React, { createContext, useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import './AdminLayout.css';
 import { clearAdminToken } from '../utils/adminAuth';
 import apiClient from '../api/axios';
+
+export const UnrepliedMessageCountContext = createContext(null);
 
 const AdminLayout = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const [unrepliedCount, setUnrepliedCount] = useState(0);
   const [pendingPlacesCount, setPendingPlacesCount] = useState(0);
+  const messageCountVersionRef = useRef(0);
+  const updateUnrepliedCount = useCallback((count) => {
+    messageCountVersionRef.current += 1;
+    setUnrepliedCount(count);
+  }, []);
 
   useEffect(() => {
+    let active = true;
+    const version = messageCountVersionRef.current;
     apiClient.get('/api/v1/messages/admin/all')
       .then(res => {
+        // 답변 후 갱신한 숫자를 늦게 도착한 최초 조회가 덮어쓰지 않도록 한다.
+        if (!active || messageCountVersionRef.current !== version) return;
         const msgs = res.data?.data ?? [];
         setUnrepliedCount(msgs.filter(m => !m.reply).length);
       })
@@ -20,9 +31,11 @@ const AdminLayout = ({ children }) => {
     // 미등록 가게 승인 대기 건수 (total만 필요해서 limit=1)
     apiClient.get('/api/v1/admin/tasting-notes', { params: { pending: 'true', page: 1, limit: 1 } })
       .then(res => {
+        if (!active) return;
         setPendingPlacesCount(res.data?.data?.total ?? 0);
       })
       .catch(() => {});
+    return () => { active = false; };
   }, []);
 
   const handleLogout = () => {
@@ -297,7 +310,9 @@ const AdminLayout = ({ children }) => {
 
       {/* Main Content */}
       <main className="admin-main">
-        {children}
+        <UnrepliedMessageCountContext.Provider value={updateUnrepliedCount}>
+          {children}
+        </UnrepliedMessageCountContext.Provider>
       </main>
     </div>
   );

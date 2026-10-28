@@ -1,12 +1,14 @@
 import { logAdminError } from '../utils/safeLogger';
-import React, { useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import apiClient from '../api/axios';
+import { UnrepliedMessageCountContext } from '../components/AdminLayout';
 import AdminTemplateModal from '../components/AdminTemplateModal';
 import AdminTemplatePicker from '../components/AdminTemplatePicker';
 import RestaurantsPage from './RestaurantsPage';
 import './MessagesPage.css';
 
 const MessagesPage = () => {
+  const updateUnrepliedCount = useContext(UnrepliedMessageCountContext);
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedMessage, setSelectedMessage] = useState(null);
@@ -23,11 +25,17 @@ const MessagesPage = () => {
     fetchMessages();
   }, []);
 
+  const updateMessageList = (nextMessages) => {
+    setMessages(nextMessages);
+    updateUnrepliedCount?.(nextMessages.filter((message) => !message.reply).length);
+  };
+
   const fetchMessages = async () => {
     try {
       setLoading(true);
+      setError('');
       const response = await apiClient.get('/api/v1/messages/admin/all');
-      setMessages(response.data.data);
+      updateMessageList(response.data.data);
     } catch (err) {
       setError('메시지 목록을 불러오는데 실패했습니다.');
       logAdminError(err, '문의 요청 실패');
@@ -43,9 +51,12 @@ const MessagesPage = () => {
     }
 
     try {
-      await apiClient.patch(`/api/v1/messages/${messageId}/reply`, {
+      const response = await apiClient.patch(`/api/v1/messages/${messageId}/reply`, {
         reply: replyText
       });
+      updateMessageList(messages.map((message) => message.id === messageId
+        ? { ...message, reply: response.data?.data?.reply ?? replyText }
+        : message));
       alert(isEditingReply ? '답장이 수정되었습니다.' : '답장이 전송되었습니다.');
       setReplyText('');
       setIsEditingReply(false);
@@ -62,6 +73,7 @@ const MessagesPage = () => {
 
     try {
       await apiClient.delete(`/api/v1/messages/${messageId}`);
+      updateMessageList(messages.filter((message) => message.id !== messageId));
       alert('메시지가 삭제되었습니다.');
       fetchMessages();
       if (selectedMessage?.id === messageId) {
