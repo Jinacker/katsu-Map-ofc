@@ -1,5 +1,5 @@
 import { logAdminError } from '../utils/safeLogger';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   awardAdminBadge,
   createAdminBadge,
@@ -85,6 +85,13 @@ export default function BadgesPage() {
   const [userInventory, setUserInventory] = useState([]);
   const [awardReason, setAwardReason] = useState('이벤트 및 운영 수여');
   const [userLoading, setUserLoading] = useState(false);
+  const [awardBadge, setAwardBadge] = useState(null);
+  const [awardSaving, setAwardSaving] = useState(false);
+  const [toast, setToast] = useState('');
+  const awardDialogRef = useRef(null);
+  const awardSearchRef = useRef(null);
+  const awardBusyRef = useRef(false);
+  const userRequestRef = useRef(0);
 
   const visibleBadges = useMemo(
     () => badges.filter((badge) => badge.type === tab),
@@ -109,6 +116,38 @@ export default function BadgesPage() {
   };
 
   useEffect(() => { loadBadges(); }, []);
+
+  useEffect(() => {
+    if (awardBadge) {
+      awardDialogRef.current?.showModal();
+      awardSearchRef.current?.focus();
+    }
+  }, [awardBadge]);
+
+  useEffect(() => {
+    if (!toast) return;
+    const timer = setTimeout(() => setToast(''), 5000);
+    return () => clearTimeout(timer);
+  }, [toast]);
+
+  const openAward = (badge) => {
+    if (awardBusyRef.current) return;
+    userRequestRef.current += 1;
+    setUserQuery('');
+    setUserResults([]);
+    setSelectedUser(null);
+    setUserInventory([]);
+    setAwardReason('이벤트 및 운영 수여');
+    setUserLoading(false);
+    setToast('');
+    setAwardBadge(badge);
+  };
+
+  const closeAward = () => {
+    if (awardBusyRef.current) return;
+    userRequestRef.current += 1;
+    setAwardBadge(null);
+  };
 
   const openCreate = () => {
     setEditingBadge(null);
@@ -237,39 +276,46 @@ export default function BadgesPage() {
 
   const searchUsers = async (event) => {
     event.preventDefault();
-    if (!userQuery.trim()) return;
+    if (!userQuery.trim() || userLoading || awardBusyRef.current) return;
+    const request = ++userRequestRef.current;
     try {
       setUserLoading(true);
+      setUserResults([]);
+      setSelectedUser(null);
+      setUserInventory([]);
       const response = await searchAdminUsers(userQuery.trim());
+      if (request !== userRequestRef.current) return;
       setUserResults(unwrap(response) || []);
     } catch (error) {
+      if (request !== userRequestRef.current) return;
       alert(errorMessage(error, '사용자를 검색하지 못했습니다.'));
     } finally {
-      setUserLoading(false);
+      if (request === userRequestRef.current) setUserLoading(false);
     }
   };
 
   const selectUser = async (user) => {
-    setSelectedUser(user);
-    setUserResults([]);
+    if (userLoading || awardBusyRef.current) return;
+    const request = ++userRequestRef.current;
+    setSelectedUser(null);
+    setUserInventory([]);
     try {
       setUserLoading(true);
       const response = await getAdminUserBadges(user.id);
+      if (request !== userRequestRef.current) return;
       setUserInventory(unwrap(response)?.badges || []);
+      setSelectedUser(user);
+      setUserResults([]);
     } catch (error) {
+      if (request !== userRequestRef.current) return;
       alert(errorMessage(error, '사용자 뱃지를 불러오지 못했습니다.'));
     } finally {
-      setUserLoading(false);
+      if (request === userRequestRef.current) setUserLoading(false);
     }
   };
 
-  const refreshInventory = async () => {
-    if (!selectedUser) return;
-    const response = await getAdminUserBadges(selectedUser.id);
-    setUserInventory(unwrap(response)?.badges || []);
-  };
-
   const toggleAward = async (badge) => {
+    if (awardBusyRef.current || userLoading) return;
     if (!selectedUser) {
       alert('먼저 사용자를 선택해주세요.');
       return;
@@ -279,11 +325,21 @@ export default function BadgesPage() {
       return;
     }
     try {
+      awardBusyRef.current = true;
+      setAwardSaving(true);
       if (owned) await revokeAdminBadge(badge.id, selectedUser.id);
       else await awardAdminBadge(badge.id, selectedUser.id, awardReason.trim());
-      await Promise.all([refreshInventory(), loadBadges()]);
+      userRequestRef.current += 1;
+      setAwardBadge(null);
+      setToast(owned
+        ? `${selectedUser.nickname || selectedUser.id}님의 ${badge.name} 뱃지를 회수했습니다.`
+        : `${selectedUser.nickname || selectedUser.id}님에게 ${badge.name} 뱃지를 수여했습니다.`);
+      await loadBadges();
     } catch (error) {
       alert(errorMessage(error, owned ? '뱃지를 회수하지 못했습니다.' : '뱃지를 수여하지 못했습니다.'));
+    } finally {
+      awardBusyRef.current = false;
+      setAwardSaving(false);
     }
   };
 
@@ -306,43 +362,11 @@ export default function BadgesPage() {
         </button>
       </div>
 
-      {tab === 'AWARD' && (
-        <section className="badge-award-panel">
-          <div className="badge-award-search">
-            <h2>사용자 수여 관리</h2>
-            <form onSubmit={searchUsers}>
-              <input value={userQuery} onChange={(event) => setUserQuery(event.target.value)} placeholder="사용자 ID 또는 닉네임" />
-              <button type="submit" disabled={userLoading}>검색</button>
-            </form>
-            {userResults.length > 0 && (
-              <div className="badge-user-results">
-                {userResults.map((user) => (
-                  <button type="button" key={user.id} onClick={() => selectUser(user)}>
-                    <strong>{user.nickname || '닉네임 없음'}</strong><span>ID {user.id}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-          <div className="badge-selected-user">
-            {selectedUser ? (
-              <>
-                <div><strong>{selectedUser.nickname || '닉네임 없음'}</strong><span>ID {selectedUser.id}</span></div>
-                <label>공개 수여 사유<input value={awardReason} onChange={(event) => setAwardReason(event.target.value)} maxLength={300} /></label>
-                <small>입력한 사유는 사용자의 앱 프로필 뱃지 상세에 공개됩니다.</small>
-                <p>아래 뱃지 카드의 버튼으로 지급하거나 회수할 수 있습니다.</p>
-              </>
-            ) : <p>수여 상태를 관리할 사용자를 검색해 선택하세요.</p>}
-          </div>
-        </section>
-      )}
-
       {loading ? (
         <div className="badge-loading">뱃지 목록을 불러오는 중...</div>
       ) : (
         <div className="badge-admin-grid">
           {visibleBadges.map((badge) => {
-            const owned = ownedAwardIds.has(badge.id);
             return (
               <article key={badge.id} className={`badge-admin-card ${!badge.isActive ? 'inactive' : ''}`}>
                 <div className="badge-card-top">
@@ -367,9 +391,9 @@ export default function BadgesPage() {
                 )}
                 <div className="badge-card-actions">
                   <button type="button" onClick={() => openEdit(badge)}>정의 수정</button>
-                  {badge.type === 'AWARD' && selectedUser && (
-                    <button type="button" className={owned ? 'revoke' : 'award'} disabled={!badge.isActive && !owned} onClick={() => toggleAward(badge)}>
-                      {owned ? '회수' : '수여'}
+                  {badge.type === 'AWARD' && (
+                    <button type="button" className="award" onClick={() => openAward(badge)}>
+                      수여
                     </button>
                   )}
                 </div>
@@ -378,6 +402,61 @@ export default function BadgesPage() {
           })}
           {visibleBadges.length === 0 && <div className="badge-empty">등록된 뱃지가 없습니다.</div>}
         </div>
+      )}
+
+      {toast && <div className="badge-toast" role="status">{toast}</div>}
+
+      {awardBadge && (
+        <dialog ref={awardDialogRef} className="badge-modal badge-award-modal" aria-labelledby="badge-award-title"
+          onCancel={(event) => { event.preventDefault(); closeAward(); }}>
+          <header>
+            <h2 id="badge-award-title">{awardBadge.name} 수여</h2>
+            <button type="button" aria-label="수여 창 닫기" disabled={awardSaving} onClick={closeAward}>×</button>
+          </header>
+          <section className="badge-award-panel" aria-label="사용자 수여 관리">
+            <div className="badge-award-search">
+              <h3>사용자 검색</h3>
+              <form onSubmit={searchUsers}>
+                <input ref={awardSearchRef} aria-label="사용자 ID 또는 닉네임" value={userQuery} disabled={userLoading || awardSaving}
+                  onChange={(event) => setUserQuery(event.target.value)} placeholder="사용자 ID 또는 닉네임" />
+                <button type="submit" disabled={userLoading || awardSaving || !userQuery.trim()}>검색</button>
+              </form>
+              {userLoading && <p role="status">사용자 정보를 불러오는 중...</p>}
+              {userResults.length > 0 && (
+                <div className="badge-user-results">
+                  {userResults.map((user) => (
+                    <button type="button" key={user.id} disabled={userLoading || awardSaving} onClick={() => selectUser(user)}>
+                      <strong>{user.nickname || '닉네임 없음'}</strong><span>ID {user.id}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="badge-selected-user">
+              {selectedUser ? (
+                <>
+                  <div><strong>{selectedUser.nickname || '닉네임 없음'}</strong><span>ID {selectedUser.id}</span></div>
+                  {ownedAwardIds.has(awardBadge.id) ? <p>이미 이 뱃지를 보유한 사용자입니다. 아래 버튼으로 회수할 수 있습니다.</p> : (
+                    <>
+                      <label>공개 수여 사유<input value={awardReason} disabled={awardSaving || userLoading}
+                        onChange={(event) => setAwardReason(event.target.value)} maxLength={300} /></label>
+                      <small>입력한 사유는 사용자의 앱 프로필 뱃지 상세에 공개됩니다.</small>
+                    </>
+                  )}
+                </>
+              ) : <p>뱃지를 수여할 사용자를 검색해 선택하세요.</p>}
+            </div>
+            {!awardBadge.isActive && <p className="badge-award-notice">비활성 뱃지는 수여할 수 없으며, 기존 보유자의 뱃지만 회수할 수 있습니다.</p>}
+            <footer>
+              <button type="button" disabled={awardSaving} onClick={closeAward}>취소</button>
+              <button type="button" className={ownedAwardIds.has(awardBadge.id) ? 'badge-revoke-button' : 'badge-primary-button'}
+                disabled={!selectedUser || userLoading || awardSaving || (!awardBadge.isActive && !ownedAwardIds.has(awardBadge.id))}
+                onClick={() => toggleAward(awardBadge)}>
+                {awardSaving ? '처리 중...' : ownedAwardIds.has(awardBadge.id) ? '회수' : '수여하기'}
+              </button>
+            </footer>
+          </section>
+        </dialog>
       )}
 
       {modalOpen && (
