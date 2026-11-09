@@ -1,4 +1,16 @@
 .events-page { max-width: 1280px; margin: 0 auto; padding: 32px; color: var(--color-text-primary); }
+.events-ranking-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+.events-ranking-heading h2 { margin: 0 0 6px; font-size: 18px; }
+.events-ranking-heading .events-button { flex-shrink: 0; }
+.events-ranking-state { padding: 18px 0 4px; font-size: 13px; color: var(--color-text-secondary); }
+.events-ranking-table-wrap { overflow-x: auto; margin-top: 16px; }
+.events-ranking-table { border-collapse: collapse; width: 100%; text-align: left; font-size: 13px; }
+.events-ranking-table th, .events-ranking-table td { padding: 11px 8px; border-bottom: 1px solid #eee9e2; }
+.events-ranking-table th { color: var(--color-text-secondary); font-size: 12px; }
+.events-ranking-table th:first-child, .events-ranking-table td:first-child { width: 70px; }
+.events-ranking-table th:last-child, .events-ranking-table td:last-child { width: 80px; text-align: right; }
+.events-ranking-user-id { color: var(--color-text-secondary); font-size: 12px; }
+.events-ranking-pages { display: flex; justify-content: center; align-items: center; gap: 12px; margin-top: 16px; font-size: 12px; color: var(--color-text-secondary); }
 .events-page h1, .events-page h2, .events-page h3 { letter-spacing: -.025em; }
 .events-header { display: flex; justify-content: space-between; align-items: center; gap: 24px; margin-bottom: 28px; }
 .events-eyebrow { color: #a0754d; font-size: 11px; font-weight: 700; letter-spacing: .08em; }

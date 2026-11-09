@@ -1,6 +1,7 @@
 import EventGiftshopEditor from '../components/EventGiftshopEditor';
 import EventLuckyDrawEditor from '../components/EventLuckyDrawEditor';
 import EventStampTourEditor from '../components/EventStampTourEditor';
+import EventRanking from '../components/EventRanking';
 import './EventsPage.css';
 import React, { useEffect, useRef, useState } from 'react';
 import apiClient from '../api/axios';
@@ -113,6 +114,7 @@ export default function EventsPage() {
           </section>
           <EventStampTourEditor key={selected.id} event={selected} onChange={(stampTour) => patch({ stampTour })} locked={locked}
             setBusy={(value) => { busy.current = value; setStatus(value ? 'uploading' : 'ready'); }} onMessage={setMessage} />
+          <EventRanking key={`ranking-${selected.id}`} eventId={selected.id} saved={catalog.config.events.some((event) => event.id === selected.id)} />
           <EventGiftshopEditor key={`giftshop-${selected.id}`} event={selected} onChange={patch} locked={locked}
             setBusy={(value) => { busy.current = value; setStatus(value ? 'uploading' : 'ready'); }} onMessage={setMessage} />
           <EventLuckyDrawEditor key={`lucky-${selected.id}`} event={selected} onChange={patchPublicData} locked={locked} />
