@@ -10,6 +10,7 @@ import {
   updateAdminBadge,
 } from '../api/badges';
 import { uploadImageToGCS } from '../api/gcs';
+import { awardSelectedUsers, hasAwardBadge } from '../utils/batchBadgeAward';
 import './BadgesPage.css';
 
 const METRICS = [
@@ -81,8 +82,8 @@ export default function BadgesPage() {
   const [imageDragOver, setImageDragOver] = useState(false);
   const [userQuery, setUserQuery] = useState('');
   const [userResults, setUserResults] = useState([]);
-  const [selectedUser, setSelectedUser] = useState(null);
-  const [userInventory, setUserInventory] = useState([]);
+  const [selectedUsers, setSelectedUsers] = useState([]);
+  const [batchFeedback, setBatchFeedback] = useState('');
   const [awardReason, setAwardReason] = useState('이벤트 및 운영 수여');
   const [userLoading, setUserLoading] = useState(false);
   const [awardBadge, setAwardBadge] = useState(null);
@@ -97,10 +98,8 @@ export default function BadgesPage() {
     () => badges.filter((badge) => badge.type === tab),
     [badges, tab],
   );
-  const ownedAwardIds = useMemo(
-    () => new Set(userInventory.filter((item) => item.badge?.type === 'AWARD').map((item) => item.badgeId)),
-    [userInventory],
-  );
+  const selectedOwned = selectedUsers.length === 1 && selectedUsers[0].ownsBadge;
+  const awardableCount = selectedUsers.filter((user) => !user.ownsBadge).length;
 
   const loadBadges = async () => {
     try {
@@ -135,8 +134,8 @@ export default function BadgesPage() {
     userRequestRef.current += 1;
     setUserQuery('');
     setUserResults([]);
-    setSelectedUser(null);
-    setUserInventory([]);
+    setSelectedUsers([]);
+    setBatchFeedback('');
     setAwardReason('이벤트 및 운영 수여');
     setUserLoading(false);
     setToast('');
@@ -281,8 +280,6 @@ export default function BadgesPage() {
     try {
       setUserLoading(true);
       setUserResults([]);
-      setSelectedUser(null);
-      setUserInventory([]);
       const response = await searchAdminUsers(userQuery.trim());
       if (request !== userRequestRef.current) return;
       setUserResults(unwrap(response) || []);
@@ -296,16 +293,18 @@ export default function BadgesPage() {
 
   const selectUser = async (user) => {
     if (userLoading || awardBusyRef.current) return;
+    if (selectedUsers.some((item) => item.id === user.id)) {
+      setSelectedUsers((current) => current.filter((item) => item.id !== user.id));
+      setBatchFeedback('');
+      return;
+    }
     const request = ++userRequestRef.current;
-    setSelectedUser(null);
-    setUserInventory([]);
     try {
       setUserLoading(true);
       const response = await getAdminUserBadges(user.id);
       if (request !== userRequestRef.current) return;
-      setUserInventory(unwrap(response)?.badges || []);
-      setSelectedUser(user);
-      setUserResults([]);
+      setSelectedUsers((current) => [...current, { ...user, ownsBadge: hasAwardBadge(response, awardBadge.id) }]);
+      setBatchFeedback('');
     } catch (error) {
       if (request !== userRequestRef.current) return;
       alert(errorMessage(error, '사용자 뱃지를 불러오지 못했습니다.'));
@@ -316,27 +315,42 @@ export default function BadgesPage() {
 
   const toggleAward = async (badge) => {
     if (awardBusyRef.current || userLoading) return;
-    if (!selectedUser) {
+    if (!selectedUsers.length) {
       alert('먼저 사용자를 선택해주세요.');
       return;
     }
-    const owned = ownedAwardIds.has(badge.id);
-    if (owned && !confirm(`${selectedUser.nickname || selectedUser.id} 사용자에게서 ${badge.name} 뱃지를 회수할까요?`)) {
+    if (selectedOwned && !confirm(`${selectedUsers[0].nickname || selectedUsers[0].id} 사용자에게서 ${badge.name} 뱃지를 회수할까요?`)) {
       return;
     }
     try {
       awardBusyRef.current = true;
       setAwardSaving(true);
-      if (owned) await revokeAdminBadge(badge.id, selectedUser.id);
-      else await awardAdminBadge(badge.id, selectedUser.id, awardReason.trim());
-      userRequestRef.current += 1;
-      setAwardBadge(null);
-      setToast(owned
-        ? `${selectedUser.nickname || selectedUser.id}님의 ${badge.name} 뱃지를 회수했습니다.`
-        : `${selectedUser.nickname || selectedUser.id}님에게 ${badge.name} 뱃지를 수여했습니다.`);
-      await loadBadges();
+      setBatchFeedback('');
+      if (selectedOwned) {
+        await revokeAdminBadge(badge.id, selectedUsers[0].id);
+        userRequestRef.current += 1;
+        setAwardBadge(null);
+        setToast(`${selectedUsers[0].nickname || selectedUsers[0].id}님의 ${badge.name} 뱃지를 회수했습니다.`);
+        await loadBadges();
+        return;
+      }
+      const result = await awardSelectedUsers({
+        users: selectedUsers, badgeId: badge.id, reason: awardReason.trim(),
+        getUserBadges: getAdminUserBadges, awardBadge: awardAdminBadge,
+      });
+      const summary = `수여 ${result.awarded.length}명 · 기존 보유로 건너뜀 ${result.skipped.length}명 · 실패 ${result.failed.length}명`;
+      if (result.failed.length) {
+        const failedIds = new Set(result.failed.map(({ user }) => user.id));
+        setSelectedUsers((current) => current.filter((user) => failedIds.has(user.id)));
+        setBatchFeedback(`${summary}\n실패: ${result.failed.map(({ user, error }) => `${user.nickname || '닉네임 없음'} (ID ${user.id}): ${errorMessage(error, '요청 실패')}`).join('\n')}\n실패한 사용자만 남겨두었습니다. 다시 시도할 수 있습니다.`);
+      } else {
+        userRequestRef.current += 1;
+        setAwardBadge(null);
+        setToast(`${badge.name}: ${summary}`);
+      }
+      if (result.awarded.length) await loadBadges();
     } catch (error) {
-      alert(errorMessage(error, owned ? '뱃지를 회수하지 못했습니다.' : '뱃지를 수여하지 못했습니다.'));
+      alert(errorMessage(error, selectedOwned ? '뱃지를 회수하지 못했습니다.' : '뱃지를 수여하지 못했습니다.'));
     } finally {
       awardBusyRef.current = false;
       setAwardSaving(false);
@@ -425,34 +439,46 @@ export default function BadgesPage() {
               {userResults.length > 0 && (
                 <div className="badge-user-results">
                   {userResults.map((user) => (
-                    <button type="button" key={user.id} disabled={userLoading || awardSaving} onClick={() => selectUser(user)}>
+                    <label className="badge-user-result" key={user.id}>
+                      <input type="checkbox" checked={selectedUsers.some((item) => item.id === user.id)}
+                        disabled={userLoading || awardSaving} onChange={() => selectUser(user)}
+                        aria-label={`${user.nickname || '닉네임 없음'} ID ${user.id} 선택`} />
                       <strong>{user.nickname || '닉네임 없음'}</strong><span>ID {user.id}</span>
-                    </button>
+                    </label>
                   ))}
                 </div>
               )}
             </div>
             <div className="badge-selected-user">
-              {selectedUser ? (
+              {selectedUsers.length ? (
                 <>
-                  <div><strong>{selectedUser.nickname || '닉네임 없음'}</strong><span>ID {selectedUser.id}</span></div>
-                  {ownedAwardIds.has(awardBadge.id) ? <p>이미 이 뱃지를 보유한 사용자입니다. 아래 버튼으로 회수할 수 있습니다.</p> : (
+                  <strong>선택한 사용자 {selectedUsers.length}명</strong>
+                  <div className="badge-selected-list">
+                    {selectedUsers.map((user) => <div className="badge-selected-row" key={user.id}>
+                      <div><strong>{user.nickname || '닉네임 없음'}</strong><span>ID {user.id}{user.ownsBadge ? ' · 이미 보유' : ''}</span></div>
+                      <button type="button" disabled={awardSaving || userLoading} aria-label={`${user.nickname || '닉네임 없음'} ID ${user.id} 선택 해제`}
+                        onClick={() => { setSelectedUsers((current) => current.filter((item) => item.id !== user.id)); setBatchFeedback(''); }}>×</button>
+                    </div>)}
+                  </div>
+                  {selectedOwned ? <p>이미 이 뱃지를 보유한 사용자입니다. 아래 버튼으로 회수할 수 있습니다.</p> : (
                     <>
+                      {selectedUsers.some((user) => user.ownsBadge) && <p>이미 보유한 사용자는 수여 시 건너뜁니다. 회수하려면 해당 사용자만 선택하세요.</p>}
                       <label>공개 수여 사유<input value={awardReason} disabled={awardSaving || userLoading}
                         onChange={(event) => setAwardReason(event.target.value)} maxLength={300} /></label>
-                      <small>입력한 사유는 사용자의 앱 프로필 뱃지 상세에 공개됩니다.</small>
+                      <small>입력한 사유는 선택한 사용자의 앱 프로필 뱃지 상세에 동일하게 공개됩니다.</small>
                     </>
                   )}
                 </>
               ) : <p>뱃지를 수여할 사용자를 검색해 선택하세요.</p>}
             </div>
+            {batchFeedback && <p className="badge-batch-feedback" role="status">{batchFeedback}</p>}
             {!awardBadge.isActive && <p className="badge-award-notice">비활성 뱃지는 수여할 수 없으며, 기존 보유자의 뱃지만 회수할 수 있습니다.</p>}
             <footer>
               <button type="button" disabled={awardSaving} onClick={closeAward}>취소</button>
-              <button type="button" className={ownedAwardIds.has(awardBadge.id) ? 'badge-revoke-button' : 'badge-primary-button'}
-                disabled={!selectedUser || userLoading || awardSaving || (!awardBadge.isActive && !ownedAwardIds.has(awardBadge.id))}
+              <button type="button" className={selectedOwned ? 'badge-revoke-button' : 'badge-primary-button'}
+                disabled={!selectedUsers.length || userLoading || awardSaving || (!selectedOwned && (!awardBadge.isActive || !awardableCount))}
                 onClick={() => toggleAward(awardBadge)}>
-                {awardSaving ? '처리 중...' : ownedAwardIds.has(awardBadge.id) ? '회수' : '수여하기'}
+                {awardSaving ? '처리 중...' : selectedOwned ? '회수' : selectedUsers.length > 1 ? `${awardableCount}명 수여하기` : '수여하기'}
               </button>
             </footer>
           </section>

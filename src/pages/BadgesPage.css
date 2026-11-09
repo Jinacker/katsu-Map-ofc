@@ -23,6 +23,9 @@
 .badge-award-search input { min-width: 0; }
 .badge-user-results { display: grid; gap: 5px; margin-top: 8px; max-height: 180px; overflow: auto; }
 .badge-user-results button { display: flex; justify-content: space-between; border: 1px solid var(--color-border); border-radius: 8px; padding: 9px 11px; background: #fff; cursor: pointer; }
+.badge-user-result { display: flex; align-items: center; gap: 9px; border: 1px solid var(--color-border); border-radius: 8px; padding: 9px 11px; background: #fff; cursor: pointer; }
+.badge-user-results .badge-user-result input[type=checkbox] { flex: 0 0 auto; width: 16px; height: 16px; margin: 0; padding: 0; }
+.badge-user-result span { margin-left: auto; }
 .badge-user-results span, .badge-selected-user span { margin-left: 8px; color: var(--color-text-tertiary); font-size: 12px; }
 .badge-selected-user { padding: 14px; border-radius: 10px; background: var(--color-bg-secondary); }
 .badge-selected-user > div { margin-bottom: 12px; }
@@ -30,6 +33,10 @@
 .badge-selected-user input { margin-top: 5px; background: #fff; }
 .badge-selected-user small { display: block; margin-top: 6px; color: var(--color-text-tertiary); font-size: 11px; }
 .badge-selected-user p { margin: 10px 0 0; color: var(--color-text-tertiary); font-size: 12px; }
+.badge-selected-list { display: grid; gap: 6px; max-height: 180px; overflow-y: auto; margin-top: 10px; }
+.badge-selected-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.badge-selected-row button { border: 0; background: transparent; color: var(--color-text-secondary); font-size: 20px; cursor: pointer; }
+.badge-batch-feedback { margin: 0; white-space: pre-line; color: var(--color-text-secondary); font-size: 12px; line-height: 1.6; }
 .badge-admin-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 15px; }
 .badge-admin-card { padding: 17px; border: 1px solid var(--color-border); border-radius: 14px; background: var(--color-surface); box-shadow: var(--shadow-sm); }
 .badge-admin-card.inactive { opacity: .64; }
